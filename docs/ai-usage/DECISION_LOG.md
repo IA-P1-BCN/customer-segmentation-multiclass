@@ -81,6 +81,24 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Approved by a human team member, 2026-11-11.
 - **Consequences:** No `openspec/` structure or tooling is added. The decision is revisited at the reevaluation trigger; nothing needs maintenance in the meantime.
 
+### D-007 — Collaborative workflow and dataset management
+
+- **Date:** 2026-11-11
+- **Status:** Approved
+- **Area:** Workflow / Data Management
+- **Context:** The team needed to define how members collaborate during EDA, preprocessing and model development, and whether the Kaggle dataset files can be kept in the repository.
+- **Decision:**
+  1. **Git workflow:** each member works on their own branch. Changes reach `main` exclusively through Pull Requests reviewed by another team member. No direct commits to `main`.
+  2. **EDA:** each member explores independently. The EDA lead owns `01_eda.ipynb` and integrates relevant findings into the final notebook.
+  3. **Notebooks:** each notebook has one designated owner. No simultaneous editing by multiple members.
+  4. **Preprocessing and data split:** implemented in a shared Python Pipeline under `src/`, ensuring consistent processing across models.
+  5. **Model experiments:** each member maintains their own model notebook, imports the shared Pipeline and records metrics in `results/` using a common format.
+  6. **Dataset:** retain `Train.csv` and `Test.csv` in the repository. The Kaggle dataset is licensed under CC0, allowing redistribution. No changes to `.gitignore` are required.
+- **Dataset license note:** the CC0 license of the Kaggle dataset was confirmed by human review on Kaggle.
+- **Documentation:** add the Kaggle dataset source and Analytics Vidhya reference to the README.
+- **Approval:** Approved by a human team member, 2026-11-11.
+- **Consequences:** The team follows a branch + Pull Request workflow with single-owner notebooks and a shared preprocessing Pipeline. `Train.csv` and `Test.csv` remain versioned in the repository under the confirmed CC0 license, with no `.gitignore` changes.
+
 ---
 
 <!-- Add new decisions below using the same structure. Preserve previous records. -->
