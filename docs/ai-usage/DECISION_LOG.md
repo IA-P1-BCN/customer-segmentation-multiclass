@@ -164,7 +164,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-010 — Primary metric, overfitting criterion and minimum reference (US-01)
 
 - **Date:** 2026-11-12
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Methodology / Evaluation
 - **Context:** The four models (US-07 to US-10) need a single metric and a shared way of measuring overfitting to be comparable. The briefing requires overfitting below 5 % between training and validation, but does not state on which metric it is measured or whether the difference is absolute or relative. Classes are close to balanced (A 24.4 %, B 23.0 %, C 24.4 %, D 28.1 % in `train_70`, per the run in `01_eda_inicial.ipynb`). Per D-009, customers with identical profiles belong to different segments, which caps the achievable performance.
 - **Alternatives:** (1) Accuracy as the only metric; (2) macro-F1 as the primary metric, with accuracy also reported; (3) weighted-F1.
@@ -178,7 +178,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   6. **Hyperparameter tuning with cross-validation (suggested by Alex):** during the improvement phase (US-07 to US-10), configurations are compared with 5-fold stratified cross-validation on `train_70` (`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`), passing the **full Pipeline** (preprocessing + model) to `cross_validate` so that imputation and encoding are fitted inside each fold. Each configuration records mean accuracy and macro-F1 on the CV folds (with standard deviation) and the train − CV accuracy gap. This gives a more stable estimate than a single validation split and avoids tuning many configurations against `val_15`. The **official** overfitting check and the model comparison in US-11 remain train vs `val_15` (item 3), as stated by the professor.
 - **Question to the professor:** Is the < 5 % overfitting limit measured on accuracy or on another metric (e.g. macro-F1), and is it an absolute difference in percentage points or a relative difference? Asked by Rita Pereira, 2026-11-12.
 - **Professor's answer (2026-11-12, relayed by Rita Pereira):** when using accuracy, overfitting is measured by subtracting the validation accuracy from the training accuracy (absolute difference). The answer does not require a different metric, so the team applies it on accuracy.
-- **Approval:** Pending — to be set by a human team member.
+- **Approval:** Approved by Brian, 2026-11-12..
 - **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, the accuracy gap in percentage points (pass/fail: < 5) and the macro-F1 gap (informative), plus per-class precision, recall and F1 on validation. Models are selected by validation macro-F1 among those that meet the accuracy-gap limit. During tuning, each configuration also records its 5-fold CV results on `train_70` (item 6).
 
 ---
