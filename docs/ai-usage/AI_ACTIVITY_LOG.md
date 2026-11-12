@@ -111,4 +111,22 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-006 — Initial EDA on Train.csv and 70/15/15 stratified data split
+
+- **Date:** 2026-11-12
+- **Agent:** Gemini
+- **Human owner:** Pedro
+- **Objective:** Perform initial exploratory data analysis on `data/Train.csv`, verify duplicate profiles, and generate reproducible stratified data splits (`train_70`, `val_15`, `test_15`) preserving raw missing values.
+- **Activities:**
+  - Configured local data ingestion from `data/Train.csv` (with on-demand `kagglehub` fallback), excluding Kaggle's external `Test.csv` (aligned with D-006).
+  - Performed structural inspection, missing-value diagnosis, and univariate visualizations (target class balance, numerical distributions/boxplots, and categorical frequencies) across all 8,068 records.
+  - Analyzed exact feature matches (`ID` and `Segmentation` excluded), confirming they represent distinct customers with identical profiles across different segments rather than true data duplicates.
+  - Implemented reproducible stratified splitting (`random_state=42`, 70/15/15) exporting `train_70.csv`, `val_15.csv`, and `test_15.csv` with missing values intact for downstream `src/` pipeline processing.
+- **Files:** Modified: `01_eda_inicial.ipynb`; Created: `data/train_70.csv`, `data/val_15.csv`, `data/test_15.csv`.
+- **Verification:** Executed `Restart & Run All` in `01_eda_inicial.ipynb`; verified exact row counts (5,647 / 1,210 / 1,211), zero ID overlap across splits, preserved missing values, and class proportions within ±0.06%.
+- **Outcome:** Completed and submitted via PR on branch `feature/eda-pedro`.
+- **Pending tasks:** Migrate split generation logic from notebook to `src/` pipeline module (per D-007) and execute deep EDA/imputation rules exclusively on `train_70.csv`.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
