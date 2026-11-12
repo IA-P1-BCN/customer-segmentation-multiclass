@@ -161,6 +161,24 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Approved by Isbel, 2026-11-12.
 - **Consequences:** No deduplication step in the Pipeline. `train_70`, `val_15` and `test_15` are used as generated in PR #43.
 
+### D-010 — Primary metric, overfitting criterion and minimum reference (US-01)
+
+- **Date:** 2026-11-12
+- **Status:** Proposed
+- **Area:** Methodology / Evaluation
+- **Context:** The four models (US-07 to US-10) need a single metric and a shared way of measuring overfitting to be comparable. The briefing requires overfitting below 5 % between training and validation, but does not state on which metric it is measured or whether the difference is absolute or relative. Classes are close to balanced (A 24.4 %, B 23.0 %, C 24.4 %, D 28.1 % in `train_70`, per the run in `01_eda_inicial.ipynb`). Per D-009, customers with identical profiles belong to different segments, which caps the achievable performance.
+- **Alternatives:** (1) Accuracy as the only metric; (2) macro-F1 as the primary metric, with accuracy also reported; (3) weighted-F1.
+- **Recommendation:** Option 2. Macro-F1 gives the four segments equal weight, so a model cannot look good by favouring the largest class (D); accuracy is kept because it is easy to explain in the business presentation. Weighted-F1 adds little with balanced classes.
+- **Decision (proposed):**
+  1. **Primary metric:** macro-F1 on validation. Accuracy is also reported for every model.
+  2. **Error costs:** all segments and all errors weigh the same; no misclassification is considered more costly than another.
+  3. **Overfitting:** the briefing limit (< 5 % between train and validation) applies. Until the professor confirms the metric and the type of difference, every model reports the train − validation gap for **both** accuracy and macro-F1, **both** in absolute points (train − val) and relative terms ((train − val) / train). The absolute and relative versions differ (e.g. 65 % vs 60 % is 5 points but 7.7 % relative), so a model may meet one and not the other.
+  4. **Minimum reference:** every model must beat the majority-class baseline (`DummyClassifier(strategy="most_frequent")`, which always predicts D). Expected values on `val_15`: accuracy ≈ 28.1 % (share of D) and macro-F1 ≈ 0.11 (F1 of D ≈ 0.44, the other classes 0). **These are analytical estimates, not measured results**; the actual values are measured and recorded in US-11.
+  5. **Good enough:** a model is acceptable if it clearly beats the baseline on validation macro-F1 and meets the overfitting limit. Results are reported together with the ceiling described in D-009 (identical profiles with different segments).
+- **Open question (to the professor):** Is the < 5 % overfitting limit measured on accuracy or on another metric (e.g. macro-F1), and is it an absolute difference in percentage points or a relative difference? Asked by Rita Pereira, 2026-11-12; answer pending.
+- **Approval:** Pending — to be set by a human team member.
+- **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, both gaps (absolute and relative), and per-class precision, recall and F1 on validation. Once the professor answers, this record is updated with the confirmed criterion and the models are checked against it.
+
 ---
 
 <!-- Add new decisions below using the same structure. Preserve previous records. -->

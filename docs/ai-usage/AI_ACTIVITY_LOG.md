@@ -127,6 +127,21 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** Completed and submitted via PR on branch `feature/eda-pedro`.
 - **Pending tasks:** Migrate split generation logic from notebook to `src/` pipeline module (per D-007) and execute deep EDA/imputation rules exclusively on `train_70.csv`.
 
+### A-007 — US-01: primary metric and overfitting criterion
+
+- **Date:** 2026-11-12
+- **Agent:** Claude Code (Claude Opus 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Document the proposed primary metric, overfitting criterion and minimum reference for US-01 (issue #8).
+- **Activities:**
+  - Read issue #8 (US-01) and the dependent user stories (US-07 to US-11) with `gh`.
+  - Proposed macro-F1 as primary metric, accuracy also reported, equal error costs, both absolute and relative train/validation gaps until the professor confirms the criterion, and the majority-class baseline as minimum reference. Rita Pereira agreed with each point; the professor is being asked about the overfitting metric.
+  - Recorded the proposal as D-010 (Proposed) on branch `feature/define-metric-overfitting-criterion` (created from `develop` at `3714435`).
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Verification:** No code executed. Baseline values in D-010 are analytical estimates (class D share in `val_15` from the recorded run in `01_eda_inicial.ipynb`), explicitly marked as not measured; they will be measured in US-11.
+- **Outcome:** Documentation drafted; D-010 is Proposed.
+- **Pending tasks:** Professor's answer on the overfitting metric and type of difference; team approval of D-010; commit, push and PR into `develop`.
+
 ---
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
