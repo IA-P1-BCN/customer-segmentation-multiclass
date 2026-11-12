@@ -168,7 +168,7 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
-### A-008 - Project Python environment and activity-log alignment
+### A-009 - Project Python environment and activity-log alignment
 
 - **Date:** 2026-11-12
 - **Agent:** opencode (DeepSeek V4.1 Flash Free)
@@ -183,9 +183,9 @@ Its purpose is to help team members understand previous activities, identify com
   - Merged `origin/develop` into `feature/eda-pedro` (`1fd943f`) and renumbered the pending EDA entry from `A-002` to `A-006`, since `A-002` was already used by "Git integration branch workflow documentation"; the entry was appended after A-005.
   - Re-executed `01_eda_inicial.ipynb` from a clean kernel (execution counts 1-5, no error outputs) and committed the result as `871585e`; opened PR #46 into `develop`.
 - **Files:** Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (A-006 entry, merged via PR #43), `01_eda_inicial.ipynb` (`871585e`, PR #46). Outside the repository: `F:\venvs\ia-workshop` (added `seaborn`, `kagglehub`).
-- **Verification:** Import and version checks in `F:\venvs\ia-workshop`: pandas 3.1.1, numpy 2.5.4, scikit-learn 1.9.1, matplotlib 3.11.2, seaborn 0.13.2, kagglehub 1.0.3, ipykernel 7.4.0. Notebook execution counts 1-5 and no `output_type: error`; `git status` showed only `01_eda_inicial.ipynb`. PR #43 merged into `develop`; PR #46 open when this record was written.
-- **Outcome:** Environment prepared and reproducible for the session; A-006 merged into `develop`; the notebook re-execution is pending merge (PR #46).
-- **Pending tasks:** Merge PR #46; `requirements.txt` with pinned versions (assigned to Isbel); move split generation to `src/` per D-007.
+- **Verification:** Import and version checks in `F:\venvs\ia-workshop`: pandas 3.1.1, numpy 2.5.4, scikit-learn 1.9.1, matplotlib 3.11.2, seaborn 0.13.2, kagglehub 1.0.3, ipykernel 7.4.0. Notebook execution counts 1-5 and no `output_type: error`; `git status` showed only `01_eda_inicial.ipynb`. PR #43 and PR #46 are merged into `develop`.
+- **Outcome:** Environment prepared and reproducible for the session; A-006 and the notebook re-execution (`871585e`, PR #46) are merged into `develop`.
+- **Pending tasks:** `requirements.txt` with pinned versions (assigned to Isbel); move split generation to `src/` per D-007.
 
 ---
 
