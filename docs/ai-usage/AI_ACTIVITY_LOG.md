@@ -142,6 +142,7 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** Documentation drafted; D-010 is Proposed.
 - **Pending tasks:** Team approval of D-010 (PR #45).
 - **Update (2026-11-12):** The professor answered (relayed by Rita Pereira) that, when using accuracy, overfitting is training accuracy minus validation accuracy. D-010 updated: pass/fail criterion is the absolute accuracy gap (< 5 percentage points); the macro-F1 gap stays informative. Added to PR #45 on the same branch.
+- **Update (2026-11-12):** Alex suggested measuring the gap with `cross_validate`. The shared snippet had two bugs (`'acuracy'` instead of `'accuracy'`; train and CV scores read from the same, non-existent key, so the gap would always be 0); a corrected version using the full Pipeline and `StratifiedKFold(random_state=42)` was given to Rita Pereira (not executed: the Pipeline does not exist yet). Added to D-010 as item 6 (CV on `train_70` for tuning; official check stays train vs `val_15`).
 
 ---
 
