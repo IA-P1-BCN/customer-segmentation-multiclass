@@ -108,6 +108,7 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** `git status` / `git diff` inspected; no code or tests to run.
 - **Outcome:** Documentation changes implemented. D-006 and D-009 are Proposed (not approved).
 - **Pending tasks:** Human approval of D-006 and D-009; review and merge PR #42; `requirements.txt` (assigned to Isbel); move the split to `src/` per D-007.
+- **Update (2026-11-12, status check):** D-006 and D-009 were approved by Isbel and integrated into `develop` with PR #42 (`d81aa03`, merged with a merge commit instead of Squash Merge; see A-008). Still pending and owned by other members: `requirements.txt` (US-03, Isbel) and moving the split to `src/` (D-007).
 
 ---
 
@@ -143,6 +144,27 @@ Its purpose is to help team members understand previous activities, identify com
 - **Pending tasks:** Team approval of D-010 (PR #45).
 - **Update (2026-11-12):** The professor answered (relayed by Rita Pereira) that, when using accuracy, overfitting is training accuracy minus validation accuracy. D-010 updated: pass/fail criterion is the absolute accuracy gap (< 5 percentage points); the macro-F1 gap stays informative. Added to PR #45 on the same branch.
 - **Update (2026-11-12):** Alex suggested measuring the gap with `cross_validate`. The shared snippet had two bugs (`'acuracy'` instead of `'accuracy'`; train and CV scores read from the same, non-existent key, so the gap would always be 0); a corrected version using the full Pipeline and `StratifiedKFold(random_state=42)` was given to Rita Pereira (not executed: the Pipeline does not exist yet). Added to D-010 as item 6 (CV on `train_70` for tuning; official check stays train vs `val_15`).
+- **Update (2026-11-12, status check):** D-010 was approved by Brian (his commits on the PR branch) and integrated into `develop` with PR #45 (Squash Merge, `559624c`). Issue #8 (US-01) closed as completed. Nothing pending for this activity; the baseline estimates in D-010 item 4 are still to be replaced with measured values in US-11.
+
+### A-008 — Status check of Rita's deliverables against AGENTS.md
+
+- **Date:** 2026-11-12
+- **Agent:** Claude Code (Claude Opus 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Following Isbel's request to the team, check that Rita's deliverables follow AGENTS.md, that logs reflect the current state, and that no required changes remain outside `develop`.
+- **Activities:**
+  - Checked how PRs #42–#46 were merged (`gh api .../pulls/<n>`, `git log --first-parent origin/develop`).
+  - Findings:
+    - PR #42 (Rita's; merged by Brian, `d81aa03`) and PR #43 (Pedro's; merged by Rita, `5eeb450`) were integrated with a **merge commit instead of Squash Merge**, contrary to AGENTS.md §4. Not reverted: fixing it would require rewriting `develop` history. Recorded here for traceability.
+    - PRs #44 and #45 were integrated with Squash Merge, as required.
+    - PR #46 (Pedro's notebook rerun from a clean kernel, commit `871585e`) was **closed without merging by mistake** from Rita's account at 15:48 while she was trying to merge PR #45. Rita reopened it and integrated it with Squash Merge (`24af72b`, approved by Rita before the merge).
+    - A-005 and A-007 still described D-006, D-009 and D-010 as pending; status updates added above (previous text preserved).
+    - Issue #8 (US-01) was still open after PR #45; closed as completed with a comment linking PR #45.
+  - Context noted for the team: `develop` requires approval of the most recent push; when a reviewer pushes to a PR branch (as happened in PR #45), another member must approve afterwards.
+- **Files:** Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Verification:** Merge type of each PR checked through the GitHub API (single squash commit vs merge commit on `develop`); issue #8 state checked after closing.
+- **Outcome:** Rita's deliverables are integrated in `develop` and the logs reflect their current status. The two non-squash merges remain in history as documented exceptions.
+- **Pending tasks:** None for Rita's deliverables. Items owned by other members (Isbel's list): centralised seed and pinned dependencies (US-03), split logic moved to `src/` (D-007), duplicated profile analysis in `01_eda_inicial.ipynb` (cells 3 and 5).
 
 ---
 
