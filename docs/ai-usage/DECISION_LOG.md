@@ -13,6 +13,7 @@ Routine tasks, minor code changes and temporary troubleshooting do not require e
 - **Proposed:** Suggested but not yet approved.
 - **Approved:** Explicitly approved by a human team member.
 - **Rejected:** Reviewed and explicitly rejected by a human team member.
+- **Consolidated:** Agreements merged into another decision record; the record is retained for traceability.
 
 AI agents can propose and document decisions, but cannot approve or reject them.
 
@@ -84,20 +85,57 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-007 — Collaborative workflow and dataset management
 
 - **Date:** 2026-11-11
+- **Last updated:** 2026-11-12 — Gitflow agreements, merge strategies, integration calendar and branch protection consolidated into this record.
 - **Status:** Approved
 - **Area:** Workflow / Data Management
-- **Context:** The team needed to define how members collaborate during EDA, preprocessing and model development, and whether the Kaggle dataset files can be kept in the repository.
+- **Context:** The team needed to define how members collaborate during EDA, preprocessing and model development, whether the Kaggle dataset files can be kept in the repository, and which Gitflow and integration rules govern collaboration.
 - **Decision:**
-  1. **Git workflow:** each member works on their own branch. Changes reach `main` exclusively through Pull Requests reviewed by another team member. No direct commits to `main`.
-  2. **EDA:** each member explores independently. The EDA lead owns `01_eda.ipynb` and integrates relevant findings into the final notebook.
-  3. **Notebooks:** each notebook has one designated owner. No simultaneous editing by multiple members.
-  4. **Preprocessing and data split:** implemented in a shared Python Pipeline under `src/`, ensuring consistent processing across models.
-  5. **Model experiments:** each member maintains their own model notebook, imports the shared Pipeline and records metrics in `results/` using a common format.
-  6. **Dataset:** retain `Train.csv` and `Test.csv` in the repository. The Kaggle dataset is licensed under CC0, allowing redistribution. No changes to `.gitignore` are required.
+  1. **Git workflow:**
+     - All task branches (`feature/*`, `fix/*`, `docs/*` and `refactor/*`) are created from `develop`.
+     - Pull Requests from all task branches go exclusively to `develop`.
+     - All task-branch Pull Requests are integrated with **Squash Merge**.
+     - `develop` is the integration branch for joint testing.
+     - When a milestone is validated, a Pull Request from `develop` to `main` is opened.
+     - The integration of `develop` into `main` uses a **normal Merge Commit** (not Squash Merge or Rebase).
+     - No direct commits are allowed on `develop` or `main`.
+     - Each Pull Request must be small, specific and reviewed by another team member the same day.
+  2. **Integration calendar:**
+     - Friday, November 13: integration with the frozen model.
+     - Monday, November 16: integration and validation.
+     - Tuesday, November 17: last stable integration before delivery.
+  3. **EDA:** each member explores independently. The EDA lead owns `01_eda.ipynb` and integrates relevant findings into the final notebook.
+  4. **Notebooks:** each notebook has one designated owner. No simultaneous editing by multiple members.
+  5. **Preprocessing and data split:** implemented in a shared Python Pipeline under `src/`, ensuring consistent processing across models.
+  6. **Model experiments:** each member maintains their own model notebook, imports the shared Pipeline and records metrics in `results/` using a common format.
+  7. **Dataset:** retain `Train.csv` and `Test.csv` in the repository. The Kaggle dataset is licensed under CC0, allowing redistribution. No changes to `.gitignore` are required.
+  8. **Branch protection:** the team will attempt to require Pull Requests and at least one approval on `main` and `develop`. If the repository plan or configuration does not allow these protections, the rules must remain explicitly documented in `AGENTS.md` and be honored by team agreement. Plan limitations must be checked manually and are not assumed.
 - **Dataset license note:** the CC0 license of the Kaggle dataset was confirmed by human review on Kaggle.
 - **Documentation:** add the Kaggle dataset source and Analytics Vidhya reference to the README.
 - **Approval:** Approved by a human team member, 2026-11-11.
-- **Consequences:** The team follows a branch + Pull Request workflow with single-owner notebooks and a shared preprocessing Pipeline. `Train.csv` and `Test.csv` remain versioned in the repository under the confirmed CC0 license, with no `.gitignore` changes.
+- **Consequences:** The team follows the `feature/* → develop → main` workflow with Squash Merge into `develop`, a normal Merge Commit into `main`, small same-day-reviewed Pull Requests, scheduled milestone integrations and single-owner notebooks with a shared preprocessing Pipeline. `Train.csv` and `Test.csv` remain versioned in the repository under the confirmed CC0 license, with no `.gitignore` changes.
+
+### D-008 — Integration branch `develop` in the Git workflow
+
+- **Date:** 2026-11-12
+- **Status:** Consolidated into D-007
+- **Area:** Workflow
+- **Consolidation:** Its Gitflow agreements have been consolidated into D-007 (updated 2026-11-12). This record is retained for traceability and its date is preserved.
+- **Context:** D-007 established that changes reach `main` exclusively through reviewed Pull Requests, but it did not define an intermediate integration stage. With several members developing features in parallel, integrating every feature directly into the stable branch made joint testing and release preparation harder.
+- **Alternatives:**
+  1. Keep the previous flow: `feature/*` PRs integrated directly into `main` (D-007).
+  2. Adopt an intermediate integration branch: `feature/* → develop → main`.
+  3. Integrate through long-lived release branches.
+- **Recommendation:** Adopt an intermediate integration branch (`develop`): it isolates the stable branch from work in progress, allows joint testing of completed features and keeps `main` reserved for validated versions.
+- **Decision:** Adopt the workflow `feature/* → develop → main`.
+  1. `main` is the stable branch and only receives integrated, tested and approved versions.
+  2. `develop` is the integration branch; it receives finished features and enables joint testing before preparing a release.
+  3. `feature/*` branches are created from `develop`, where each member develops their task.
+  4. `feature/*` branches open Pull Requests into `develop`, and each PR must be reviewed by another team member.
+  5. Direct commits to `develop` and `main` are not allowed.
+  6. Once `develop` is validated, a Pull Request is opened into `main`.
+- **Relationship with D-007:** Its Gitflow agreements were consolidated into D-007, which is now the authoritative record for the workflow. D-007 also preserves its original agreements on EDA ownership, single-owner notebooks, shared preprocessing Pipeline, model experiment conventions and dataset management.
+- **Approval:** Consolidated into D-007, which is Approved by a human team member (2026-11-11).
+- **Consequences:** All feature work is integrated and validated in `develop` before reaching `main`. This adds one integration step and requires branch protection rules for both `develop` and `main` in GitHub.
 
 ---
 

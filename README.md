@@ -13,3 +13,19 @@ Customer segmentation through multiclass classification using demographic and be
 - `Train.csv` — labeled data for EDA, preprocessing, model development and validation.
 - `Test.csv` — separate test data for final predictions.
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).
+
+## Git Collaboration Workflow
+
+The project uses an integration branch: `feature/* → develop → main`.
+
+- **`main`** — stable branch. Only receives integrated, tested and approved versions; no direct commits.
+- **`develop`** — integration branch. Receives finished features and enables joint testing before preparing a release; no direct commits.
+- **Task branches** (`feature/*`, `fix/*`, `docs/*`, `refactor/*`) — individual branches created from `develop`, where each member develops their task.
+
+Pull Requests:
+
+- All task branches open small, specific PRs exclusively into `develop`, reviewed by another team member the same day.
+- All task-branch PRs are integrated into `develop` using **Squash Merge**.
+- When a milestone is validated, a PR is opened from `develop` into `main`, using a **normal Merge Commit** (not Squash Merge or Rebase).
+
+`main` and `develop` must require Pull Requests and at least one approval. If the repository plan or configuration does not allow these protections, the rules remain mandatory by team agreement as documented in `AGENTS.md`; plan limitations must be checked manually.
