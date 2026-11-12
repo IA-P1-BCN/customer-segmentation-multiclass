@@ -1,0 +1,12 @@
+column,dtype,non_null,null_count,null_pct,imputation
+ID,int64,5647,0,0.0,none
+Gender,str,5647,0,0.0,none
+Ever_Married,str,5548,99,1.75,mode
+Age,int64,5647,0,0.0,none
+Graduated,str,5594,53,0.94,mode
+Profession,str,5558,89,1.58,constant:Unknown
+Work_Experience,float64,5084,563,9.97,median + missing indicator
+Spending_Score,str,5647,0,0.0,none
+Family_Size,float64,5403,244,4.32,median + missing indicator
+Var_1,str,5597,50,0.89,mode
+Segmentation,str,5647,0,0.0,none
