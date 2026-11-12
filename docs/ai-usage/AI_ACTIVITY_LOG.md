@@ -135,7 +135,7 @@ Its purpose is to help team members understand previous activities, identify com
 - **Objective:** Document the proposed primary metric, overfitting criterion and minimum reference for US-01 (issue #8).
 - **Activities:**
   - Read issue #8 (US-01) and the dependent user stories (US-07 to US-11) with `gh`.
-  - Proposed macro-F1 as primary metric, accuracy also reported, equal error costs, both absolute and relative train/validation gaps until the professor confirms the criterion, and the majority-class baseline as minimum reference. Rita Pereira agreed with each point; the professor is being asked about the overfitting metric.
+  - Proposed macro-F1 as primary metric, accuracy also reported, equal error costs, both absolute and relative train/validation gaps until the professor confirms the criterion, and the majority-class baseline as minimum reference. Rita Pereira agreed with each point; the professor is being asked about the overfitting metric. *(Initial proposal: the absolute + relative gaps were superseded by the professor's answer, which set the criterion as the absolute accuracy gap; see the first update below.)*
   - Recorded the proposal as D-010 (Proposed) on branch `feature/define-metric-overfitting-criterion` (created from `develop` at `3714435`).
 - **Files:** Modified: `docs/ai-usage/DECISION_LOG.md`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
 - **Verification:** No code executed. Baseline values in D-010 are analytical estimates (class D share in `val_15` from the recorded run in `01_eda_inicial.ipynb`), explicitly marked as not measured; they will be measured in US-11.
