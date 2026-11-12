@@ -146,4 +146,25 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-008 - Project Python environment and activity-log alignment
+
+- **Date:** 2026-11-12
+- **Agent:** opencode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** Prepare a reproducible Python environment for the project and align the activity log with the integration branch `develop`.
+- **Activities:**
+  - Reviewed `AGENTS.md`, `DECISION_LOG.md` and `AI_ACTIVITY_LOG.md` before acting; work done on branch `feature/eda-pedro`.
+  - Inspected the shared environment `F:\venvs\ia-workshop` (Python 3.12.3, `venv`) and verified pandas, numpy, scikit-learn, matplotlib and ipykernel were present.
+  - With explicit human approval (Pedro), installed `seaborn 0.13.2` and `kagglehub 1.0.3` into that environment; the installation changed no repository files.
+  - Registered the user-scope Jupyter kernelspec `Python (ia-workshop)` and resolved the issue where VSCode did not list it, by selecting `F:\venvs\ia-workshop\Scripts\python.exe` as the workspace interpreter.
+  - Confirmed `kagglehub` is not needed at runtime because `data/Train.csv` is committed (the notebook only downloads when the file is missing); no Kaggle credentials were used.
+  - Merged `origin/develop` into `feature/eda-pedro` (`1fd943f`) and renumbered the pending EDA entry from `A-002` to `A-006`, since `A-002` was already used by "Git integration branch workflow documentation"; the entry was appended after A-005.
+  - Re-executed `01_eda_inicial.ipynb` from a clean kernel (execution counts 1-5, no error outputs) and committed the result as `871585e`; opened PR #46 into `develop`.
+- **Files:** Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (A-006 entry, merged via PR #43), `01_eda_inicial.ipynb` (`871585e`, PR #46). Outside the repository: `F:\venvs\ia-workshop` (added `seaborn`, `kagglehub`).
+- **Verification:** Import and version checks in `F:\venvs\ia-workshop`: pandas 3.1.1, numpy 2.5.4, scikit-learn 1.9.1, matplotlib 3.11.2, seaborn 0.13.2, kagglehub 1.0.3, ipykernel 7.4.0. Notebook execution counts 1-5 and no `output_type: error`; `git status` showed only `01_eda_inicial.ipynb`. PR #43 merged into `develop`; PR #46 open when this record was written.
+- **Outcome:** Environment prepared and reproducible for the session; A-006 merged into `develop`; the notebook re-execution is pending merge (PR #46).
+- **Pending tasks:** Merge PR #46; `requirements.txt` with pinned versions (assigned to Isbel); move split generation to `src/` per D-007.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
