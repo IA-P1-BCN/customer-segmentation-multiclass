@@ -7,7 +7,7 @@ Collaborative Data Science and Machine Learning project: customer segmentation t
 **Dataset** ([Kaggle – Customer Segmentation](https://www.kaggle.com/datasets/kaushiksuresh147/customer-segmentation)):
 
 - `Train.csv` — the only data source for the project (EDA, preprocessing, model development, validation and final testing).
-- `Test.csv` — **not used.** 2,332 of its 2,627 IDs also appear in `Train.csv` with different feature values and labels, so it cannot serve as an independent test set.
+- `Test.csv` — kept in the repository but **not used.** 2,332 of its 2,627 IDs also appear in `Train.csv` with different feature values and labels, so it cannot serve as an independent test set.
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).
 
 **Data rules:**
