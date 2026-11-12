@@ -85,13 +85,13 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-006 — Discard external `Test.csv`; split `Train.csv` 70/15/15
 
 - **Date:** 2026-11-12
- - **Status:** Approved
+- **Status:** Approved
 - **Area:** Methodology / Data Management
 - **Context:** AGENTS.md and the README described `Test.csv` as the project's separate test set. A local check (Python `csv` module, run 2026-11-11 by Claude Code) found that `Test.csv` has labels, but 2,332 of its 2,627 IDs also appear in `Train.csv` (8,068 rows) with different feature values (e.g. ID 458989: `Age` 36 in Test vs 42 in Train) and only 707 shared IDs keep the same `Segmentation` label. Class distribution also differs (Train: D 28.1 %, A 24.4 %; Test: A 32.2 %, D 28.9 %). The team had independently decided to split `Train.csv` directly (EDA work in `feature/eda-pedro`).
 - **Alternatives:** (1) Use `Test.csv` as the final test set; (2) use `Test.csv` after removing overlapping IDs (only 295 rows left); (3) discard `Test.csv` and split `Train.csv` into train / validation / test.
 - **Recommendation:** Option 3. Overlapping customers with altered records make `Test.csv` unreliable as an independent test set, and option 2 leaves too few rows for a robust evaluation.
 - **Decision:** Do not use `Test.csv`. Split `Train.csv` once into train / validation / test (70/15/15), stratified by `Segmentation`, `random_state=42`. A first basic EDA on the full `Train.csv` (structure, types, nulls) precedes the split and is descriptive only; the full EDA, modeling decisions and all fitted preprocessing use only the train split; the test split is used only for the final evaluation. `ID` is never used as a feature. `Test.csv` stays versioned in the repository (CC0, per D-007) for traceability, but it is not used for training, validation or evaluation.
-- **Approval:** Pending — to be set by a human team member. → - **Approval:** Approved by Isbel, 2026-11-12.
+- **Approval:** Approved by Isbel, 2026-11-12.
 - **Consequences:** AGENTS.md (§1, §5) and README updated accordingly. The split produces three new files in `data/` (train, validation and test), which every member uses instead of `Test.csv`. The split must be implemented reproducibly (shared code under `src/`, per D-007) so every member works with the same partitions. The new file names must not differ from `Train.csv`/`Test.csv` only by letter case (e.g. avoid `test.csv`): on case-insensitive file systems (macOS, Windows) they would overwrite the originals.
 
 ### D-007 — Collaborative workflow and dataset management
@@ -158,7 +158,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Alternatives:** (1) Remove exact duplicates before the split; (2) keep all rows; (3) group identical profiles so they fall in the same split.
 - **Recommendation:** Option 2. The rows are most likely different customers with the same profile, not repeated records: removing them would discard real customers and distort the frequency of common profiles. Identical profiles across splits are not leakage, since new customers in production will also match profiles seen in training.
 - **Decision:** Keep all rows; the D-006 split is not changed. Identical profiles with different labels set a ceiling on achievable accuracy and should be mentioned when reporting model performance. Pedro documents the analysis in `01_eda_inicial.ipynb` so the figures come from an executed run.
- - **Approval:** Approved by Isbel, 2026-11-12.
+- **Approval:** Approved by Isbel, 2026-11-12.
 - **Consequences:** No deduplication step in the Pipeline. `train_70`, `val_15` and `test_15` are used as generated in PR #43.
 
 ---
