@@ -45,13 +45,28 @@ All significant AI-assisted work must be traceable: the team must be able to kno
 
 ## 4. Git Workflow
 
+**Branch model** — the project uses an intermediate integration branch:
+
+```
+feature/* ──PR──> develop ──PR──> main
+```
+
+- `main` — stable branch. It only receives integrated, tested and approved versions. No direct commits.
+- `develop` — integration branch. It receives finished features and enables joint testing before preparing a release. No direct commits.
+- Task branches (`feature/*`, `fix/*`, `docs/*`, `refactor/*`) — individual branches created from `develop`, where each member develops their task.
+
 **Branches** — keep `main` stable; work on one branch per independent task, named:
 
 - `feature/<description>` (new functionality), `fix/<description>` (bug fixes), `docs/<description>` (documentation), `refactor/<description>` (code restructuring).
+- All task branches are created from `develop`.
 
 **Commits** — use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`), with clear descriptive messages, each focused on a single logical change.
 
-**Pull Requests** — required to integrate significant changes into `main`; explain purpose and scope, include relevant tests and validation results, and request human review before merging.
+**Pull Requests** — All task branches (`feature/*`, `fix/*`, `docs/*` and `refactor/*`) are created from `develop` and open Pull Requests exclusively into `develop`. Each PR must be small, specific and reviewed by another team member the same day. Direct commits to `develop` or `main` are not allowed. All task-branch PRs are integrated into `develop` using **Squash Merge**. Once a milestone is validated, a Pull Request is opened from `develop` into `main`, using a **normal Merge Commit** (not Squash Merge or Rebase); `main` only receives stable, approved versions. Explain purpose and scope, include relevant tests and validation results, and request human review before merging.
+
+**Integration milestones** — `develop` is integrated into `main` on the agreed dates: Friday, November 13 (frozen-model integration), Monday, November 16 (integration and validation) and Tuesday, November 17 (last stable integration before delivery).
+
+**Branch protection** — `main` and `develop` must require Pull Requests and at least one approval. If the repository plan or configuration does not allow these protections, the rules remain mandatory by team agreement and must be honored as documented here. Plan limitations must be verified manually.
 
 **Agent restrictions:** before starting any task, inspect the current branch and working tree (`git status`); preserve unrelated changes, including uncommitted work, and never overwrite another team member's work; never discard, reset, overwrite or delete existing work, and never use destructive Git commands, without explicit approval; never commit, push, merge or rebase without explicit human authorization; after completing a task, report the branch, changed files and validation status.
 
