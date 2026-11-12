@@ -10,6 +10,6 @@ Customer segmentation through multiclass classification using demographic and be
 
 ## Files
 
-- `Train.csv` — labeled data for EDA, preprocessing, model development and validation.
-- `Test.csv` — separate test data for final predictions.
+- `Train.csv` — the only data source: split once into train / validation / test (70/15/15), stratified by `Segmentation` (`random_state=42`).
+- `Test.csv` — **not used.** Most of its IDs (2,332 of 2,627) also appear in `Train.csv` with different values and labels, so it is not an independent test set (see D-006 in the [Decision Log](docs/ai-usage/DECISION_LOG.md)).
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).

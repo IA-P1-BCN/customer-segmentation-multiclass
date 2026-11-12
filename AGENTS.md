@@ -6,15 +6,18 @@ Collaborative Data Science and Machine Learning project: customer segmentation t
 
 **Dataset** ([Kaggle – Customer Segmentation](https://www.kaggle.com/datasets/kaushiksuresh147/customer-segmentation)):
 
-- `Train.csv` — labeled data for EDA, preprocessing, model development and validation.
-- `Test.csv` — separate test data; its structure and the availability of target labels must be verified before use.
+- `Train.csv` — the only data source for the project (EDA, preprocessing, model development, validation and final testing).
+- `Test.csv` — **not used.** 2,332 of its 2,627 IDs also appear in `Train.csv` with different feature values and labels, so it cannot serve as an independent test set.
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).
 
 **Data rules:**
 
-- The original test data must never be used for training or for decisions that introduce data leakage.
-- Any additional validation split must be created from the training data using an appropriate strategy.
-- Data integrity must be preserved.
+- `Train.csv` is split once into **train / validation / test (70/15/15)**, stratified by `Segmentation` with a fixed random seed (`random_state=42`).
+- An initial basic EDA on the full `Train.csv` is allowed for data inspection only (structure, types, nulls). The full EDA and every modeling decision or fitted step (imputation, encoding, scaling, feature selection) use only the train split.
+- The validation split is used for model comparison and tuning; the test split is used only for the final evaluation, never for training or decisions.
+- `ID` is an identifier, never a feature.
+- Do not use `Test.csv` for training, validation or evaluation.
+- Data integrity must be preserved: never modify the original CSV files.
 
 ## 2. Agent Governance
 
@@ -59,7 +62,7 @@ All significant AI-assisted work must be traceable: the team must be able to kno
 
 - Pin the Python environment (interpreter and package versions) so every result is reproducible; installing or upgrading dependencies requires human approval (see §2).
 - Set and document random seeds for every stochastic step (splits, resampling, models) so runs can be repeated exactly.
-- Define and justify the validation strategy before modeling and keep it consistent across all model comparisons; never tune against untouched test data.
+- Keep the validation strategy defined in §1 consistent across all model comparisons; never tune against the test split.
 - Fit preprocessing only on training data; keep transformations reproducible and versioned.
 - Notebooks are expressly allowed for EDA, visualization and experimentation; prioritize scripts/modules for reusable logic and any process that must be rerun reproducibly.
 - Every reported metric must come from an executed, recorded run — never estimated or remembered; log the run per §3.
