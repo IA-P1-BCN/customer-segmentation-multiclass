@@ -140,7 +140,8 @@ Its purpose is to help team members understand previous activities, identify com
 - **Files:** Modified: `docs/ai-usage/DECISION_LOG.md`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
 - **Verification:** No code executed. Baseline values in D-010 are analytical estimates (class D share in `val_15` from the recorded run in `01_eda_inicial.ipynb`), explicitly marked as not measured; they will be measured in US-11.
 - **Outcome:** Documentation drafted; D-010 is Proposed.
-- **Pending tasks:** Professor's answer on the overfitting metric and type of difference; team approval of D-010; commit, push and PR into `develop`.
+- **Pending tasks:** Team approval of D-010 (PR #45).
+- **Update (2026-11-12):** The professor answered (relayed by Rita Pereira) that, when using accuracy, overfitting is training accuracy minus validation accuracy. D-010 updated: pass/fail criterion is the absolute accuracy gap (< 5 percentage points); the macro-F1 gap stays informative. Added to PR #45 on the same branch.
 
 ---
 

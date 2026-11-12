@@ -172,12 +172,13 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Decision (proposed):**
   1. **Primary metric:** macro-F1 on validation. Accuracy is also reported for every model.
   2. **Error costs:** all segments and all errors weigh the same; no misclassification is considered more costly than another.
-  3. **Overfitting:** the briefing limit (< 5 % between train and validation) applies. Until the professor confirms the metric and the type of difference, every model reports the train − validation gap for **both** accuracy and macro-F1, **both** in absolute points (train − val) and relative terms ((train − val) / train). The absolute and relative versions differ (e.g. 65 % vs 60 % is 5 points but 7.7 % relative), so a model may meet one and not the other.
+  3. **Overfitting:** the briefing limit (< 5 % between train and validation) is checked on **accuracy as an absolute difference**: `accuracy(train) − accuracy(validation) < 5 percentage points` (e.g. 65 % → 60 % is exactly 5 points and does not meet the limit). This follows the professor's answer (see below). The train − validation gap in macro-F1 is also reported for information, but it is not the pass/fail criterion.
   4. **Minimum reference:** every model must beat the majority-class baseline (`DummyClassifier(strategy="most_frequent")`, which always predicts D). Expected values on `val_15`: accuracy ≈ 28.1 % (share of D) and macro-F1 ≈ 0.11 (F1 of D ≈ 0.44, the other classes 0). **These are analytical estimates, not measured results**; the actual values are measured and recorded in US-11.
   5. **Good enough:** a model is acceptable if it clearly beats the baseline on validation macro-F1 and meets the overfitting limit. Results are reported together with the ceiling described in D-009 (identical profiles with different segments).
-- **Open question (to the professor):** Is the < 5 % overfitting limit measured on accuracy or on another metric (e.g. macro-F1), and is it an absolute difference in percentage points or a relative difference? Asked by Rita Pereira, 2026-11-12; answer pending.
+- **Question to the professor:** Is the < 5 % overfitting limit measured on accuracy or on another metric (e.g. macro-F1), and is it an absolute difference in percentage points or a relative difference? Asked by Rita Pereira, 2026-11-12.
+- **Professor's answer (2026-11-12, relayed by Rita Pereira):** when using accuracy, overfitting is measured by subtracting the validation accuracy from the training accuracy (absolute difference). The answer does not require a different metric, so the team applies it on accuracy.
 - **Approval:** Pending — to be set by a human team member.
-- **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, both gaps (absolute and relative), and per-class precision, recall and F1 on validation. Once the professor answers, this record is updated with the confirmed criterion and the models are checked against it.
+- **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, the accuracy gap in percentage points (pass/fail: < 5) and the macro-F1 gap (informative), plus per-class precision, recall and F1 on validation. Models are selected by validation macro-F1 among those that meet the accuracy-gap limit.
 
 ---
 
