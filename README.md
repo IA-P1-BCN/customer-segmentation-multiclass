@@ -10,8 +10,8 @@ Customer segmentation through multiclass classification using demographic and be
 
 ## Files
 
-- `Train.csv` — the only data source: split once into `train_70.csv`, `val_15.csv` and `test_15.csv` (70/15/15), stratified by `Segmentation` (`random_state=42`). `test_15.csv` is the project's test set (D-012).
-- **Original Kaggle `Test.csv` — not part of the project's dataset/repository.** It must not be added, restored or used. Of its 2,627 IDs, 2,332 also appear in `Train.csv`. The overlapping records are not fully consistent; for example, ID 458989 has an `Age` value of 36 in `Test.csv` and 42 in `Train.csv`. Among the shared IDs, `Segmentation` labels match in only 30% of cases. The project's test set is the internally generated `test_15.csv` (see D-006 and D-012 in the [Decision Log](docs/ai-usage/DECISION_LOG.md)).
+- `Train.csv` — the only data source: split once into train / validation / test (70/15/15), stratified by `Segmentation` (`random_state=42`).
+- `Test.csv` — kept in the repository but **not used.** Most of its IDs (2,332 of 2,627) also appear in `Train.csv` with different values and labels, so it is not an independent test set (see D-006 in the [Decision Log](docs/ai-usage/DECISION_LOG.md)).
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).
 
 ## Git Collaboration Workflow
