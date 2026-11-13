@@ -6,20 +6,20 @@ so they all receive exactly the same transformed features. Column roles live
 in ``src.config`` and each group gets its own sub-pipeline inside a
 ``ColumnTransformer``.
 
-The concrete imputation and encoding strategies are still pending team
-approval and are therefore exposed as parameters instead of being
-implemented:
+The concrete strategies are not implemented in this structural phase and are
+therefore exposed as parameters instead of being wired in:
 
-- Imputation: D-011 (Proposed, PR #49) — median plus missing indicators for
-  ``Work_Experience``/``Family_Size``, mode for ``Ever_Married``/
-  ``Graduated``/``Var_1``, and a constant ``Unknown`` level for
-  ``Profession``.
+- Imputation: D-011 (Approved by Brian, 2026-11-13) — median plus missing
+  indicators for ``Work_Experience``/``Family_Size``, mode for
+  ``Ever_Married``/``Graduated``/``Var_1``, and a constant ``Unknown`` level
+  for ``Profession``. The strategies are approved but their implementation is
+  deferred to the next phase.
 - Encoding: the proposal recorded in issue #17, whose decision record
-  (candidate ``D-014``) is not yet approved — one-hot for the nominal
-  columns and the ordinal order ``Low < Average < High`` for
+  (candidate ``D-014``) is still pending team approval — one-hot for the
+  nominal columns and the ordinal order ``Low < Average < High`` for
   ``Spending_Score``.
 
-Until those decisions are approved every strategy parameter defaults to
+Until the strategies are wired in, every strategy parameter defaults to
 ``"passthrough"``: the pipeline keeps its shape and runs without errors, but
 it performs no imputation and no encoding. Passing real transformers (for
 example ``SimpleImputer`` or ``OneHotEncoder``) fills in the behaviour
@@ -56,8 +56,8 @@ from src.config import (
 __all__ = ["make_features_target", "build_preprocessing", "PENDING_DECISIONS"]
 
 PENDING_DECISIONS = {
-    "imputation": "D-011 (Proposed, PR #49)",
-    "encoding": "issue #17 proposal, candidate record D-014 (not approved)",
+    "imputation": "D-011 (Approved by Brian, 2026-11-13) — strategies approved, implementation deferred to phase 2",
+    "encoding": "not yet recorded; candidate identifier D-014, pending team approval",
 }
 
 
@@ -94,9 +94,9 @@ def build_preprocessing(
     Parameters
     ----------
     numeric_imputer:
-        Transformer for the numeric columns. Once D-011 is approved this
-        will receive the median imputer; the missing indicators of D-011 can
-        ride on the same step (``SimpleImputer(add_indicator=True)``).
+        Transformer for the numeric columns. D-011 (approved) assigns the
+        median imputer here; its missing indicators can ride on the same step
+        (``SimpleImputer(add_indicator=True)``).
     binary_imputer, nominal_imputer, ordinal_imputer:
         Transformers for each categorical group. D-011 proposes mode
         imputation for the binary and ``Var_1`` columns and a constant

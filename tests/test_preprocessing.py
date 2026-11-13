@@ -6,9 +6,10 @@ Run from the repository root with:
 
 These tests cover the approved structure only: X/target separation, ID
 exclusion, column-group consistency, immutability of the input dataframe and
-the basic shape and integration of the preprocessor. The concrete imputation
-and encoding strategies remain pending (D-011 Proposed; encoding candidate
-D-014 not yet recorded) and are deliberately not asserted here.
+the basic shape and integration of the preprocessor. The concrete strategies
+are deliberately not asserted here: the D-011 imputation strategies are
+approved (Brian, 2026-11-13) but not yet implemented (phase 2), and the
+encoding decision (candidate record D-014) is still pending approval.
 """
 
 from __future__ import annotations
@@ -172,7 +173,7 @@ class TestPreprocessorStructure:
                     "encoder",
                 ]
             for _, transformer in sub_pipeline.steps:
-                assert transformer == "passthrough"  # pending D-011 / D-014
+                assert transformer == "passthrough"  # D-011 approved, deferred to phase 2; D-014 pending
 
     def test_fit_transform_train_and_transform_val(self, train_df, val_df):
         X_train, y_train = preprocessing.make_features_target(train_df)
@@ -186,7 +187,8 @@ class TestPreprocessorStructure:
 
     def test_strategies_are_parametrizable_without_rewriting(self, train_df):
         # Mechanism validation only: proves the parameter seam accepts a real
-        # transformer. It does NOT implement any pending D-011/D-014 decision.
+        # transformer. It does NOT implement D-011 (approved, phase 2) or the
+        # pending encoding decision (candidate D-014).
         from sklearn.impute import SimpleImputer
 
         prep = preprocessing.build_preprocessing(
