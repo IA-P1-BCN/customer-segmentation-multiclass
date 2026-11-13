@@ -326,4 +326,25 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-018 — US-08: random forest baseline and improvement
+
+- **Date:** 2026-11-13
+- **Note:** Numbered A-018 because A-017 is used by open PR #58 (Rita's EDA). If A-018 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Opus 5.5 / Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Train the random forest on the shared Pipeline, first as a baseline and then improved, and record the metrics required by D-010 (issue #20, US-08).
+- **Activities:**
+  - Read the results convention (`results/README.md`), `src/config.py`, `src/preprocessing.py`, D-010, D-011, D-013 and D-014. Rita Pereira chose a script plus a notebook, and to start with D-014 while it is still Proposed.
+  - Created branch `feature/model-random-forest` from `develop` (`51024c7`) and `src/train_random_forest.py`: D-013 checks (row counts, no ID overlap, SHA-256), D-011 imputation and D-014 encoding passed through the parameters of `build_preprocessing()` (shared module not modified), `RandomForestClassifier` with `RANDOM_STATE`, and two stages (`baseline`, `tune`) that append to `results/random_forest.csv`.
+  - Finding on D-013: the SHA-256 values listed there correspond to a Windows checkout (CRLF line endings). Git stores the CSV files with LF, so a macOS/Linux checkout gives different hashes for the same content (verified: converting the LF files to CRLF reproduces the four D-013 hashes). The script hashes the content with line endings normalised to LF. Not changed in the Decision Log; to be raised with the team.
+  - Ran `python -m src.train_random_forest --stage baseline` and `--stage tune` (60 configurations: `max_depth` 4/6/8/10/12/None × `min_samples_leaf` 1/5/10/20/40 × `max_features` sqrt/0.5, 300 trees; 5-fold stratified CV on `train_70`, full Pipeline inside each fold, D-010 item 6). Selection rule: best CV macro-F1 among configurations with train − CV accuracy gap < 5 points; `val_15` was not used to choose.
+  - Created `03_model_random_forest.ipynb`, which reads the recorded results, refits the selected configuration (reproducing the recorded validation accuracy) and produces the tuning plot, the confusion matrix and the feature importances, with written conclusions.
+  - Created `tests/test_train_random_forest.py` (7 structural tests).
+- **Files:** Created: `src/train_random_forest.py`, `tests/test_train_random_forest.py`, `results/random_forest.csv`, `03_model_random_forest.ipynb`, `reports/figures/rf_tuning_cv.png`, `rf_confusion_matrix_val.png`, `rf_feature_importance.png`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Recorded runs (Python 3.12.10, scikit-learn 1.9.1, seed 42), 64 rows in `results/random_forest.csv`. Baseline: accuracy 0.9683 train / 0.4983 val (gap 47.00 points, fails the < 5 limit), macro-F1 val 0.4849. Selected configuration (`n_estimators=300`, `max_depth=12`, `min_samples_leaf=20`, `max_features="sqrt"`): accuracy 0.5628 train / 0.5421 val (gap 2.06 points, meets the limit), macro-F1 0.5442 train / 0.5197 val; per-class F1 on val A 0.448, B 0.359, C 0.556, D 0.715; CV macro-F1 0.5084 (sd 0.0101), 35 of 60 configurations within the CV gap limit. `pytest tests` → 23 passed (16 existing + 7 new). Notebook executed from a clean kernel (execution counts 1–13, no error outputs). `test_15` never read.
+- **Outcome:** Implemented and executed; not committed (awaiting Rita's review). The selected configuration is fixed for US-11.
+- **Pending tasks:** Rita reviews the notebook; commit and PR into `develop`; re-run both stages if D-014 is changed before approval; raise the D-013 checksum finding with the team.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
