@@ -270,4 +270,24 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-014 — D-014 proposal: categorical encoding strategy for the shared Pipeline
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Draft decision D-014 (Proposed) fixing the project's categorical encoding strategy, as a prerequisite to unblock US-07 (multinomial logistic regression), without implementing any encoder or modifying the shared preprocessing module.
+- **Activities:**
+  - Verified the unblock prerequisites: PR #55 merged into `develop` (`e66b874`, review APPROVED); D-011 approved (Brian, 2026-11-13); D-013 still Proposed; no encoding decision recorded anywhere (`develop` decision log ends at D-013).
+  - Reviewed the existing evidence for the encoding choice: the proposal recorded in issue #17 (one-hot for nominal columns, explicit ordinal order for `Spending_Score`) and the manual smoke test performed by Rita Pereira during the PR #55 review (numeric matrix 5,647×26 on `train_70` through the parameter seam, without touching the module).
+  - Created branch `docs/propose-d014-encoding` from `origin/develop` (`e66b874`) and added D-014 (Proposed) to `docs/ai-usage/DECISION_LOG.md` after D-013: one-hot for the binary (`Ever_Married`, `Graduated`) and nominal (`Gender`, `Profession`, `Var_1`) columns with `handle_unknown="ignore"` and `drop="if_binary"` for the binaries, ordinal encoding for `Spending_Score` with the explicit order `Low`=0, `Average`=1, `High`=2 and a documented `-1` sentinel for unexpected values; integration through the existing `build_preprocessing()` encoder parameters, fitted on `train_70` only (D-010 item 6, D-013 item 3); `ID` never encoded (D-006, D-012).
+  - Recorded this session as A-014 in `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+  - Cross-checked the proposal against D-011 (imputers run before the encoders inside each sub-pipeline), D-012 (dataset policy untouched) and D-013 (transformations live inside the shared Pipeline, fitted on `train_70`); noted in D-014 that D-013 still states D-011 was Proposed because it was written before that approval.
+  - Opened PR into `develop` for team review; the approval status of D-014 remains Pending for a human team member.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `git diff --check` clean; diff against `develop` touches only the two documentation files; no encoder implemented, no code, CSV, notebook or configuration file modified; log order intact (activities A-010…A-014 above the template comment; decisions D-011…D-014 above the template comment); approval states of D-011 (Approved) and D-013 (Proposed) unchanged.
+- **Outcome:** D-014 formally proposed and traceable to issue #17 and the PR #55 review evidence; US-07 remains blocked only on the team's approval of D-014.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
