@@ -16,7 +16,9 @@ Rita, Isbel, Pedro and Brian.
 ## Installation
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Linux/macOS
+.venv\Scripts\activate             # Windows (cmd)
+.venv\Scripts\Activate.ps1         # Windows (PowerShell)
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
@@ -32,7 +34,7 @@ Reference environment: Python 3.12.3 (see A-009 / A-012).
 data/            # Train.csv + splits (train_70, val_15, test_15)
 src/             # split_data.py, config.py, data_quality.py, (Pipeline US-05)
 results/         # per-model metrics (convention in results/README.md)
-reports/         # EDA figures and tables (nulls, etc.)
+reports/         # data-quality report (data_quality.md, nulls_train_70.csv)
 docs/ai-usage/   # DECISION_LOG.md, AI_ACTIVITY_LOG.md
 01_eda_inicial.ipynb
 requirements.txt
@@ -44,6 +46,7 @@ AGENTS.md
 - **Models:** notebooks/scripts for logistic regression, random forest, boosting and SVM (importing the shared Pipeline from `src/`).
 - **App:** *(pending — US-15)* `streamlit run app.py`
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
+- **Tests:** `python -m pytest`
 
 ## Main results
 - *(Pending — US-11)* Baseline (majority class, D) and frozen model metrics on test.
