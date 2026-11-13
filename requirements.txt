@@ -23,3 +23,6 @@ matplotlib==3.11.2
 seaborn==0.13.2
 kagglehub==1.0.3
 ipykernel==7.4.0
+
+# --- Development (tests, US-05) ---
+pytest==9.2.0
