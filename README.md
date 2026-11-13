@@ -41,20 +41,19 @@ AGENTS.md
 
 ## How to run
 - **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All".
-- **Models:** notebooks/scripts under `feature/model-*` (logistic regression, random forest, boosting, SVM) importing the shared Pipeline from `src/`.
+- **Models:** notebooks/scripts for logistic regression, random forest, boosting and SVM (importing the shared Pipeline from `src/`).
 - **App:** *(pending — US-15)* `streamlit run app.py`
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
 
 ## Main results
-- Baseline (majority class, D): accuracy ≈ 28.1 %, macro-F1 ≈ 0.11 (D-010).
-- *(Pending — US-11)* Frozen best model, test metrics and feature importance.
+- *(Pending — US-11)* Baseline (majority class, D) and frozen model metrics on test.
 
 ## Board
 - GitHub Project #58: https://github.com/orgs/IA-P1-BCN/projects/58
 
 ## Decisions and traceability
-- [Decision Log](docs/ai-usage/DECISION_LOG.md) — D-001 to D-013.
-- [AI Activity Log](docs/ai-usage/AI_ACTIVITY_LOG.md) — A-001 to A-012.
+- [Decision Log](docs/ai-usage/DECISION_LOG.md) — full decision history.
+- [AI Activity Log](docs/ai-usage/AI_ACTIVITY_LOG.md) — full activity history.
 - Git workflow: `feature/* → develop → main`, with Squash Merge into `develop`.
 
 ## License
