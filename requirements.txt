@@ -1,0 +1,30 @@
+# Dependencies for the Customer Segmentation project (US-03, issue #15).
+#
+# Reference environment (documented and merged): Python 3.12.3, venv
+# (see A-009 in docs/ai-usage/AI_ACTIVITY_LOG.md, merged via PR #47).
+# Versions below are the ones verified by recorded project runs:
+#   - A-009 (PR #47): environment inspection and import/version checks.
+#   - D-011 (PR #49): data-quality run with pandas 3.1.1 on Python 3.12.3.
+#
+# Install with:
+#   python -m pip install --upgrade pip
+#   python -m pip install -r requirements.txt
+#
+# Transitive dependencies (scipy, joblib, threadpoolctl, cloudpickle, narwhals)
+# are resolved automatically by pip from the pins below and are not listed
+# here because no project run has verified their versions yet. joblib becomes
+# a direct dependency in US-12 when the frozen model is serialized.
+
+# --- Execution ---
+pandas==3.1.1
+numpy==2.5.4
+scikit-learn==1.9.1
+matplotlib==3.11.2
+seaborn==0.13.2
+kagglehub==1.0.3
+ipykernel==7.4.0
+
+# --- Development / testing ---
+# No project run has used pytest yet; the version matches the local tooling
+# environment and will be confirmed on the reference venv when tests land.
+pytest==9.2.0

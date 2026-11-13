@@ -190,3 +190,21 @@ Its purpose is to help team members understand previous activities, identify com
 ---
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
+
+### A-012 — US-03: reproducible-environment deliverables (requirements, seed module, metrics convention)
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Pending human review
+- **Objective:** Implement US-03 (issue #15) deliverables — `requirements.txt` with fixed versions, a central seed module (`src/config.py`), the `results/` metrics convention, and the versioned-CSVs decision points — without installing packages, committing, switching branches unsafely or touching other people's work.
+- **Activities:**
+  - Audited the working tree and branch topology before acting: 4 modified documentation files pending review, `stash@{0}` intact, HEAD `d13fc76` equal to `origin/feature/stratified-split` (PR #50), `origin/develop` at `f6bd6e0`.
+  - Tested the branch switch to a develop-based working branch and git refused it (`AI_ACTIVITY_LOG.md` differs between HEAD and `develop` because of A-009 and also carries the pending A-010 changes); applied the non-destructive variant: created the branch ref `feature/environment-setup` at `origin/develop` without switching, leaving the deliverables as untracked files ready to commit on that branch later.
+  - Re-audited seed usage restricted to project files (excluding the local ignored `.venv/`): `src/split_data.py` lines 12/50/56 (`RANDOM_STATE = 42`, PR #50) and `01_eda_inicial.ipynb` cells 8–9 (`random_state=42`); no other stochastic usage found.
+  - Created `requirements.txt`: 7 runtime pins sourced from recorded runs (A-009 verification line; D-011 run with pandas 3.1.1 on Python 3.12.3) plus `pytest==9.2.0` as a dev pin marked as not yet exercised by a project run; scipy/joblib/threadpoolctl/cloudpickle/narwhals deliberately left as pip-resolved transitives (joblib becomes a direct dependency in US-12).
+  - Created `src/config.py` with `RANDOM_STATE = 42` as the single source of truth, `src/__init__.py` so `src` is importable as a package, and `results/README.md` defining the one-CSV-per-model metrics convention with the required columns (timestamp, seed, model, partition) plus the D-010 columns (config, accuracy, macro_f1, per-class F1, notes).
+  - Did not modify `.gitignore`: the versioned-CSVs decision stays with the team (D-013 remains Proposed).
+- **Files:** Created: `requirements.txt`, `src/config.py`, `src/__init__.py`, `results/README.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m py_compile src/config.py src/__init__.py` exits 0; `python -c "from src.config import RANDOM_STATE"` prints 42; `python -m pip install --dry-run -r requirements.txt` resolves with no conflicts (would install cloudpickle 3.1.2, joblib 1.6.0, pandas 3.1.1, scikit-learn 1.9.1 and threadpoolctl 3.8.0; everything else already satisfied in the local environment); `git status` shows only the four new untracked files and the four pre-existing modified docs; `git diff --stat origin/develop -- data/` is empty; `src/split_data.py` unmodified; `stash@{0}` untouched. Note: the dry-run ran on the local Python 3.14.6 environment, not on the reference venv; final verification there is pending.
+- **Outcome:** US-03 deliverables prepared as untracked additions, ready for review and commit on `feature/environment-setup` (created at `origin/develop`, `f6bd6e0`); no commits, installs or branch switches performed.
+- **Pending tasks:** Human approval of the Python 3.12.3 pin and package versions, of the versioned-CSVs policy, and of the commit on `feature/environment-setup`; migrate `RANDOM_STATE` in `src/split_data.py` to `src.config` after PR #50 merges; README environment section; seed migration in `01_eda_inicial.ipynb` (US-05 context).
