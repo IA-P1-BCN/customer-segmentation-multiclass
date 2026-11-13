@@ -307,4 +307,23 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-016 — D-014 revision from the second PR #57 review: `Spending_Score` one-hot with measured evidence
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Incorporate the second technical review of Rita Pereira into the D-014 proposal — replace the ordinal strategy for `Spending_Score` with one-hot, document the measured evidence, and align the dimension estimate — without rewriting A-014, A-015 or any previous record, and keeping D-014 in `Proposed`.
+- **Activities:**
+  - Verified the review's evidence table by an executed run on `data/train_70.csv` (read-only): the percentages are the share of each segment within every `Spending_Score` level (column-normalized) and match the review exactly — Low: A 27.8 %, B 18.5 %, C 13.5 %, D 40.2 %; Average: A 17.4 %, B 29.3 %, C 45.7 %, D 7.7 %; High: A 22.1 %, B 31.4 %, C 34.2 %, D 12.3 % (row counts: Low 954/634/464/1,377; Average 237/399/623/105; High 189/268/292/105).
+  - Verified the transformed width by an executed fit on `train_70` of the exact proposed configuration (D-011 imputers, one-hot everywhere categorical): **29 columns** (3 numeric + 2 D-011 missing indicators + 2 binary + 2 Gender + 10 Profession with `"Unknown"` + 7 `Var_1` + 3 `Spending_Score`); the configuration measured during the PR #55 review (mode-imputed `Profession`, single-column ordinal `Spending_Score`) measures 26. The review's estimate of ≈ 28 columns is documented as an estimate; the verified 29 is recorded as the executed reference.
+  - Updated D-014: Decision item 4 now fixes `OneHotEncoder(handle_unknown="ignore")` for `Spending_Score` (three columns, all kept) with the verified non-monotone evidence table; item 3 extended to all categorical groups; item 5 clarifies that `ORDINAL_COLS` and the `ordinal_encoder` slot describe the source column group, not the transformer type — the shared US-05 architecture stays unchanged and the one-hot encoder rides on the existing slot; Context, Alternatives (ordinal option now discarded because the measured segment mix is not monotone) and Recommendation aligned; Consequences document the dimension estimates (review ≈ 28, verified 29, reference 26) and note the dependence on the observed categories during fit.
+  - Kept unchanged: binary `drop="if_binary"`, one-hot for nominals, `handle_unknown="ignore"`, the `Profession`/`"Unknown"` interaction with D-011 (item 2), the `StandardScaler` responsibility split (item 6) and the `ID` exclusion (item 7). D-014 remains `Proposed`.
+  - Recorded this session as A-016 in `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014 proposal content only), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). Executed diagnostic runs (read-only, no repository files changed): `data/train_70.csv` crosstab and sklearn fit for the column-count verification.
+- **Verification:** `git diff --check` clean; the branch diff touches only the two documentation files; A-014 and A-015 and all previous entries unchanged; D-001…D-013 unmodified; D-014 still `Proposed`; `test_15.csv` never used; the diagnostic runs read only `train_70.csv` and did not modify any file.
+- **Outcome:** D-014 now encodes `Spending_Score` as one-hot with executed, verified evidence instead of an assumed ordinal order; the proposal remains open for team approval on PR #57.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
