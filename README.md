@@ -1,31 +1,63 @@
-# customer-segmentation-multiclass
+# Customer Segmentation — Multiclass Minds
 
-Customer segmentation through multiclass classification using demographic and behavioral customer data to predict customer segments (classes A, B, C and D).
+Multiclass classification of customers into segments A, B, C and D from demographic and behavioral data. M2 project (Data Analytics & Machine Learning), Essential level, delivery 18/11/2026.
+
+## Team
+Rita, Isbel, Pedro and Brian.
 
 ## Dataset
-
-- **Source (Kaggle):** [Customer Segmentation](https://www.kaggle.com/datasets/kaushiksuresh147/customer-segmentation)
-- **Complementary reference:** [Analytics Vidhya – JanataHack: Customer Segmentation](https://datahack.analyticsvidhya.com/contest/janatahack-customer-segmentation/) (the original hackathon whose data this Kaggle dataset reproduces)
+- **Source:** [Kaggle – Customer Segmentation](https://www.kaggle.com/datasets/kaushiksuresh147/customer-segmentation)
+- **Complementary reference:** [Analytics Vidhya – JanataHack: Customer Segmentation](https://datahack.analyticsvidhya.com/contest/janatahack-customer-segmentation/)
 - **License:** CC0 (confirmed on Kaggle), which allows redistribution of the dataset in this repository.
+- `Train.csv` is the only data source. It is split once into `train_70.csv`, `val_15.csv` and `test_15.csv` (70/15/15, stratified by `Segmentation`, `random_state=42`).
+- The original Kaggle `Test.csv` **is not part of the project dataset/repository** (D-012). The project's test set is `test_15.csv`.
+- Target variable: `Segmentation` (multiclass; classes A, B, C, D).
 
-## Files
+## Installation
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Linux/macOS
+.venv\Scripts\activate             # Windows (cmd)
+.venv\Scripts\Activate.ps1         # Windows (PowerShell)
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+Reference environment: Python 3.12.3 (see A-009 / A-012).
 
-- `Train.csv` — the only data source: split once into `train_70.csv`, `val_15.csv` and `test_15.csv` (70/15/15), stratified by `Segmentation` (`random_state=42`). `test_15.csv` is the project's test set (D-012).
-- **Original Kaggle `Test.csv` — not part of the project's dataset/repository.** It must not be added, restored or used. Of its 2,627 IDs, 2,332 also appear in `Train.csv`. The overlapping records are not fully consistent; for example, ID 458989 has an `Age` value of 36 in `Test.csv` and 42 in `Train.csv`. Among the shared IDs, `Segmentation` labels match in only 30% of cases. The project's test set is the internally generated `test_15.csv` (see D-006 and D-012 in the [Decision Log](docs/ai-usage/DECISION_LOG.md)).
-- Target variable: `Segmentation` (multiclass; classes A, B, C and D).
+## Reproducibility
+- Global seed: `RANDOM_STATE = 42` in `src/config.py`. Always import it; never hardcode.
+- Split: `python src/split_data.py` generates `data/train_70.csv`, `data/val_15.csv` and `data/test_15.csv`.
+- Primary metric: macro-F1 on validation; accuracy is also reported. Overfitting: absolute accuracy difference < 5 points between train and validation (D-010).
 
-## Git Collaboration Workflow
+## Repository structure
+```
+data/            # Train.csv + splits (train_70, val_15, test_15)
+src/             # split_data.py, config.py, data_quality.py, (Pipeline US-05)
+results/         # per-model metrics (convention in results/README.md)
+reports/         # data-quality report (data_quality.md, nulls_train_70.csv)
+docs/ai-usage/   # DECISION_LOG.md, AI_ACTIVITY_LOG.md
+01_eda_inicial.ipynb
+requirements.txt
+AGENTS.md
+```
 
-The project uses an integration branch: `feature/* → develop → main`.
+## How to run
+- **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All".
+- **Models:** notebooks/scripts for logistic regression, random forest, boosting and SVM (importing the shared Pipeline from `src/`).
+- **App:** *(pending — US-15)* `streamlit run app.py`
+- **Technical report:** *(pending — US-16)* see `reports/` and the report.
+- **Tests:** `python -m pytest`
 
-- **`main`** — stable branch. Only receives integrated, tested and approved versions; no direct commits.
-- **`develop`** — integration branch. Receives finished features and enables joint testing before preparing a release; no direct commits.
-- **Task branches** (`feature/*`, `fix/*`, `docs/*`, `refactor/*`) — individual branches created from `develop`, where each member develops their task.
+## Main results
+- *(Pending — US-11)* Baseline (majority class, D) and frozen model metrics on test.
 
-Pull Requests:
+## Board
+- GitHub Project #58: https://github.com/orgs/IA-P1-BCN/projects/58
 
-- All task branches open small, specific PRs exclusively into `develop`, reviewed by another team member the same day.
-- All task-branch PRs are integrated into `develop` using **Squash Merge**.
-- When a milestone is validated, a PR is opened from `develop` into `main`, using a **normal Merge Commit** (not Squash Merge or Rebase).
+## Decisions and traceability
+- [Decision Log](docs/ai-usage/DECISION_LOG.md) — full decision history.
+- [AI Activity Log](docs/ai-usage/AI_ACTIVITY_LOG.md) — full activity history.
+- Git workflow: `feature/* → develop → main`, with Squash Merge into `develop`.
 
-`main` and `develop` must require Pull Requests and at least one approval. If the repository plan or configuration does not allow these protections, the rules remain mandatory by team agreement as documented in `AGENTS.md`; plan limitations must be checked manually.
+## License
+Dataset under CC0. Project code: to be defined by the team.
