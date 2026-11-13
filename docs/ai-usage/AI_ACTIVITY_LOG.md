@@ -187,6 +187,28 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** Environment prepared and reproducible for the session; A-006 and the notebook re-execution (`871585e`, PR #46) are merged into `develop`.
 - **Pending tasks:** `requirements.txt` with pinned versions (assigned to Isbel); move split generation to `src/` per D-007.
 
+---
+
+### A-011 - US-04: missing-value diagnosis and imputation strategy
+
+- **Date:** 2026-11-12
+- **Agent:** opencode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** Produce the missing-value table per variable on the train split, check duplicated IDs in `Train.csv` and propose an imputation strategy for the Pipeline (issue #16, US-04).
+- **Activities:**
+  - Reviewed `AGENTS.md`, `DECISION_LOG.md` and `AI_ACTIVITY_LOG.md`; created `feature/null-diagnosis` from `develop` (`6878635`).
+  - Explored all four CSVs with the shared interpreter `F:\venvs\ia-workshop\Scripts\python.exe` to confirm shapes and missing values before writing code.
+  - Asked Pedro for approval on the artifact format and the imputation strategy (AGENTS.md section 2); approved: reusable script in `src/` plus generated reports, and the robust strategy (median/mode + missing indicators + `Unknown`).
+  - Created `src/data_quality.py`: reads `data/train_70.csv` for the missing-value table and `data/Train.csv` only for the duplicated-ID check, and writes the CSV table plus the Markdown report.
+  - Ran `python src/data_quality.py` from the repository root with the shared interpreter; the recorded run produced `reports/nulls_train_70.csv` and `reports/data_quality.md`.
+  - Proposed the strategy as D-011 (Proposed) in `docs/ai-usage/DECISION_LOG.md`; approval status left pending for the team.
+- **Files:** Created: `src/data_quality.py`, `reports/nulls_train_70.csv`, `reports/data_quality.md`. Modified: `docs/ai-usage/DECISION_LOG.md` (D-011), `docs/ai-usage/AI_ACTIVITY_LOG.md` (A-011).
+- **Verification:** Recorded run on `data/train_70.csv` (5,647 rows): `Work_Experience` 563 (9.97 %), `Family_Size` 244 (4.32 %), `Ever_Married` 99 (1.75 %), `Profession` 89 (1.58 %), `Graduated` 53 (0.94 %), `Var_1` 50 (0.89 %), all other columns 0.00 %. `Train.csv`: 8,068 rows, 8,068 unique IDs, 0 duplicated IDs. Interpreter Python 3.12.3, pandas 3.1.1; command, platform and versions are embedded in the generated report.
+- **Outcome:** The missing-value table and the duplicated-ID check come from an executed, reproducible run; the imputation strategy is documented and awaiting team approval.
+- **Pending tasks:** Team approval of D-011; implement the strategy in the US-05 Pipeline; optional extra (impute vs drop rows compared on validation with the US-01 metric) not done.
+
+---
+
 ### A-012 — US-03: reproducible-environment deliverables (requirements, seed module, metrics convention)
 
 - **Date:** 2026-11-13
