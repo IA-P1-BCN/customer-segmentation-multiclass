@@ -290,4 +290,21 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-015 — D-014 refinements from the PR #57 review (Profession one-hot width, scaler responsibility)
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Incorporate the two observations of Rita Pereira on the PR #57 branch into the D-014 proposal before its integration, without rewriting previous records and keeping D-014 in `Proposed`.
+- **Activities:**
+  - Clarified in D-014 (Decision, item 2) the interaction with D-011: `Profession` is imputed with the constant level `"Unknown"`, so once that level appears in the training data after imputation — inside the same sub-pipeline, where the imputer runs before the encoder — `OneHotEncoder` generates an additional column for `"Unknown"`.
+  - Corrected the Consequences section of D-014: the ≈ 26-column figure measured during the PR #55 review corresponds to a configuration that imputed `Profession` with the mode; with the D-011 constant `"Unknown"` level the width on the current data can be 27, and in any case the width is not a universal number — it depends on the categories observed during fit on `train_70`.
+  - Added to D-014 a new Decision item stating that `StandardScaler` is a model-specific transformation of logistic regression (US-07), not part of the shared preprocessing: it is integrated in the US-07 pipeline after the shared preprocessing and before the estimator; the responsibilities of the shared module and of the model stay separate (D-013 item 3).
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014 proposal content only), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `git diff --check` clean; the diff on this branch touches only the two documentation files; A-014 and all previous entries unchanged; D-014 remains `Proposed` (approval status untouched for the team); decisions D-001…D-013 unmodified.
+- **Outcome:** The D-014 proposal incorporates both review observations and remains open for team approval on PR #57.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
