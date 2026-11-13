@@ -270,4 +270,60 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-014 — D-014 proposal: categorical encoding strategy for the shared Pipeline
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Draft decision D-014 (Proposed) fixing the project's categorical encoding strategy, as a prerequisite to unblock US-07 (multinomial logistic regression), without implementing any encoder or modifying the shared preprocessing module.
+- **Activities:**
+  - Verified the unblock prerequisites: PR #55 merged into `develop` (`e66b874`, review APPROVED); D-011 approved (Brian, 2026-11-13); D-013 still Proposed; no encoding decision recorded anywhere (`develop` decision log ends at D-013).
+  - Reviewed the existing evidence for the encoding choice: the proposal recorded in issue #17 (one-hot for nominal columns, explicit ordinal order for `Spending_Score`) and the manual smoke test performed by Rita Pereira during the PR #55 review (numeric matrix 5,647×26 on `train_70` through the parameter seam, without touching the module).
+  - Created branch `docs/propose-d014-encoding` from `origin/develop` (`e66b874`) and added D-014 (Proposed) to `docs/ai-usage/DECISION_LOG.md` after D-013: one-hot for the binary (`Ever_Married`, `Graduated`) and nominal (`Gender`, `Profession`, `Var_1`) columns with `handle_unknown="ignore"` and `drop="if_binary"` for the binaries, ordinal encoding for `Spending_Score` with the explicit order `Low`=0, `Average`=1, `High`=2 and a documented `-1` sentinel for unexpected values; integration through the existing `build_preprocessing()` encoder parameters, fitted on `train_70` only (D-010 item 6, D-013 item 3); `ID` never encoded (D-006, D-012).
+  - Recorded this session as A-014 in `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+  - Cross-checked the proposal against D-011 (imputers run before the encoders inside each sub-pipeline), D-012 (dataset policy untouched) and D-013 (transformations live inside the shared Pipeline, fitted on `train_70`); noted in D-014 that D-013 still states D-011 was Proposed because it was written before that approval.
+  - Opened PR into `develop` for team review; the approval status of D-014 remains Pending for a human team member.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `git diff --check` clean; diff against `develop` touches only the two documentation files; no encoder implemented, no code, CSV, notebook or configuration file modified; log order intact (activities A-010…A-014 above the template comment; decisions D-011…D-014 above the template comment); approval states of D-011 (Approved) and D-013 (Proposed) unchanged.
+- **Outcome:** D-014 formally proposed and traceable to issue #17 and the PR #55 review evidence; US-07 remains blocked only on the team's approval of D-014.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
+### A-015 — D-014 refinements from the PR #57 review (Profession one-hot width, scaler responsibility)
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Incorporate the two observations of Rita Pereira on the PR #57 branch into the D-014 proposal before its integration, without rewriting previous records and keeping D-014 in `Proposed`.
+- **Activities:**
+  - Clarified in D-014 (Decision, item 2) the interaction with D-011: `Profession` is imputed with the constant level `"Unknown"`, so once that level appears in the training data after imputation — inside the same sub-pipeline, where the imputer runs before the encoder — `OneHotEncoder` generates an additional column for `"Unknown"`.
+  - Corrected the Consequences section of D-014: the ≈ 26-column figure measured during the PR #55 review corresponds to a configuration that imputed `Profession` with the mode; with the D-011 constant `"Unknown"` level the width on the current data can be 27, and in any case the width is not a universal number — it depends on the categories observed during fit on `train_70`.
+  - Added to D-014 a new Decision item stating that `StandardScaler` is a model-specific transformation of logistic regression (US-07), not part of the shared preprocessing: it is integrated in the US-07 pipeline after the shared preprocessing and before the estimator; the responsibilities of the shared module and of the model stay separate (D-013 item 3).
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014 proposal content only), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `git diff --check` clean; the diff on this branch touches only the two documentation files; A-014 and all previous entries unchanged; D-014 remains `Proposed` (approval status untouched for the team); decisions D-001…D-013 unmodified.
+- **Outcome:** The D-014 proposal incorporates both review observations and remains open for team approval on PR #57.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
+### A-016 — D-014 revision from the second PR #57 review: `Spending_Score` one-hot with measured evidence
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Incorporate the second technical review of Rita Pereira into the D-014 proposal — replace the ordinal strategy for `Spending_Score` with one-hot, document the measured evidence, and align the dimension estimate — without rewriting A-014, A-015 or any previous record, and keeping D-014 in `Proposed`.
+- **Activities:**
+  - Verified the review's evidence table by an executed run on `data/train_70.csv` (read-only): the percentages are the share of each segment within every `Spending_Score` level (column-normalized) and match the review exactly — Low: A 27.8 %, B 18.5 %, C 13.5 %, D 40.2 %; Average: A 17.4 %, B 29.3 %, C 45.7 %, D 7.7 %; High: A 22.1 %, B 31.4 %, C 34.2 %, D 12.3 % (row counts: Low 954/634/464/1,377; Average 237/399/623/105; High 189/268/292/105).
+  - Verified the transformed width by an executed fit on `train_70` of the exact proposed configuration (D-011 imputers, one-hot everywhere categorical): **29 columns** (3 numeric + 2 D-011 missing indicators + 2 binary + 2 Gender + 10 Profession with `"Unknown"` + 7 `Var_1` + 3 `Spending_Score`); the configuration measured during the PR #55 review (mode-imputed `Profession`, single-column ordinal `Spending_Score`) measures 26. The review's estimate of ≈ 28 columns is documented as an estimate; the verified 29 is recorded as the executed reference.
+  - Updated D-014: Decision item 4 now fixes `OneHotEncoder(handle_unknown="ignore")` for `Spending_Score` (three columns, all kept) with the verified non-monotone evidence table; item 3 extended to all categorical groups; item 5 clarifies that `ORDINAL_COLS` and the `ordinal_encoder` slot describe the source column group, not the transformer type — the shared US-05 architecture stays unchanged and the one-hot encoder rides on the existing slot; Context, Alternatives (ordinal option now discarded because the measured segment mix is not monotone) and Recommendation aligned; Consequences document the dimension estimates (review ≈ 28, verified 29, reference 26) and note the dependence on the observed categories during fit.
+  - Kept unchanged: binary `drop="if_binary"`, one-hot for nominals, `handle_unknown="ignore"`, the `Profession`/`"Unknown"` interaction with D-011 (item 2), the `StandardScaler` responsibility split (item 6) and the `ID` exclusion (item 7). D-014 remains `Proposed`.
+  - Recorded this session as A-016 in `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-014 proposal content only), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). Executed diagnostic runs (read-only, no repository files changed): `data/train_70.csv` crosstab and sklearn fit for the column-count verification.
+- **Verification:** `git diff --check` clean; the branch diff touches only the two documentation files; A-014 and A-015 and all previous entries unchanged; D-001…D-013 unmodified; D-014 still `Proposed`; `test_15.csv` never used; the diagnostic runs read only `train_70.csv` and did not modify any file.
+- **Outcome:** D-014 now encodes `Spending_Score` as one-hot with executed, verified evidence instead of an assumed ordinal order; the proposal remains open for team approval on PR #57.
+- **Pending tasks:** Team approval of D-014 (human); then implement US-07 wiring D-011 and D-014 through the `build_preprocessing()` parameters; D-013 still Proposed.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
