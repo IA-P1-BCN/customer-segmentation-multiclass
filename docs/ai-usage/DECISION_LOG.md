@@ -220,6 +220,32 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Pending — to be set by a human team member.
 - **Consequences:** `AGENTS.md` and `README.md` reference D-012 and state that the original `Test.csv` is not part of the project's dataset/repository and must not be added, restored or used; the activity is recorded as A-010 in `AI_ACTIVITY_LOG.md`. `data/` contains `Train.csv` and the three internal splits. Future documentation must not claim that the original file is kept in the repository, nor that it was removed from it: the clarification is about what belongs to the project dataset.
 
+### D-013 — Single shared 70/15/15 partition; each member contributes only their model
+
+- **Date:** 2026-11-13
+- **Status:** Proposed
+- **Area:** Data management / Methodology
+- **Context:** US-07 to US-10 assign one model per member, each on their own branch. The phrase "each member trains with the 70 %" can be read as "each member makes their own copy of the split", and that reading would break the project: four models trained on different customers cannot be compared in US-11, which evaluates all of them on `val_15`. Preprocessing done by hand before training would also leak validation and test information into the fitted values. D-006 already fixed the split and `AGENTS.md` section 1 states that `Train.csv` is split once and the original CSV files must never be modified; this decision makes the operational consequence explicit so nobody has to guess.
+- **Alternatives:** (1) Each member generates their own split with their own seed or row order; (2) each member keeps a personal cleaned copy (filtered rows, filled values, scaled columns) and trains on it; (3) one committed partition, read-only for everyone, with differences only in the model, its hyperparameters and the Pipeline steps that model needs.
+- **Recommendation:** Option 3. Options 1 and 2 make the comparison in US-11 measure who chose the easier data instead of which model is better, and they silently reintroduce the information leak that D-006 and US-05 are designed to prevent. A single read-only partition costs each member nothing: Git isolates branches, so reading `data/train_70.csv` cannot disturb anybody else's work.
+- **Decision (proposed):**
+  1. `data/train_70.csv` (5,647 rows), `data/val_15.csv` (1,210 rows) and `data/test_15.csv` (1,211 rows) are the only partitions and are shared and read-only. They are generated once by `src/split_data.py` with `RANDOM_STATE = 42` (D-006) and every member works with the same bytes. Reference checksums (SHA-256):
+
+     | File | Rows | SHA-256 |
+     |---|---:|---|
+     | `data/train_70.csv` | 5,647 | `ca47194e3284b8e2582a3f77c00c921f5a9919f38ff2c6e10c12c05acebb5af3` |
+     | `data/val_15.csv` | 1,210 | `62d80bfa65524fe853f99953e75238bf7e1d3b3e354c376a0047e5f593611d8f` |
+     | `data/test_15.csv` | 1,211 | `c1aa73938debae6160c664926909fe457ac83d9056c8bca87baeca2a0a535994` |
+     | `data/Train.csv` (source) | 8,068 | `2faa14ac581599790575d1f646c0b55b95c9e1cdc93ff5ee67f773c82ee690e3` |
+
+  2. No member creates, modifies or commits a personal copy of the partitions inside the repository. A temporary copy for an experiment is allowed only outside the repository or in a folder ignored by Git, and never reaches `develop`.
+  3. Every transformation applied to the data — imputation, encoding, scaling, feature selection — lives inside the shared Pipeline built in US-05 and is fitted on `train_70`. Nothing is applied by hand to the CSV files before training. Each model may add the steps it needs, always inside the Pipeline: for example, logistic regression and SVM can include scaling, while random forest and boosting usually do not need it. Imputation and encoding follow the decisions the team approves for US-04 and US-05; D-011 is currently Proposed, so this record does not assume it is approved.
+  4. Each member owns the model and its hyperparameters, the training script or notebook, the configurations tried and the recorded metrics. Nothing else is decided individually.
+  5. A run is comparable only if items 1 to 3 hold. A result obtained on a different split or with transformations applied outside the Pipeline is not used in US-11.
+  6. Verification: every model run reports the row count of each partition (5,647 / 1,210 / 1,211), the absence of `ID` overlap across them, and the SHA-256 of the file it read. Any deviation from the reference checksums is reported before the results are compared.
+- **Approval:** Pending — to be set by a human team member.
+- **Consequences:** Individual freedom is limited to the model and to the Pipeline steps that model needs, not to the data, in exchange for a valid comparison in US-11 and reproducible runs. If the shared Pipeline changes, the models that depend on it must be re-run before their metrics are compared. If the team later needs a different partition (for example a sensitivity analysis), it is a new decision and a new file with a different name; the committed partitions are never replaced.
+
 ---
 
 <!-- Add new decisions below using the same structure. Preserve previous records. -->
