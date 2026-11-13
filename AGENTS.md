@@ -7,16 +7,16 @@ Collaborative Data Science and Machine Learning project: customer segmentation t
 **Dataset** ([Kaggle – Customer Segmentation](https://www.kaggle.com/datasets/kaushiksuresh147/customer-segmentation)):
 
 - `Train.csv` — the only data source for the project (EDA, preprocessing, model development, validation and final testing).
-- `Test.csv` — kept in the repository but **not used.** 2,332 of its 2,627 IDs also appear in `Train.csv` with different feature values and labels, so it cannot serve as an independent test set.
+- `Test.csv` — **not part of the project's dataset/repository.** The original Kaggle file must not be added, restored or used. Of its 2,627 IDs, 2,332 also appear in `Train.csv`. The overlapping records are not fully consistent; for example, ID 458989 has an `Age` value of 36 in `Test.csv` and 42 in `Train.csv`. Among the shared IDs, `Segmentation` labels match in only 30% of cases, so it cannot serve as an independent test set. The project's test set is `test_15.csv`, generated internally from `Train.csv` (see Data rules, D-006 and D-012).
 - Target variable: `Segmentation` (multiclass; classes A, B, C and D).
 
 **Data rules:**
 
-- `Train.csv` is split once into **train / validation / test (70/15/15)**, stratified by `Segmentation` with a fixed random seed (`random_state=42`).
+- `Train.csv` is split once into **train / validation / test (70/15/15)** — `train_70.csv`, `val_15.csv` and `test_15.csv` — stratified by `Segmentation` with a fixed random seed (`random_state=42`). `test_15.csv` is the project's test set (D-012).
 - An initial basic EDA on the full `Train.csv` is allowed for data inspection only (structure, types, nulls). The full EDA and every modeling decision or fitted step (imputation, encoding, scaling, feature selection) use only the train split.
 - The validation split is used for model comparison and tuning; the test split is used only for the final evaluation, never for training or decisions.
 - `ID` is an identifier, never a feature.
-- Do not use `Test.csv` for training, validation or evaluation.
+- Do not add, restore or use the original Kaggle `Test.csv`; use the internally generated `test_15.csv` for final evaluation only (D-012).
 - Data integrity must be preserved: never modify the original CSV files.
 
 ## 2. Agent Governance
