@@ -181,6 +181,26 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Approved by Brian, 2026-11-12.
 - **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, the accuracy gap in percentage points (pass/fail: < 5) and the macro-F1 gap (informative), plus per-class precision, recall and F1 on validation. Models are selected by validation macro-F1 among those that meet the accuracy-gap limit. During tuning, each configuration also records its 5-fold CV results on `train_70` (item 6).
 
+### D-011 - Missing-value diagnosis and imputation strategy (US-04)
+
+- **Date:** 2026-11-12
+- **Status:** Proposed
+- **Area:** Preprocessing / Data quality
+- **Context:** US-04 requires a missing-value table per variable on the train split and an agreed imputation strategy for the Pipeline (US-05), with statistics computed only from `train_70`. Run of `src/data_quality.py` (opencode, 2026-11-12, Python 3.12.3, pandas 3.1.1) on `data/train_70.csv` (5,647 rows): `Work_Experience` 563 (9.97 %), `Family_Size` 244 (4.32 %), `Ever_Married` 99 (1.75 %), `Profession` 89 (1.58 %), `Graduated` 53 (0.94 %) and `Var_1` 50 (0.89 %); `ID`, `Gender`, `Age`, `Spending_Score` and `Segmentation` have no missing values. No duplicated `ID` in `Train.csv` (8,068 unique of 8,068 rows). Evidence per variable in `reports/data_quality.md`.
+- **Alternatives:** (1) Drop every row with a missing value, which removes ~16 % of `train_70` and biases the sample towards customers who answered every field; (2) impute only with median/mode and no indicators; (3) median/mode plus missing indicators and an explicit `Unknown` level; (4) model-based imputation (KNN, iterative), which adds complexity and cost for a small share of missing data.
+- **Recommendation:** Option 3. It keeps all customers, is cheap and explainable, and does not fabricate values where the mode is unreliable. Numeric variables with high missingness (`Work_Experience`, `Family_Size`) are right-skewed or small-range, so the median is robust; the missing indicators preserve the signal contained in the absence itself. `Profession` has 9 categories and a mode of only 31.4 % (`Artist`), so imputing `Artist` would invent a profession; an `Unknown` level is more honest and the encoder handles it natively. The remaining categorical variables are binary or heavily dominated by the mode (58.8 %, 62.4 % and 66.0 %), where the mode introduces little bias.
+- **Decision (proposed):**
+  1. `Work_Experience`: median (1.0) + binary indicator `Work_Experience_was_missing`.
+  2. `Family_Size`: median (3.0) + binary indicator `Family_Size_was_missing`.
+  3. `Ever_Married`: mode (`Yes`).
+  4. `Graduated`: mode (`Yes`).
+  5. `Var_1`: mode (`Cat_6`).
+  6. `Profession`: constant category `Unknown`.
+  7. Variables without missing values (`ID`, `Gender`, `Age`, `Spending_Score`) and the target `Segmentation`: no imputation; `ID` is never a feature.
+  8. All statistics are fitted on `train_70` inside the Pipeline (`SimpleImputer` / `Pipeline`, inside each cross-validation fold). `val_15` and `test_15` are transformed with the values learned from train, never used to compute them.
+- **Approval:** Pending team approval.
+- **Consequences:** US-05 implements the strategy in the preprocessing Pipeline; no row is removed by missing values, so `train_70` keeps its 5,647 rows. The optional comparison of imputing vs dropping rows (US-04 extra) is not done now and can be added on validation if time allows.
+
 ---
 
 <!-- Add new decisions below using the same structure. Preserve previous records. -->
