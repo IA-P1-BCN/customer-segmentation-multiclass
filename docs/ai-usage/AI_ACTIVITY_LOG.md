@@ -248,4 +248,26 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-013 — US-05 phase 1: shared preprocessing structure (X/y separation, column roles, structural tests)
+
+- **Date:** 2026-11-13
+- **Agent:** opencode (revision: glm-5.3-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Implement the structural part of US-05 (issue #17) — a shared preprocessing layout so the four models (US-07 to US-10) and the prediction app receive exactly the same transformed features — without implementing any pending decision, without touching the CSVs, notebooks or other members' work, and without using `test_15.csv`.
+- **Activities:**
+  - Designed and implemented `src/preprocessing.py`: `make_features_target(df)` (X/y separation by name, excludes `ID` and undeclared columns, does not mutate the input dataframe, validates the schema) and `build_preprocessing(...)` (`ColumnTransformer` with four sub-pipelines — numeric, binary, nominal, ordinal — over the column groups in `src.config`, `remainder="drop"`, `verbose_feature_names_out=False`).
+  - All seven strategy parameters (`numeric/binary/nominal/ordinal_imputer`, `binary/nominal/ordinal_encoder`) default to `"passthrough"` so no pending decision is imposed: D-011 (imputation) and the encoding decision (candidate D-014, not yet recorded) are exposed as parameters, not implemented.
+  - Extended `src/config.py` with the shared column roles (`TARGET`, `ID_COLUMN`, `NUMERIC_COLS`, `BINARY_COLS`, `NOMINAL_COLS`, `ORDINAL_COLS`, `FEATURE_COLUMNS`); no new random seeds (`RANDOM_STATE` remains the single source of truth in `src.config`).
+  - Wrote 16 structural tests in `tests/test_preprocessing.py`: X/target separation, ID exclusion, exact column-group coverage, input immutability, train/val schema, `ColumnTransformer` layout, fit on train / transform on validation, parameterizable strategies without rewriting the module, and integration into a model `Pipeline`.
+  - Set up the isolated project environment (`.venv`, gitignored, Python 3.12.10) with the pinned `requirements.txt` versions plus `pytest==9.2.0` as a development dependency installed inside the venv; nothing installed globally.
+  - Updated the branch with `origin/develop` (PR #51, #52, #53 and #54 integrated; resolved an add/add conflict in `src/config.py` keeping the US-05 superset) and created PR #55 into `develop` with a stacked diff of exactly the three US-05 files.
+  - After D-011 was approved (Brian, 2026-11-13), aligned the module documentation to record the approval and that the strategies remain deferred to phase 2.
+  - Applied this review's corrections (Rita Pereira, PR #55): re-added `pytest==9.2.0` to `requirements.txt` in a development section (the US-05 tests use it) and recorded this entry as A-013.
+- **Files:** Created: `src/preprocessing.py`, `tests/test_preprocessing.py`. Modified: `src/config.py`, `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `pytest tests/test_preprocessing.py` → 16 passed (Python 3.12.10, pandas 3.1.1, scikit-learn 1.9.1, pytest 9.2.0 in `.venv`; `pip check` clean); `python -m py_compile src/config.py src/preprocessing.py tests/test_preprocessing.py` exits 0; `git diff --check` clean; the diff against `develop` contains only the US-05 files; no CSV, notebook or other member's file modified; `test_15.csv` never used.
+- **Outcome:** PR #55 open with the US-05 phase-1 structure. By design of this structural phase, all strategy parameters still default to `"passthrough"`: until the approved D-011 strategies and the (still unrecorded) encoding decision are connected through the existing parameters, the pipeline keeps nulls and text categories and cannot train models on real data. This is the intended behaviour of phase 1, not a defect.
+- **Pending tasks:** Team review and squash-merge of PR #55; phase 2 — wire the approved D-011 strategies through the existing parameters; the encoding decision is not yet recorded (candidate identifier D-014) and requires team approval before any encoder is fixed; D-013 (single shared partition) still Proposed.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
