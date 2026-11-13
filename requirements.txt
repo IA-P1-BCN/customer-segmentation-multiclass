@@ -23,8 +23,3 @@ matplotlib==3.11.2
 seaborn==0.13.2
 kagglehub==1.0.3
 ipykernel==7.4.0
-
-# --- Development / testing ---
-# No project run has used pytest yet; the version matches the local tooling
-# environment and will be confirmed on the reference venv when tests land.
-pytest==9.2.0

@@ -187,15 +187,11 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** Environment prepared and reproducible for the session; A-006 and the notebook re-execution (`871585e`, PR #46) are merged into `develop`.
 - **Pending tasks:** `requirements.txt` with pinned versions (assigned to Isbel); move split generation to `src/` per D-007.
 
----
-
-<!-- Add new activities below using the same structure. Preserve previous records. -->
-
 ### A-012 — US-03: reproducible-environment deliverables (requirements, seed module, metrics convention)
 
 - **Date:** 2026-11-13
 - **Agent:** opencode (revision: glm-5.3-flash-free)
-- **Human owner:** Pending human review
+- **Human owner:** Isbel
 - **Objective:** Implement US-03 (issue #15) deliverables — `requirements.txt` with fixed versions, a central seed module (`src/config.py`), the `results/` metrics convention, and the versioned-CSVs decision points — without installing packages, committing, switching branches unsafely or touching other people's work.
 - **Activities:**
   - Audited the working tree and branch topology before acting: 4 modified documentation files pending review, `stash@{0}` intact, HEAD `d13fc76` equal to `origin/feature/stratified-split` (PR #50), `origin/develop` at `f6bd6e0`.
@@ -203,8 +199,30 @@ Its purpose is to help team members understand previous activities, identify com
   - Re-audited seed usage restricted to project files (excluding the local ignored `.venv/`): `src/split_data.py` lines 12/50/56 (`RANDOM_STATE = 42`, PR #50) and `01_eda_inicial.ipynb` cells 8–9 (`random_state=42`); no other stochastic usage found.
   - Created `requirements.txt`: 7 runtime pins sourced from recorded runs (A-009 verification line; D-011 run with pandas 3.1.1 on Python 3.12.3) plus `pytest==9.2.0` as a dev pin marked as not yet exercised by a project run; scipy/joblib/threadpoolctl/cloudpickle/narwhals deliberately left as pip-resolved transitives (joblib becomes a direct dependency in US-12).
   - Created `src/config.py` with `RANDOM_STATE = 42` as the single source of truth, `src/__init__.py` so `src` is importable as a package, and `results/README.md` defining the one-CSV-per-model metrics convention with the required columns (timestamp, seed, model, partition) plus the D-010 columns (config, accuracy, macro_f1, per-class F1, notes).
-  - Did not modify `.gitignore`: the versioned-CSVs decision stays with the team (D-013 remains Proposed).
+  - Did not modify `.gitignore`: the versioned-CSVs decision stays with the team (D-012 remains Proposed).
 - **Files:** Created: `requirements.txt`, `src/config.py`, `src/__init__.py`, `results/README.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
 - **Verification:** `python -m py_compile src/config.py src/__init__.py` exits 0; `python -c "from src.config import RANDOM_STATE"` prints 42; `python -m pip install --dry-run -r requirements.txt` resolves with no conflicts (would install cloudpickle 3.1.2, joblib 1.6.0, pandas 3.1.1, scikit-learn 1.9.1 and threadpoolctl 3.8.0; everything else already satisfied in the local environment); `git status` shows only the four new untracked files and the four pre-existing modified docs; `git diff --stat origin/develop -- data/` is empty; `src/split_data.py` unmodified; `stash@{0}` untouched. Note: the dry-run ran on the local Python 3.14.6 environment, not on the reference venv; final verification there is pending.
 - **Outcome:** US-03 deliverables prepared as untracked additions, ready for review and commit on `feature/environment-setup` (created at `origin/develop`, `f6bd6e0`); no commits, installs or branch switches performed.
 - **Pending tasks:** Human approval of the Python 3.12.3 pin and package versions, of the versioned-CSVs policy, and of the commit on `feature/environment-setup`; migrate `RANDOM_STATE` in `src/split_data.py` to `src.config` after PR #50 merges; README environment section; seed migration in `01_eda_inicial.ipynb` (US-05 context).
+
+---
+
+<!-- Add new activities below using the same structure. Preserve previous records. -->
+
+### A-010 — Dataset policy clarification: original Kaggle `Test.csv` excluded (D-012)
+
+- **Date:** 2026-11-12
+- **Agent:** opencode (deepseek-v4.1-flash-free; revision: glm-5.3-flash-free)
+- **Human owner:** Pending human review
+- **Objective:** Clarify the documented dataset policy so that the original Kaggle `Test.csv` is excluded from the project dataset (D-012), without rewriting D-006/D-007 or touching data, code, notebooks or configuration.
+- **Activities:**
+  - Reviewed `AGENTS.md`, `README.md`, `docs/ai-usage/DECISION_LOG.md` and `docs/ai-usage/AI_ACTIVITY_LOG.md` for references to the original Kaggle `Test.csv`.
+  - Updated `AGENTS.md` and `README.md` to state that the original `Test.csv` is not part of the project's dataset/repository, must not be added, restored or used, and that `test_15.csv` is the project's internal test set generated from `Train.csv`; the shared-ID evidence (2,332 of 2,627 IDs; labels matching in only 30% of shared IDs) is documented.
+  - Added D-012 (Proposed) to supersede only the conservation clauses of D-006 and D-007; their historical records remain unchanged.
+  - Revised and renumbered the pending documentation draft (previously drafted as D-011/A-009, recovered from `stash@{0}` without modifying the stash) as D-012/A-010 before any commit, to avoid clashing with identifiers already in use: D-011 is in use on `origin/feature/null-diagnosis`, A-009 belongs to another activity, A-011 is in use for the US-04 null-diagnosis work, and the numbering of the team's Git-flow proposal remains pending assignment.
+  - Preserved the historical A-005 wording as history; A-010 and D-012 record the current policy that supersedes it.
+  - Updated cross-references in `AGENTS.md` and `README.md` to point to D-012.
+- **Files:** Modified: `AGENTS.md`, `README.md`, `docs/ai-usage/DECISION_LOG.md`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Verification:** `git diff --check` passes; diff reviewed for scope; only the four authorized documentation files were modified (the untracked `src/split_data.py` from the ongoing US-02 task was not modified); no CSV, notebook or configuration changes; `stash@{0}` left untouched.
+- **Outcome:** Documentation prepared for human review; D-012 is Proposed and requires human approval. The clarification is documentary: no file was removed from the repository.
+- **Pending tasks:** Human approval of D-012; review and commit of these documentary changes on `feature/stratified-split`; open PR to `develop`.
