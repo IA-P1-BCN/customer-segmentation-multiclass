@@ -184,7 +184,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-011 - Missing-value diagnosis and imputation strategy (US-04)
 
 - **Date:** 2026-11-12
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Preprocessing / Data quality
 - **Context:** US-04 requires a missing-value table per variable on the train split and an agreed imputation strategy for the Pipeline (US-05), with statistics computed only from `train_70`. Run of `src/data_quality.py` (opencode, 2026-11-12, Python 3.12.3, pandas 3.1.1) on `data/train_70.csv` (5,647 rows): `Work_Experience` 563 (9.97 %), `Family_Size` 244 (4.32 %), `Ever_Married` 99 (1.75 %), `Profession` 89 (1.58 %), `Graduated` 53 (0.94 %) and `Var_1` 50 (0.89 %); `ID`, `Gender`, `Age`, `Spending_Score` and `Segmentation` have no missing values. No duplicated `ID` in `Train.csv` (8,068 unique of 8,068 rows). Evidence per variable in `reports/data_quality.md`.
 - **Alternatives:** (1) Drop every row with a missing value, which removes ~16 % of `train_70` and biases the sample towards customers who answered every field; (2) impute only with median/mode and no indicators; (3) median/mode plus missing indicators and an explicit `Unknown` level; (4) model-based imputation (KNN, iterative), which adds complexity and cost for a small share of missing data.
@@ -198,13 +198,13 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   6. `Profession`: constant category `Unknown`.
   7. Variables without missing values (`ID`, `Gender`, `Age`, `Spending_Score`) and the target `Segmentation`: no imputation; `ID` is never a feature.
   8. All statistics are fitted on `train_70` inside the Pipeline (`SimpleImputer` / `Pipeline`, inside each cross-validation fold). `val_15` and `test_15` are transformed with the values learned from train, never used to compute them.
-- **Approval:** Pending team approval.
+- **Approval:** Approved by Brian, 2026-11-13.
 - **Consequences:** US-05 implements the strategy in the preprocessing Pipeline; no row is removed by missing values, so `train_70` keeps its 5,647 rows. The optional comparison of imputing vs dropping rows (US-04 extra) is not done now and can be added on validation if time allows.
 
 ### D-012 — Original Kaggle `Test.csv` excluded from the project dataset
 
 - **Date:** 2026-11-12
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Data Management / Methodology
 - **Context:** D-006 and D-007 contain clauses stating that the original Kaggle `Test.csv` stays/remains versioned in the repository. The team has confirmed that the original file is not part of the project's dataset: the evidence recorded in D-006 (Python `csv` check, 2026-11-11) shows that 2,332 of its 2,627 IDs also appear in `Train.csv` (8,068 rows) with different feature values (e.g. ID 458989: `Age` 36 in `Test.csv` vs 42 in `Train.csv`), that among those shared IDs the `Segmentation` labels match in only 30% of cases, and that the class distributions differ (Train: D 28.1 %, A 24.4 %; Test: A 32.2 %, D 28.9 %). It therefore cannot serve as an independent test set. The repository's `data/` directory currently contains `Train.csv` and the three internal splits (`train_70.csv`, `val_15.csv`, `test_15.csv`). The previous wording also conflicts with `AGENTS.md` and `README.md`, which are being updated to state that the original file must not be added, restored or used.
 - **Alternatives:** (1) Keep the original `Test.csv` as part of the project dataset/repository, versioned for traceability; (2) exclude the original `Test.csv` from the project dataset and use only the internally generated `test_15.csv` as the test set; (3) use the original `Test.csv` as the final test set.
@@ -217,7 +217,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   5. `ID` is an identifier, never a feature.
   6. D-012 expressly supersedes only the conservation clauses of D-006 and D-007 that state the original `Test.csv` stays/remains versioned in the repository. It does not supersede any other part of D-006 or D-007, which remain fully in force; their historical records are not rewritten or deleted.
 - **Relationship with D-006 and D-007:** D-006 remains the decision that stopped using the original test set and defined the 70/15/15 split; D-007 remains the workflow and dataset-management decision. D-012 only replaces their clauses about retaining the original `Test.csv` in the repository; it does not replace either decision as a whole.
-- **Approval:** Pending — to be set by a human team member.
+- **Approval:** Approved by Brian, 2026-11-13.
 - **Consequences:** `AGENTS.md` and `README.md` reference D-012 and state that the original `Test.csv` is not part of the project's dataset/repository and must not be added, restored or used; the activity is recorded as A-010 in `AI_ACTIVITY_LOG.md`. `data/` contains `Train.csv` and the three internal splits. Future documentation must not claim that the original file is kept in the repository, nor that it was removed from it: the clarification is about what belongs to the project dataset.
 
 ---
