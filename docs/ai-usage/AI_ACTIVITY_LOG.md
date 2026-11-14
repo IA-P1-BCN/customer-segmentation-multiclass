@@ -326,4 +326,24 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-017 — US-06 EDA on train_70: Spending_Score and Ever_Married
+
+- **Date:** 2026-11-12 / 2026-11-13
+- **Note:** Numbered A-017 because A-013 is used by PR #55 and A-014–A-016 by PR #57 (merged into `develop` before this entry).
+- **Agent:** Claude Code (Claude Opus 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Rita's section of US-06 (issue #10): `Spending_Score` vs `Profession`, `Graduated` and `Segmentation`, and `Ever_Married` vs `Segmentation`, using only `train_70`.
+- **Activities:**
+  - Set up Rita's local environment (with her approval): `.venv/` (git-ignored), Python 3.12.10, with the pinned team `requirements.txt` (pandas 3.1.1, numpy 2.5.4, scikit-learn 1.9.1, matplotlib 3.11.2, seaborn 0.13.2, kagglehub 1.0.3, ipykernel 7.4.0, pytest 9.2.0; scipy 1.18.1 as a scikit-learn dependency) plus jupyterlab 4.6.6; `pip check` clean. Registered the user-scope Jupyter kernelspec `Python (multiclass-minds .venv)` because VS Code did not detect the venv from the parent workspace folder.
+  - Team agreement (Rita and Pedro, 2026-11-12): each member works on their own branch and notebook named `02_eda_train70_<analysis>.ipynb`, with a separate PR per section instead of the single PR in issue #10; Pedro integrates the findings.
+  - Created branch `feature/eda-gasto-estado-civil` and the notebook `02_eda_train70_gasto_estado_civil.ipynb`: row-normalised proportion tables (nulls shown as `Missing`, not imputed), 100 % stacked bar charts, chi-square and Cramér's V (rows with nulls in the pair excluded), segment distribution of rows with nulls, an explanation of how to read Cramér's V, and written conclusions based only on the executed outputs.
+  - 2026-11-13: updated the branch to `develop` (`e66b874`). Ran `python src/split_data.py --check` (US-02): the generated split matches the existing CSV files, so the notebook data are unchanged. Updated the conclusions to refer to D-011 as approved (Brian, 2026-11-13) and re-executed the notebook. Rita Pereira reviewed the notebook and approved it for a PR.
+  - Main results (from the executed notebook): high spending concentrated in Executive (65.4 % High) and Lawyer (51.6 %); Healthcare 93.3 % Low; Graduated weakly associated with spending (V = 0.138); segment D 86.8 % Low and 29 % ever married (vs 58–79 % in A–C); V = 0.302 (Spending_Score–Segmentation) and 0.408 (Ever_Married–Segmentation); all 2,284 never-married customers have Spending_Score Low (V = 0.669).
+- **Files:** Created: `02_eda_train70_gasto_estado_civil.ipynb`, `reports/figures/eda_spending_by_profession.png`, `eda_spending_by_graduated.png`, `eda_spending_by_segment.png`, `eda_married_by_segment.png`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). Outside the repository: `.venv/`, Jupyter kernelspec.
+- **Verification:** Notebook executed from a clean kernel with `jupyter nbconvert --execute` (execution counts 1–19, no error outputs); figures inspected visually; `val_15` and `test_15` are not read; `src/split_data.py --check` exit code 0.
+- **Outcome:** Implemented and reviewed by Rita Pereira; submitted as a PR into `develop`. Points raised for other sections, not decisions: the Ever_Married/Spending_Score rule (Brian's leakage review); for the 47.5 % of null `Ever_Married` rows with Low spending, the approved mode imputation (D-011) is less certain, and the null signal (D-skew) is lost — only relevant if the team revisits D-011 (99 rows, 1.8 % of `train_70`).
+- **Pending tasks:** Review and squash-merge of the PR; comment in issue #10 that US-06 is split into one PR per section; Pedro integrates the findings into the final EDA.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
