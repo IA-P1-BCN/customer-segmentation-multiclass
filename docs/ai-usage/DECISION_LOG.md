@@ -223,7 +223,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-013 — Single shared 70/15/15 partition; each member contributes only their model
 
 - **Date:** 2026-11-13
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Data management / Methodology
 - **Context:** US-07 to US-10 assign one model per member, each on their own branch. The phrase "each member trains with the 70 %" can be read as "each member makes their own copy of the split", and that reading would break the project: four models trained on different customers cannot be compared in US-11, which evaluates all of them on `val_15`. Preprocessing done by hand before training would also leak validation and test information into the fitted values. D-006 already fixed the split and `AGENTS.md` section 1 states that `Train.csv` is split once and the original CSV files must never be modified; this decision makes the operational consequence explicit so nobody has to guess.
 - **Alternatives:** (1) Each member generates their own split with their own seed or row order; (2) each member keeps a personal cleaned copy (filtered rows, filled values, scaled columns) and trains on it; (3) one committed partition, read-only for everyone, with differences only in the model, its hyperparameters and the Pipeline steps that model needs.
@@ -247,7 +247,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
         python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" data/train_70.csv
 
    Any deviation from the reference checksums is reported before the results are compared.
-- **Approval:** Pending — to be set by a human team member.
+- **Approval:** Approved by Isbel, 2026-11-16.
 - **Consequences:** Individual freedom is limited to the model and to the Pipeline steps that model needs, not to the data, in exchange for a valid comparison in US-11 and reproducible runs. If the shared Pipeline changes, the models that depend on it must be re-run before their metrics are compared. If the team later needs a different partition (for example a sensitivity analysis), it is a new decision and a new file with a different name; the committed partitions are never replaced.
 
 ### D-014 — Categorical encoding strategy for the shared preprocessing Pipeline
