@@ -224,12 +224,26 @@ def test_compute_metrics_on_perfect_predictions():
     assert metrics["accuracy"] == 1.0
     assert metrics["macro_f1"] == 1.0
     for label in labels:
+        assert metrics[f"precision_{label}"] == 1.0
+        assert metrics[f"recall_{label}"] == 1.0
         assert metrics[f"f1_{label}"] == 1.0
 
 
 def test_compute_metrics_reports_every_class_even_if_absent():
     metrics = train_boosting.compute_metrics(["A", "A"], ["A", "A"], ["A", "B"])
-    assert metrics["f1_B"] == 0.0  # zero_division=0, not NaN
+    # zero_division=0, not NaN
+    assert metrics["f1_B"] == 0.0
+    assert metrics["precision_B"] == 0.0
+    assert metrics["recall_B"] == 0.0
+
+
+def test_per_class_report_contains_every_class_and_the_three_metrics():
+    labels = ["A", "B", "C", "D"]
+    metrics = train_boosting.compute_metrics(labels, labels, labels)
+    report = train_boosting.per_class_report(metrics, labels)
+    assert report.startswith("per-class val ")
+    for label in labels:
+        assert f"{label} P=1.000 R=1.000 F1=1.000" in report
 
 
 def test_encode_target_round_trips_string_labels():
@@ -244,7 +258,12 @@ def test_encode_target_round_trips_string_labels():
 
 
 @requires_sklearn
-def test_build_preprocessor_returns_a_numeric_matrix_without_nan():
+def test_build_preprocessor_returns_the_d011_d014_matrix():
+    # D-011 + D-014 fix the width on train_70: 3 numeric + 2 missing
+    # indicators + 2 binary + 1 Gender + 10 Profession (9 levels + Unknown)
+    # + 7 Var_1 + 3 Spending_Score = 28. Var_1 keeps the mode, so there is no
+    # Var_1_Unknown column: that column only appeared with the provisional
+    # single nominal_imputer.
     from src.preprocessing import make_features_target
 
     df = pd.read_csv(DATA_DIR / "train_70.csv")
@@ -253,12 +272,17 @@ def test_build_preprocessor_returns_a_numeric_matrix_without_nan():
     matrix = preprocessor.fit_transform(X, y)
     dense = matrix.toarray() if hasattr(matrix, "toarray") else matrix
 
-    assert dense.shape[0] == len(X)
-    assert dense.shape[1] > X.shape[1]  # the encoders expanded the categoricals
+    assert dense.shape == (len(X), 28)
     assert not pd.isna(dense).any()
     names = list(preprocessor.get_feature_names_out())
     assert "ID" not in names
     assert "Segmentation" not in names
+    assert "Gender_Male" in names
+    assert sum(name.startswith("Gender_") for name in names) == 1
+    assert "Profession_Unknown" in names
+    assert sum(name.startswith("Profession_") for name in names) == 10
+    assert sum(name.startswith("Var_1_") for name in names) == 7
+    assert "Var_1_Unknown" not in names
 
 
 @requires_sklearn

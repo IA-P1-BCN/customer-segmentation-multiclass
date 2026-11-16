@@ -1,10 +1,17 @@
 """US-09 - Boosting (XGBoost): baseline and improvement.
 
-The model is XGBoost 3.4.1 (D-0xx, pending record). This script keeps the
-shared preprocessing from US-05 as the only transformation step: it imports
-``build_preprocessing()`` and fills its parameters with the choices fixed by
-D-011 (imputation) and D-014 (encoding). Nothing is transformed by hand and
-nothing is fitted outside a training split (D-013, item 3).
+The model is XGBoost 3.4.1 (candidate decision D-0xx, to be numbered at merge).
+This script keeps the shared preprocessing from US-05 as the only
+transformation step: it imports ``build_preprocessing()`` and fills its
+parameters with the choices fixed by D-011 (imputation) and D-014 (encoding).
+Nothing is transformed by hand and nothing is fitted outside a training split
+(D-013, item 3).
+
+D-011 asks for the mode in ``Var_1`` and a constant ``Unknown`` level in
+``Profession``, but the shared module exposes a single ``nominal_imputer``
+slot (phase 2 pending). Instead of modifying the module, that slot receives a
+``ColumnTransformer`` that applies each imputation to its own columns, so the
+result is the D-011 imputation in full with the shared module untouched.
 
 Partitions (D-013):
 
@@ -80,24 +87,19 @@ RESULTS_COLUMNS = [
 ]
 
 # ---------------------------------------------------------------------------
-# PROVISIONAL PIPELINE
+# D-011 IMPUTATION IN THE NOMINAL SLOT
 # ---------------------------------------------------------------------------
-# ``build_preprocessing()`` (US-05, phase 1) has a single ``nominal_imputer``
-# for ``Gender``, ``Profession`` and ``Var_1``, but D-011 (approved) asks for a
-# constant ``Unknown`` level in ``Profession`` and the mode in ``Var_1``. With
-# one slot only, the configuration below imputes the three columns with
-# ``Unknown``, which adds a ``Var_1_Unknown`` column that D-011 does not
-# contemplate.
+# ``build_preprocessing()`` (US-05, phase 1) exposes a single
+# ``nominal_imputer`` for ``Gender``, ``Profession`` and ``Var_1``, while D-011
+# asks for the mode in ``Gender``/``Var_1`` and the constant level ``Unknown``
+# in ``Profession``. Instead of modifying the shared module, the slot receives
+# a ``ColumnTransformer``: each imputation is applied to its own columns inside
+# the same sub-pipeline, so the imputer still runs before the encoder and is
+# still fitted on ``train_70`` (or on the training part of each fold).
 #
-# Consequences: the code, the cross-validation harness and the partition
-# verification are final; the recorded metrics are provisional until US-05
-# phase 2 lands. Set this flag to False in the same PR that starts using the
-# corrected module, and re-run before comparing models in US-11.
-PIPELINE_IS_PROVISIONAL = True
-PROVISIONAL_NOTE = (
-    "provisional pipeline: single nominal_imputer pending US-05 phase 2 "
-    "(Unknown also applied to Var_1)"
-)
+# Measured on train_70: 28 columns, no NaN and no ``Var_1_Unknown`` column.
+# This is the D-011 + D-014 matrix, so the recorded metrics are final for this
+# configuration (no provisional flag: the preprocessing is the approved one).
 
 # Baseline: XGBoost with a neutral, untuned configuration.
 BASELINE_PARAMS = {
@@ -201,8 +203,11 @@ def build_preprocessor():
     """Return the shared preprocessor wired with D-011 and D-014.
 
     D-011 (approved): median plus missing indicators for the numeric columns,
-    mode for the binary ones, constant ``Unknown`` for ``Profession``.
-    D-014 (proposed): one-hot for binary and nominal columns, with
+    mode for the binary columns, mode for ``Gender`` and ``Var_1``, and the
+    constant level ``Unknown`` for ``Profession``. The single ``nominal_imputer``
+    slot receives a ``ColumnTransformer`` so each column gets the imputation the
+    decision assigns to it, without modifying the shared module.
+    D-014 (approved): one-hot for the binary and nominal columns, with
     ``drop="if_binary"`` so a two-level column contributes a single 0/1 column,
     and one-hot for ``Spending_Score`` (the ordinal order is not monotone with
     the segment, so it is not imposed). ``handle_unknown="ignore"`` keeps the
@@ -210,13 +215,26 @@ def build_preprocessor():
 
     Scaling is intentionally absent: tree-based models do not need it.
     """
+    from sklearn.compose import ColumnTransformer
     from sklearn.impute import SimpleImputer
     from sklearn.preprocessing import OneHotEncoder
+
+    nominal_imputer = ColumnTransformer(
+        [
+            (
+                "profession",
+                SimpleImputer(strategy="constant", fill_value="Unknown"),
+                ["Profession"],
+            ),
+            ("mode", SimpleImputer(strategy="most_frequent"), ["Gender", "Var_1"]),
+        ],
+        verbose_feature_names_out=False,
+    ).set_output(transform="pandas")
 
     return build_preprocessing(
         numeric_imputer=SimpleImputer(strategy="median", add_indicator=True),
         binary_imputer=SimpleImputer(strategy="most_frequent"),
-        nominal_imputer=SimpleImputer(strategy="constant", fill_value="Unknown"),
+        nominal_imputer=nominal_imputer,
         ordinal_imputer=SimpleImputer(strategy="most_frequent"),
         binary_encoder=OneHotEncoder(drop="if_binary", handle_unknown="ignore"),
         nominal_encoder=OneHotEncoder(drop="if_binary", handle_unknown="ignore"),
@@ -261,10 +279,25 @@ def encode_target(y: pd.Series):
 
 
 def compute_metrics(y_true, y_pred, classes: list[str]) -> dict[str, float]:
-    """Accuracy, macro-F1 and per-class F1 (D-010)."""
-    from sklearn.metrics import accuracy_score, f1_score
+    """Accuracy, macro-F1 and per-class precision, recall and F1 (D-010).
 
-    per_class = f1_score(
+    D-010 (Consequences) requires precision, recall and F1 per class on
+    validation, so the three are computed from the same predictions.
+    """
+    from sklearn.metrics import (
+        accuracy_score,
+        f1_score,
+        precision_score,
+        recall_score,
+    )
+
+    per_class_f1 = f1_score(
+        y_true, y_pred, labels=classes, average=None, zero_division=0
+    )
+    per_class_precision = precision_score(
+        y_true, y_pred, labels=classes, average=None, zero_division=0
+    )
+    per_class_recall = recall_score(
         y_true, y_pred, labels=classes, average=None, zero_division=0
     )
     metrics = {
@@ -273,9 +306,29 @@ def compute_metrics(y_true, y_pred, classes: list[str]) -> dict[str, float]:
             f1_score(y_true, y_pred, labels=classes, average="macro", zero_division=0)
         ),
     }
-    for label, value in zip(classes, per_class):
-        metrics[f"f1_{label}"] = float(value)
+    for label, precision, recall, f1 in zip(
+        classes, per_class_precision, per_class_recall, per_class_f1
+    ):
+        metrics[f"precision_{label}"] = float(precision)
+        metrics[f"recall_{label}"] = float(recall)
+        metrics[f"f1_{label}"] = float(f1)
     return metrics
+
+
+def per_class_report(metrics: dict[str, float], classes: list[str]) -> str:
+    """Compact precision/recall/F1 string for the notes of a validation row.
+
+    The results convention fixes the CSV columns (US-03), so the per-class
+    precision and recall that D-010 requires travel in ``notes`` next to the
+    F1 columns instead of widening the shared format.
+    """
+    parts = [
+        f"{label} P={metrics[f'precision_{label}']:.3f} "
+        f"R={metrics[f'recall_{label}']:.3f} "
+        f"F1={metrics[f'f1_{label}']:.3f}"
+        for label in classes
+    ]
+    return "per-class val " + "; ".join(parts)
 
 
 def cross_validate(
@@ -409,10 +462,13 @@ def run_config(
     on_train = fit_and_evaluate(X_train, y_train, X_train, y_train, params)
     on_val = fit_and_evaluate(X_train, y_train, X_val, y_val, params)
     gap_pp = (on_train["accuracy"] - on_val["accuracy"]) * 100
+    # Relative gap is informative only: D-010 item 3 and the professor's answer
+    # fix the pass/fail check on accuracy as an absolute difference.
+    relative_gap_pct = (
+        gap_pp / on_train["accuracy"] if on_train["accuracy"] else float("nan")
+    )
 
     notes_suffix = f" | {environment_note()}"
-    if PIPELINE_IS_PROVISIONAL:
-        notes_suffix += f" | {PROVISIONAL_NOTE}"
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Two different overfitting signals: inside the cross-validation (in-fold
@@ -445,7 +501,10 @@ def run_config(
             config,
             "val_15",
             on_val,
-            f"evaluated with the model fitted on train_70{split_notes(gap_pp)}"
+            f"evaluated with the model fitted on train_70{split_notes(gap_pp)}; "
+            f"{per_class_report(on_val, cv['classes'])}; "
+            f"relative accuracy gap={relative_gap_pct:.2f}% of train accuracy "
+            f"(D-010 checks the absolute one)"
             f"{notes_suffix}",
         ),
     ]
@@ -566,13 +625,6 @@ def main() -> None:
     print("Partition verification (D-013):")
     datasets = load_partitions()
     verify_partitions(datasets)
-
-    if PIPELINE_IS_PROVISIONAL:
-        print(
-            "\nWARNING: the shared preprocessing cannot yet apply D-011 in full\n"
-            "         (single nominal_imputer for Gender/Profession/Var_1).\n"
-            "         Metrics from this run are PROVISIONAL until US-05 phase 2.\n"
-        )
 
     if args.check:
         return
