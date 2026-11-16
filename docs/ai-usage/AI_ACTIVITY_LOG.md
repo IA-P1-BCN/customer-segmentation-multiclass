@@ -360,6 +360,7 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** `python -m src.segment_profile` run on 2026-11-16 14:31 UTC (Python 3.12.10, pandas 3.1.1): 5,647 rows, SHA-256 matches D-013; second run produced identical files. `pytest tests` → 28 passed (16 existing + 12 new). `val_15` and `test_15` not read; no CSV in `data/` modified. Main figures: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; High-spending customers A 189, B 268, C 292, D 105 (854 in total); median age 41 / 46 / 49 / 29; ever married 58.2 % / 73.7 % / 79.5 % / 29.0 % of the customers with a value.
 - **Outcome:** Implemented and executed; not committed. The document is a draft: the prioritisation rule and the campaign table are proposals, not team decisions, and no Decision Log record was created or changed.
 - **Pending tasks:** Team approval of the prioritisation rule, of the meaning of "on the train split" in the story and of the campaign table; add the feature importance from US-12 and the numeric EDA figures of PR #64 once merged; commit and PR into `develop` with Rita's authorization.
+- **Update 2026-11-16 (Claude Fable 5.2):** committed (`f73cfe4`, `11e90e1`) and pushed with Rita's authorization. Rita Pereira opened PR #69 into `develop` as the first part of US-13; issue #13 stays open until the US-12 feature importance is added. Pending: review of PR #69 and the team approvals listed above.
 
 ---
 
