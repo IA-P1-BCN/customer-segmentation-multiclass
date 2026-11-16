@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from src import train_random_forest as rf
@@ -46,9 +47,9 @@ def test_preprocessor_output_is_numeric_and_complete(frames):
     train_t = prep.fit_transform(X_train)
     val_t = prep.transform(X_val)
     # D-011 + D-014 on train_70: 3 numeric + 2 missing indicators + 2 binary
-    # + 2 Gender + 10 Profession (with "Unknown") + 7 Var_1 + 3 Spending_Score.
-    assert train_t.shape == (5647, 29)
-    assert val_t.shape == (1210, 29)
+    # + 1 Gender + 10 Profession (with "Unknown") + 7 Var_1 + 3 Spending_Score.
+    assert train_t.shape == (5647, 28)
+    assert val_t.shape == (1210, 28)
     assert not np.isnan(np.asarray(train_t, dtype=float)).any()
     assert not np.isnan(np.asarray(val_t, dtype=float)).any()
 
@@ -88,3 +89,33 @@ def test_append_results_is_append_only(tmp_path, monkeypatch):
     assert [r["partition"] for r in rows] == ["train_70", "val_15"]
     assert rows[0]["accuracy"] == "0.1235"  # rounded to 4 decimals
     assert b"\r" not in path.read_bytes()  # LF line endings on every platform
+
+
+def _cv_table(rows):
+    return pd.DataFrame(rows, columns=["name", "cv_macro_f1", "cv_macro_f1_sd", "train_cv_gap"])
+
+
+def test_selection_breaks_ties_by_smallest_gap():
+    # Standard error of the best = 0.0100 / sqrt(5) = 0.0045 -> tie threshold 0.5055.
+    table = _cv_table([
+        ("overfits", 0.5300, 0.0100, 0.0800),    # best score but gap above the limit
+        ("best", 0.5100, 0.0100, 0.0490),
+        ("tied", 0.5070, 0.0100, 0.0300),        # within one standard error, smaller gap
+        ("too_low", 0.5000, 0.0100, 0.0100),     # smallest gap but clearly worse
+    ])
+    best, reason = rf.select_configuration(table)
+    assert best["name"] == "tied"
+    assert "2 configs within one standard error" in reason
+    assert "3/4 configs" in reason
+
+
+def test_selection_keeps_best_when_nothing_is_tied():
+    table = _cv_table([("best", 0.5200, 0.0050, 0.0400), ("worse", 0.5000, 0.0050, 0.0100)])
+    assert rf.select_configuration(table)[0]["name"] == "best"
+
+
+def test_selection_falls_back_to_smallest_gap():
+    table = _cv_table([("a", 0.5200, 0.0050, 0.0900), ("b", 0.5000, 0.0050, 0.0600)])
+    best, reason = rf.select_configuration(table)
+    assert best["name"] == "b"
+    assert "no config met" in reason

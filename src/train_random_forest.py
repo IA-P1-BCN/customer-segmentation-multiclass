@@ -13,19 +13,23 @@ baseline
 tune
     Compares a grid of configurations with 5-fold stratified cross-validation
     on ``train_70`` (D-010 item 6), passing the full Pipeline so imputation and
-    encoding are fitted inside each fold. The selected configuration is the
-    best CV macro-F1 among those whose train - CV accuracy gap is below
-    5 points; it is then refitted on ``train_70`` and evaluated on ``val_15``
-    (official overfitting check, D-010 item 3). ``val_15`` is never used to
-    choose between configurations.
+    encoding are fitted inside each fold. Selection uses CV results only (see
+    ``select_configuration``): among the configurations whose train - CV
+    accuracy gap is below 5 points, those within one standard error of the
+    best CV macro-F1 are treated as tied, and the one with the smallest gap
+    is selected. It is then refitted on ``train_70`` and evaluated on
+    ``val_15`` (official overfitting check, D-010 item 3). ``val_15`` is
+    never used to choose between configurations.
 
 Every run appends rows to ``results/random_forest.csv`` following
 ``results/README.md`` (append-only). ``test_15`` is never read.
 
 Preprocessing follows D-011 (imputation, Approved) and D-014 (encoding,
-Proposed at the time of writing), wired through the parameters of
+Approved on 2026-11-16), wired through the parameters of
 ``src.preprocessing.build_preprocessing`` without modifying that module
-(D-014 item 5). If D-014 changes, re-run both stages (D-013, Consequences).
+(D-014 item 5). It yields 28 columns on ``train_70``. Rows recorded before
+the approval used the earlier D-014 proposal (29 columns, two ``Gender``
+columns); their notes say "D-014 (Proposed)".
 """
 
 from __future__ import annotations
@@ -59,11 +63,11 @@ RESULTS_PATH = ROOT / "results" / "random_forest.csv"
 MODEL_NAME = "random_forest"
 CLASSES = ("A", "B", "C", "D")
 MAX_ACCURACY_GAP = 0.05  # D-010 item 3: train - validation accuracy < 5 points
+CV_FOLDS = 5  # D-010 item 6
 
 # D-013 item 1: expected rows and SHA-256 of each partition. The hashes are
 # computed after normalising line endings to LF, which is how Git stores the
-# files. D-013 lists the hashes of a Windows (CRLF) checkout; both describe
-# the same content.
+# files and matches the values listed in D-013.
 PARTITIONS = {
     "train_70": (5647, "58da50146ebd3ceaff7ac539f4a9c1c1cb21f7055f3d2262b923feaf3e49e754"),
     "val_15": (1210, "f7243496ce9a93cdfb9104e6e6d7fb045c50788bdf5fd70f7586e5045bcb2db1"),
@@ -129,7 +133,7 @@ def build_preprocessor() -> ColumnTransformer:
         binary_imputer=SimpleImputer(strategy="most_frequent"),
         nominal_imputer=nominal_imputer,
         binary_encoder=OneHotEncoder(drop="if_binary", handle_unknown="ignore", sparse_output=False),
-        nominal_encoder=OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+        nominal_encoder=OneHotEncoder(drop="if_binary", handle_unknown="ignore", sparse_output=False),
         ordinal_encoder=OneHotEncoder(handle_unknown="ignore", sparse_output=False),
     )
 
@@ -199,7 +203,7 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
     print("  Per-class report on val_15:")
     print(classification_report(y_val, model.predict(X_val), digits=3))
     note = (f"accuracy gap {gap * 100:.2f} pts ({'meets' if passed else 'fails'} < 5); "
-            f"macro-F1 gap {f1_gap:.4f}; preprocessing D-011 + D-014 (Proposed)")
+            f"macro-F1 gap {f1_gap:.4f}; preprocessing D-011 + D-014 (Approved, 28 columns)")
     if extra_note:
         note = f"{extra_note}; {note}"
     common = {"run_timestamp_utc": timestamp, "seed": RANDOM_STATE, "model": MODEL_NAME,
@@ -208,6 +212,36 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
         {**common, "partition": "train_70", **train_m, "notes": note},
         {**common, "partition": "val_15", **val_m, "notes": note},
     ]
+
+
+# --- Selection --------------------------------------------------------------
+
+def select_configuration(table: pd.DataFrame) -> tuple[pd.Series, str]:
+    """Choose one row of the CV summary table; returns the row and the reason.
+
+    1. Keep the configurations whose train - CV accuracy gap is below the
+       D-010 limit (5 points).
+    2. Among them, treat as tied those whose CV macro-F1 is within one standard
+       error of the best one (standard error = fold standard deviation of the
+       best configuration / sqrt(number of folds)): differences smaller than
+       that are not distinguishable from fold-to-fold noise.
+    3. Among the tied ones, select the smallest gap (least overfitting); if
+       the gap is equal, the highest CV macro-F1.
+
+    Only cross-validation results on ``train_70`` are used.
+    """
+    eligible = table[table["train_cv_gap"] < MAX_ACCURACY_GAP]
+    if eligible.empty:
+        best = table.sort_values("train_cv_gap").iloc[0]
+        return best, "no config met the CV gap limit; smallest train-CV gap"
+    top = eligible.sort_values("cv_macro_f1", ascending=False).iloc[0]
+    std_error = top["cv_macro_f1_sd"] / np.sqrt(CV_FOLDS)
+    tied = eligible[eligible["cv_macro_f1"] >= top["cv_macro_f1"] - std_error]
+    best = tied.sort_values(["train_cv_gap", "cv_macro_f1"], ascending=[True, False]).iloc[0]
+    reason = (f"selected: smallest train-CV gap among {len(tied)} configs within one standard "
+              f"error ({std_error:.4f}) of the best CV macro-F1 ({top['cv_macro_f1']:.4f}); "
+              f"{len(eligible)}/{len(table)} configs with train-CV gap < 5 pts")
+    return best, reason
 
 
 # --- Stages -----------------------------------------------------------------
@@ -221,7 +255,7 @@ def run_baseline(frames, record: bool) -> None:
 
 def run_tuning(frames, record: bool) -> None:
     X_train, y_train = make_features_target(frames["train_70"])
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
     keys = list(TUNING_GRID)
     configs = [dict(zip(keys, values)) for values in itertools.product(*TUNING_GRID.values())]
     timestamp = _now()
@@ -235,7 +269,8 @@ def run_tuning(frames, record: bool) -> None:
         f1, f1_sd = scores["test_f1_macro"].mean(), scores["test_f1_macro"].std()
         train_acc = scores["train_accuracy"].mean()
         gap = train_acc - acc
-        summary.append({**params, "cv_accuracy": acc, "cv_macro_f1": f1, "train_cv_gap": gap})
+        summary.append({**params, "cv_accuracy": acc, "cv_macro_f1": f1,
+                        "cv_macro_f1_sd": f1_sd, "train_cv_gap": gap})
         cv_rows.append({
             "run_timestamp_utc": timestamp, "seed": RANDOM_STATE, "model": MODEL_NAME,
             "config": _config_str(f"tune-{i:02d}", params), "partition": "cv5fold",
@@ -246,16 +281,7 @@ def run_tuning(frames, record: bool) -> None:
         print(f"  {i:02d}/{len(configs)} {params} -> CV macro-F1 {f1:.4f}, "
               f"CV accuracy {acc:.4f}, train-CV gap {gap * 100:.2f} pts")
 
-    table = pd.DataFrame(summary)
-    eligible = table[table["train_cv_gap"] < MAX_ACCURACY_GAP]
-    if eligible.empty:
-        print("\nNo configuration meets the < 5 points train - CV gap; selecting the smallest gap.")
-        best = table.sort_values("train_cv_gap").iloc[0]
-        reason = "no config met the CV gap limit; smallest train-CV gap"
-    else:
-        best = eligible.sort_values("cv_macro_f1", ascending=False).iloc[0]
-        reason = (f"selected: best CV macro-F1 among {len(eligible)}/{len(table)} configs "
-                  f"with train-CV gap < 5 pts")
+    best, reason = select_configuration(pd.DataFrame(summary))
     best_params = {k: _py(best[k]) for k in keys}
     print(f"\n{reason}: {best_params}")
 

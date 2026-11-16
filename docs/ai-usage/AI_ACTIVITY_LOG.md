@@ -329,7 +329,7 @@ Its purpose is to help team members understand previous activities, identify com
 ### A-018 — US-08: random forest baseline and improvement
 
 - **Date:** 2026-11-13
-- **Note:** Numbered A-018 because A-017 is used by open PR #58 (Rita's EDA). If A-018 is taken when this is merged, use the next free number.
+- **Note:** Numbered A-018 because A-017 is Rita's EDA (PR #58, merged). If A-018 is taken when this is merged, use the next free number.
 - **Agent:** Claude Code (Claude Opus 5.5 / Claude Fable 5.2)
 - **Human owner:** Rita Pereira
 - **Objective:** Train the random forest on the shared Pipeline, first as a baseline and then improved, and record the metrics required by D-010 (issue #20, US-08).
@@ -344,6 +344,15 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** Recorded runs (Python 3.12.10, scikit-learn 1.9.1, seed 42), 64 rows in `results/random_forest.csv`. Baseline: accuracy 0.9683 train / 0.4983 val (gap 47.00 points, fails the < 5 limit), macro-F1 val 0.4849. Selected configuration (`n_estimators=300`, `max_depth=12`, `min_samples_leaf=20`, `max_features="sqrt"`): accuracy 0.5628 train / 0.5421 val (gap 2.06 points, meets the limit), macro-F1 0.5442 train / 0.5197 val; per-class F1 on val A 0.448, B 0.359, C 0.556, D 0.715; CV macro-F1 0.5084 (sd 0.0101), 35 of 60 configurations within the CV gap limit. `pytest tests` → 23 passed (16 existing + 7 new). Notebook executed from a clean kernel (execution counts 1–13, no error outputs). `test_15` never read.
 - **Outcome:** Implemented and executed; not committed (awaiting Rita's review). The selected configuration is fixed for US-11.
 - **Pending tasks:** Rita reviews the notebook; commit and PR into `develop`; re-run both stages if D-014 is changed before approval; raise the D-013 checksum finding with the team.
+- **Update 2026-11-16 (re-run after D-014 approval, Claude Fable 5.2):**
+  - D-014 was approved in PR #61 with a change to item 2: nominal columns use `OneHotEncoder(drop="if_binary", handle_unknown="ignore")`, so `Gender` yields one column (28 columns instead of 29). The D-013 checksum finding was resolved by PR #59 (LF hashes in the Decision Log).
+  - Changed `build_preprocessor()` accordingly, updated the width test (29 → 28) and the outdated comments, and re-ran both stages. The file is append-only: the 64 rows of 2026-11-13 are kept (their notes say "D-014 (Proposed)") and 64 new rows were appended (notes say "D-014 (Approved, 28 columns)"), 128 rows in total.
+  - Rebuilt and re-executed `03_model_random_forest.ipynb`: it now uses only the latest run of each stage and adds a comparison with the earlier run.
+  - Verification: `pytest tests` → 23 passed. Baseline: accuracy 0.9683 train / 0.4959 val (gap 47.24 points, fails), macro-F1 val 0.4830. Selected configuration (`n_estimators=300`, `max_depth=None`, `min_samples_leaf=20`, `max_features=0.5`): accuracy 0.5792 train / 0.5314 val (gap 4.78 points, meets the limit), macro-F1 0.5656 train / 0.5102 val; per-class F1 on val A 0.409, B 0.373, C 0.552, D 0.707; CV macro-F1 0.5116 (sd 0.0077), CV gap 4.94 points; 37 of 60 configurations within the CV gap limit. `test_15` never read.
+  - Finding: that configuration is within 0.3 points of the gap limit (CV gap 4.94, validation gap 4.78) and leads the next admissible ones by 0.002 CV macro-F1, less than its standard error (0.0034).
+  - Selection rule changed by decision of Rita Pereira (2026-11-16, after seeing the result above; proposed by the agent): among the configurations with train − CV gap < 5 points, those within one standard error of the best CV macro-F1 are treated as tied and the smallest gap is selected (`select_configuration()`, 3 new tests). Only CV results on `train_70` are used; `val_15` does not take part in the choice. Re-ran `--stage tune` (62 more rows appended, 190 in total; the previous run is kept for traceability).
+  - Final verification: `pytest tests` → 26 passed. Six configurations tied; selected `n_estimators=300`, `max_depth=6`, `min_samples_leaf=10`, `max_features=0.5` (CV macro-F1 0.5082, sd 0.0086, CV gap 3.01 points; its CV macro-F1 equals the tie threshold to four decimals). On `train_70` / `val_15`: accuracy 0.5438 / 0.5248 (gap 1.90 points, meets the limit), macro-F1 0.5321 / 0.5080; per-class F1 on val A 0.419, B 0.356, C 0.551, D 0.706. Compared with the rule without tie-break on `val_15`: macro-F1 0.5102 → 0.5080, accuracy gap 4.78 → 1.90 points. Notebook re-executed from a clean kernel (14 code cells, no errors); it uses the latest run of each stage and shows the three recorded runs side by side.
+  - Outcome: committed and pushed on 2026-11-16 with Rita's authorization; pull request into `develop` pending. The rule change should be communicated to the team before US-11.
 
 ---
 
