@@ -346,4 +346,24 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-019 — D-015 proposal: common rule to select each model's configuration
+
+- **Date:** 2026-11-16
+- **Note:** Numbered A-019 because A-018 is used by open PR #67 (random forest). If A-019 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Document, as a proposal for team approval, a single rule for choosing each model's final configuration, after the review of PRs #65, #66 and #67 showed that the three models did not choose in the same way.
+- **Activities:**
+  - Reviewed PR #65 (XGBoost), PR #66 (logistic regression) and PR #67 (random forest) in temporary worktrees: the first two choose the best validation macro-F1 among the configurations evaluated on `val_15`; the third chooses with cross-validation on `train_70` only.
+  - Read the acceptance criteria of US-08 (issue #20) and D-010: the user stories say "compare in validation" and D-010 item 6 asks for cross-validation. Reported the contradiction to Rita Pereira, who raised it in the team channel with two options.
+  - Isbel agreed with choosing by cross-validation and asked for the standard-error formula to be explicit. Pedro and Brian had not answered when this entry was written.
+  - Wrote D-015 (Status: Proposed) in `docs/ai-usage/DECISION_LOG.md`. D-010 is not modified. Three details were added by the agent and have not been discussed by the team: the standard deviation convention (`ddof=0`), the use of the mean of the fold scores instead of pooled out-of-fold predictions, and what to do when the selected configuration fails the official check on `val_15`.
+  - Correction recorded: an earlier figure given by the agent for the smallest XGBoost train − CV gap (5.47 points) was an approximation from the full-fit training accuracy; the value recorded in the `notes` of PR #65 is 6.19 points. D-015 quotes the recorded value.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (new record D-015), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no code or data changed and no model executed for this entry. Figures quoted in D-015 were read from the results files of PRs #65, #66 and #67 (`C=0.1_l2` validation macro-F1 0.4806, `C=1_l2_balanced` CV macro-F1 0.4857, XGBoost smallest train − CV gap 6.19 points, random forest standard error 0.0034 and validation gap 4.78 points). The effect of the rule on logistic regression and XGBoost was not executed. `git diff --check` passes.
+- **Outcome:** Proposed; committed, pushed and opened as a pull request into `develop` with Rita Pereira's authorization. Not approved: only a human team member can approve D-015.
+- **Pending tasks:** Answers from Pedro and Brian; human approval of D-015; if approved, PRs #65 and #66 re-derive their selected configuration before US-11.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
