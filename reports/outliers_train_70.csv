@@ -1,0 +1,4 @@
+variable,n,q1,q3,iqr_lower,iqr_upper,n_iqr,pct_iqr,n_zscore,pct_zscore,min,max
+Age,5647,31.0,53.0,-2.0,86.0,72,1.28,0,0.0,18.0,89.0
+Work_Experience,5084,0.0,4.0,-6.0,10.0,142,2.79,68,1.34,0.0,14.0
+Family_Size,5403,2.0,4.0,-1.0,7.0,65,1.2,65,1.2,1.0,9.0
