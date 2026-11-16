@@ -344,6 +344,23 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** Implemented and reviewed by Rita Pereira; submitted as a PR into `develop`. Points raised for other sections, not decisions: the Ever_Married/Spending_Score rule (Brian's leakage review); for the 47.5 % of null `Ever_Married` rows with Low spending, the approved mode imputation (D-011) is less certain, and the null signal (D-skew) is lost — only relevant if the team revisits D-011 (99 rows, 1.8 % of `train_70`).
 - **Pending tasks:** Review and squash-merge of the PR; comment in issue #10 that US-06 is split into one PR per section; Pedro integrates the findings into the final EDA.
 
+### A-020 — US-13: segment profiles, prioritisation proposal and campaign draft
+
+- **Date:** 2026-11-16
+- **Note:** Numbered A-020 because A-018 is the random forest entry in PR #67 and A-019 is the D-015 proposal entry in PR #68 (both open, not yet in `develop`). If A-020 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Start US-13 (issue #13) with the parts that do not depend on the model: the profile of each segment, a prioritisation proposal and the campaign table that US-15 integrates.
+- **Activities:**
+  - Read `AGENTS.md`, D-010, D-011, D-013, D-014, issues #13, #34, #35, #36 and #37, and the executed outputs of `02_eda_train70_gasto_estado_civil.ipynb`.
+  - Created branch `feature/segment-insights` from `develop` (`6e3c217`) and `src/segment_profile.py`: reads `data/train_70.csv` only, checks the row count and the SHA-256 (LF) of D-013 before computing, and writes a summary table (one row per segment plus `All`) and a long table with every categorical level. Percentages exclude missing values from the denominator; the number of missing values is recorded next to them. The output files carry no timestamp, so two runs give byte-identical files.
+  - Created `tests/test_segment_profile.py` (12 tests), mostly on an invented 8-customer dataset whose figures can be checked by hand.
+  - Wrote `reports/segment_insights.md` (in English, like the other reports, by decision of Rita Pereira): profile per segment, prioritisation, influential variables from the EDA and a campaign table. Rita Pereira chose the prioritisation rule to propose (most High-spending customers) among three options presented by the agent, and kept the segment names and the campaign texts drafted by the agent; the names are presented as hypotheses.
+- **Files:** Created: `src/segment_profile.py`, `tests/test_segment_profile.py`, `reports/segment_profile_train_70.csv`, `reports/segment_distributions_train_70.csv`, `reports/segment_insights.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m src.segment_profile` run on 2026-11-16 14:31 UTC (Python 3.12.10, pandas 3.1.1): 5,647 rows, SHA-256 matches D-013; second run produced identical files. `pytest tests` → 28 passed (16 existing + 12 new). `val_15` and `test_15` not read; no CSV in `data/` modified. Main figures: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; High-spending customers A 189, B 268, C 292, D 105 (854 in total); median age 41 / 46 / 49 / 29; ever married 58.2 % / 73.7 % / 79.5 % / 29.0 % of the customers with a value.
+- **Outcome:** Implemented and executed; not committed. The document is a draft: the prioritisation rule and the campaign table are proposals, not team decisions, and no Decision Log record was created or changed.
+- **Pending tasks:** Team approval of the prioritisation rule, of the meaning of "on the train split" in the story and of the campaign table; add the feature importance from US-12 and the numeric EDA figures of PR #64 once merged; commit and PR into `develop` with Rita's authorization.
+
 ---
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
