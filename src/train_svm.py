@@ -3,36 +3,32 @@
 Run from the repository root:
 
     python -m src.train_svm --stage baseline
-    python -m src.train_svm --stage tune --rule cv
+    python -m src.train_svm --stage tune
 
 Stages
 ------
 baseline
     Fits ``SVC`` with scikit-learn defaults on ``train_70`` (only the seed is
-    fixed) and evaluates it on ``train_70`` and ``val_15``.
+    fixed), records its 5-fold cross-validation scores (D-010 item 6) and
+    evaluates it on ``train_70`` and ``val_15``.
 tune
     Fits a small grid of configurations, compares them with 5-fold stratified
     cross-validation on ``train_70`` (D-010 item 6, full Pipeline inside every
     fold) and also records their train/validation results, because issue #22
     asks for every configuration's macro-F1, train/val gap and training time.
-    The final configuration is chosen with ``--rule`` (see ``select_cv`` and
-    ``select_val``), refitted on ``train_70`` and evaluated on ``val_15``.
+    The final configuration is chosen with ``select_cv``, refitted on
+    ``train_70`` and evaluated on ``val_15``.
 
-Selection rule (``--rule``)
----------------------------
-``cv`` (default)
-    Cross-validation only: among the configurations whose train - CV accuracy
-    gap is below 5 points, those within one standard error of the best CV
-    macro-F1 are tied, and the smallest gap wins. This is the rule proposed in
-    D-015 (still ``Proposed``), the one already followed by the random forest
-    (``src/train_random_forest.py``) and the one voted for by Brian on PR #68.
-``val``
-    Best ``val_15`` macro-F1 among the configurations whose train - validation
-    gap is below 5 points. This is how the logistic regression and the XGBoost
-    PRs chose (US-07, US-09), so it keeps the model comparable with them if the
-    team approves option A of D-015.
-The rule in force is written in the ``notes`` of every recorded row, so a run
-can never be mistaken for the other rule.
+Selection rule
+--------------
+D-015 (Approved by Brian on 2026-11-17) fixes one rule for the four models:
+among the configurations whose train - CV accuracy gap is below 5 points, those
+within one standard error of the best CV macro-F1 are treated as tied and the
+smallest gap wins; if none meets the limit, the configuration with the smallest
+gap is chosen and the limitation is declared. ``val_15`` takes no part in the
+choice: it is the official overfitting check (D-010 item 3) and the comparison
+split of US-11. Option A of D-015 (choosing on ``val_15``) was rejected, so only
+the approved rule is available here.
 
 Scaling
 -------
@@ -66,7 +62,13 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -80,7 +82,7 @@ DATA_DIR = ROOT / "data"
 RESULTS_PATH = ROOT / "results" / "svm.csv"
 MODEL_NAME = "svm"
 CLASSES = ("A", "B", "C", "D")
-MAX_ACCURACY_GAP = 0.05  # D-010 item 3: train - validation accuracy < 5 points
+MAX_ACCURACY_GAP = 0.05  # D-010 item 3, applied to train - CV (item 6) and to train - val_15
 CV_FOLDS = 5  # D-010 item 6
 
 # D-013 item 1: expected rows and SHA-256 of each partition, computed over the
@@ -177,16 +179,34 @@ def build_model(**params: Any) -> Pipeline:
     )
 
 
-def evaluate(model: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict[str, float]:
+def _metrics_from_pred(y_true: pd.Series, y_pred: Any) -> dict[str, float]:
     """Accuracy, macro-F1 and per-class F1 (D-010)."""
-    pred = model.predict(X)
-    per_class = f1_score(y, pred, labels=list(CLASSES), average=None)
+    per_class = f1_score(y_true, y_pred, labels=list(CLASSES), average=None)
     metrics = {
-        "accuracy": accuracy_score(y, pred),
-        "macro_f1": f1_score(y, pred, average="macro"),
+        "accuracy": accuracy_score(y_true, y_pred),
+        "macro_f1": f1_score(y_true, y_pred, average="macro"),
     }
     metrics.update({f"f1_{c}": v for c, v in zip(CLASSES, per_class)})
     return metrics
+
+
+def evaluate(model: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict[str, float]:
+    """Accuracy, macro-F1 and per-class F1 (D-010)."""
+    return _metrics_from_pred(y, model.predict(X))
+
+
+def _per_class_note(y_true: pd.Series, y_pred: Any) -> str:
+    """Per-class precision, recall and F1 on validation (D-010 Consequences).
+
+    Recorded in ``notes`` because the shared results header only carries the
+    per-class F1 columns; the XGBoost results use the same wording.
+    """
+    precision = precision_score(y_true, y_pred, labels=list(CLASSES), average=None)
+    recall = recall_score(y_true, y_pred, labels=list(CLASSES), average=None)
+    f1 = f1_score(y_true, y_pred, labels=list(CLASSES), average=None)
+    parts = [f"{c} P={p:.3f} R={r:.3f} F1={f:.3f}"
+             for c, p, r, f in zip(CLASSES, precision, recall, f1)]
+    return "per-class val " + "; ".join(parts)
 
 
 # --- Recording --------------------------------------------------------------
@@ -234,8 +254,10 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
     started = time.perf_counter()
     model.fit(X_train, y_train)
     fit_time = time.perf_counter() - started
-    train_m = evaluate(model, X_train, y_train)
-    val_m = evaluate(model, X_val, y_val)
+    train_pred = model.predict(X_train)
+    val_pred = model.predict(X_val)
+    train_m = _metrics_from_pred(y_train, train_pred)
+    val_m = _metrics_from_pred(y_val, val_pred)
     f1_gap = train_m["macro_f1"] - val_m["macro_f1"]
     print(f"\n[{label}] {params}")
     print(f"  accuracy  train {train_m['accuracy']:.4f} | val {val_m['accuracy']:.4f} | "
@@ -244,7 +266,7 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
           f"gap {f1_gap:.4f}")
     print(f"  fit time  {fit_time:.2f} s")
     print("  Per-class report on val_15:")
-    print(classification_report(y_val, model.predict(X_val), digits=3))
+    print(classification_report(y_val, val_pred, digits=3))
     note = (f"{_gap_note(train_m['accuracy'], val_m['accuracy'])}; "
             f"macro-F1 gap {f1_gap:.4f}; fit time {fit_time:.2f} s; "
             f"preprocessing D-011 + D-014 (Approved, 28 columns)")
@@ -256,7 +278,12 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
               "config": _config_str(label, params)}
     rows = [
         {**common, "partition": "train_70", **train_m, "notes": note},
-        {**common, "partition": "val_15", **val_m, "notes": note},
+        {
+            **common,
+            "partition": "val_15",
+            **val_m,
+            "notes": f"{note}; {_per_class_note(y_val, val_pred)}",
+        },
     ]
     summary = {
         "params": params,
@@ -274,7 +301,7 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
 # --- Selection --------------------------------------------------------------
 
 def select_cv(table: pd.DataFrame) -> tuple[pd.Series, str]:
-    """Choose one row of the CV summary table with the rule proposed in D-015.
+    """Choose one row of the CV summary table with the approved rule (D-015).
 
     1. Keep the configurations whose train - CV accuracy gap is below the
        D-010 limit (5 points).
@@ -282,7 +309,7 @@ def select_cv(table: pd.DataFrame) -> tuple[pd.Series, str]:
        error of the best one (fold standard deviation of the best / sqrt(folds)).
     3. Among the tied ones, select the smallest gap; if equal, the highest CV
        macro-F1. If none meets the gap limit, the smallest gap is selected and
-       the record says so.
+       the record says so (D-015 item 6).
     """
     eligible = table[table["train_cv_gap"] < MAX_ACCURACY_GAP]
     if eligible.empty:
@@ -292,76 +319,79 @@ def select_cv(table: pd.DataFrame) -> tuple[pd.Series, str]:
     std_error = top["cv_macro_f1_sd"] / np.sqrt(CV_FOLDS)
     tied = eligible[eligible["cv_macro_f1"] >= top["cv_macro_f1"] - std_error]
     best = tied.sort_values(["train_cv_gap", "cv_macro_f1"], ascending=[True, False]).iloc[0]
-    reason = (f"selected with CV (D-015 proposed): smallest train-CV gap among {len(tied)} configs "
-              f"within one standard error ({std_error:.4f}) of the best CV macro-F1 "
-              f"({top['cv_macro_f1']:.4f}); {len(eligible)}/{len(table)} configs with gap < 5 pts")
+    config_word = "config" if len(tied) == 1 else "configs"
+    reason = (f"selected with CV (D-015, approved 2026-11-17): smallest train-CV gap among "
+              f"{len(tied)} {config_word} within one standard error ({std_error:.4f}) of the "
+              f"best CV macro-F1 ({top['cv_macro_f1']:.4f}); "
+              f"{len(eligible)}/{len(table)} configs with gap < 5 pts")
     return best, reason
 
 
-def select_val(table: pd.DataFrame) -> tuple[pd.Series, str]:
-    """Choose the best ``val_15`` macro-F1 among the admissible configurations.
+# --- CV helper --------------------------------------------------------------
 
-    This mirrors how US-07 and US-09 chose (option A of D-015). ``val_15`` is
-    used to choose, so the recorded figure is optimistic; the rule is written
-    in every row to make that visible.
-    """
-    eligible = table[table["train_val_gap"] < MAX_ACCURACY_GAP]
-    if eligible.empty:
-        best = table.sort_values("train_val_gap").iloc[0]
-        return best, ("no config met the val gap limit; smallest train-val gap "
-                      "(declared, issue #22)")
-    best = eligible.sort_values("val_macro_f1", ascending=False).iloc[0]
-    reason = (f"selected on val_15 (option A of D-015): highest val macro-F1 "
-              f"({best['val_macro_f1']:.4f}) among {len(eligible)}/{len(table)} configs "
-              f"with train-val gap < 5 pts")
-    return best, reason
-
-
-SELECTORS = {"cv": select_cv, "val": select_val}
+def _cross_validate_config(label: str, params: dict[str, Any], X_train: pd.DataFrame,
+                           y_train: pd.Series, cv: StratifiedKFold,
+                           timestamp: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Run 5-fold CV for one configuration; return its recorded row and summary."""
+    scores = cross_validate(build_model(**params), X_train, y_train, cv=cv,
+                            scoring=["accuracy", "f1_macro"], return_train_score=True)
+    acc, acc_sd = scores["test_accuracy"].mean(), scores["test_accuracy"].std()
+    f1, f1_sd = scores["test_f1_macro"].mean(), scores["test_f1_macro"].std()
+    train_acc = scores["train_accuracy"].mean()
+    gap = train_acc - acc
+    row = {
+        "run_timestamp_utc": timestamp, "seed": RANDOM_STATE, "model": MODEL_NAME,
+        "config": _config_str(label, params), "partition": "cv5fold",
+        "accuracy": acc, "macro_f1": f1,
+        "notes": (f"mean of {cv.get_n_splits()} folds; sd accuracy {acc_sd:.4f}, "
+                  f"sd macro-F1 {f1_sd:.4f}; "
+                  f"in-fold train accuracy {train_acc:.4f}; train - CV gap {gap * 100:.2f} pts; "
+                  f"selection rule: D-015 (approved 2026-11-17)"),
+    }
+    summary = {**params, "cv_accuracy": acc, "cv_macro_f1": f1,
+               "cv_macro_f1_sd": f1_sd, "train_cv_gap": gap}
+    return row, summary
 
 
 # --- Stages -----------------------------------------------------------------
 
 def run_baseline(frames, record: bool) -> None:
+    X_train, y_train = make_features_target(frames["train_70"])
+    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
+    timestamp = _now()
+    cv_row, cv_summary = _cross_validate_config("baseline", {}, X_train, y_train, cv, timestamp)
+    print(f"\n[baseline] CV macro-F1 {cv_summary['cv_macro_f1']:.4f}, "
+          f"CV accuracy {cv_summary['cv_accuracy']:.4f}, "
+          f"train-CV gap {cv_summary['train_cv_gap'] * 100:.2f} pts")
     rows, _ = train_and_validate(
-        "baseline", {}, frames, _now(),
-        extra_note="scikit-learn defaults (kernel=rbf, C=1.0, gamma=scale)",
+        "baseline", {}, frames, timestamp,
+        extra_note=("scikit-learn defaults (kernel=rbf, C=1.0, gamma=scale); "
+                    "its CV row has the same hyperparameters"),
     )
     if record:
-        append_results(rows)
+        append_results([cv_row] + rows)
 
 
-def run_tuning(frames, record: bool, rule: str) -> None:
+def run_tuning(frames, record: bool) -> None:
     X_train, y_train = make_features_target(frames["train_70"])
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
     timestamp = _now()
     print(f"\nCross-validating {len(TUNING_GRID)} configurations "
-          f"(5-fold stratified on train_70, selection rule: {rule})...")
+          f"(5-fold stratified on train_70, rule: D-015) ...")
 
     cv_rows, cv_summary = [], []
     for i, params in enumerate(TUNING_GRID, start=1):
-        scores = cross_validate(build_model(**params), X_train, y_train, cv=cv,
-                                scoring=["accuracy", "f1_macro"], return_train_score=True)
-        acc, acc_sd = scores["test_accuracy"].mean(), scores["test_accuracy"].std()
-        f1, f1_sd = scores["test_f1_macro"].mean(), scores["test_f1_macro"].std()
-        train_acc = scores["train_accuracy"].mean()
-        gap = train_acc - acc
-        cv_summary.append({**params, "cv_accuracy": acc, "cv_macro_f1": f1,
-                           "cv_macro_f1_sd": f1_sd, "train_cv_gap": gap})
-        cv_rows.append({
-            "run_timestamp_utc": timestamp, "seed": RANDOM_STATE, "model": MODEL_NAME,
-            "config": _config_str(f"grid-{i:02d}", params), "partition": "cv5fold",
-            "accuracy": acc, "macro_f1": f1,
-            "notes": (f"mean of 5 folds; sd accuracy {acc_sd:.4f}, sd macro-F1 {f1_sd:.4f}; "
-                      f"in-fold train accuracy {train_acc:.4f}; train - CV gap {gap * 100:.2f} pts; "
-                      f"selection rule: {rule}"),
-        })
-        print(f"  {i:02d}/{len(TUNING_GRID)} {params} -> CV macro-F1 {f1:.4f}, "
-              f"CV accuracy {acc:.4f}, train-CV gap {gap * 100:.2f} pts")
+        row, summary = _cross_validate_config(f"grid-{i:02d}", params, X_train, y_train,
+                                              cv, timestamp)
+        cv_rows.append(row)
+        cv_summary.append(summary)
+        print(f"  {i:02d}/{len(TUNING_GRID)} {params} -> CV macro-F1 "
+              f"{summary['cv_macro_f1']:.4f}, CV accuracy {summary['cv_accuracy']:.4f}, "
+              f"train-CV gap {summary['train_cv_gap'] * 100:.2f} pts")
 
     # Issue #22 asks for every configuration's macro-F1, train/val gap and
     # training time, so each configuration is also fitted on the full train_70
-    # and evaluated on val_15 (recorded always; used to choose only for --rule val).
+    # and evaluated on val_15. val_15 is never used to choose.
     full_rows, full_summary = [], []
     for i, params in enumerate(TUNING_GRID, start=1):
         rows, summary = train_and_validate(f"grid-{i:02d}", params, frames, timestamp)
@@ -371,13 +401,11 @@ def run_tuning(frames, record: bool, rule: str) -> None:
         summary["train_cv_gap"] = cv_summary[i - 1]["train_cv_gap"]
         full_summary.append(summary)
 
-    table = pd.DataFrame(full_summary)
-    best, reason = SELECTORS[rule](table)
+    best, reason = select_cv(pd.DataFrame(full_summary))
     best_params = best["params"]
     print(f"\n{reason}: {best_params}")
 
-    # Mark the selected configuration in the rows already fitted above and add
-    # a dedicated pair of rows so the choice is explicit in the results file.
+    # A dedicated pair of rows makes the choice explicit in the results file.
     selected_rows, _ = train_and_validate("tuned", best_params, frames, timestamp,
                                           extra_note=reason, selected=True)
     if record:
@@ -387,9 +415,6 @@ def run_tuning(frames, record: bool, rule: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--stage", choices=["baseline", "tune"], required=True)
-    parser.add_argument("--rule", choices=sorted(SELECTORS), default="cv",
-                        help="Selection rule for --stage tune: 'cv' (D-015 proposed, "
-                             "default) or 'val' (option A, as US-07/US-09 did).")
     parser.add_argument("--no-record", action="store_true",
                         help="Print the results without appending them to results/svm.csv.")
     args = parser.parse_args(argv)
@@ -398,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.stage == "baseline":
         run_baseline(frames, record=not args.no_record)
     else:
-        run_tuning(frames, record=not args.no_record, rule=args.rule)
+        run_tuning(frames, record=not args.no_record)
     return 0
 
 

@@ -16,6 +16,7 @@ import csv
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.model_selection import StratifiedKFold
 
 from src import train_svm as svm
 from src.config import RANDOM_STATE
@@ -134,26 +135,27 @@ def test_cv_selection_falls_back_to_smallest_gap():
     assert "no config met" in reason
 
 
-def _val_table(rows):
-    return pd.DataFrame(rows, columns=["name", "val_macro_f1", "train_val_gap"])
+def test_per_class_note_has_precision_recall_and_f1(frames):
+    """D-010 Consequences: precision, recall and F1 per class on validation."""
+    sample = frames["train_70"].sample(n=300, random_state=RANDOM_STATE)
+    X, y = make_features_target(sample)
+    model = svm.build_model(kernel="linear", C=1.0).fit(X, y)
+    note = svm._per_class_note(y, model.predict(X))
+    assert note.startswith("per-class val A P=")
+    assert "R=" in note and "F1=" in note
+    assert len(note.split(";")) == 4  # one block per class
 
 
-def test_val_selection_takes_the_best_admissible_macro_f1():
-    table = _val_table([
-        ("overfits", 0.5400, 0.1200),  # best macro-F1 but gap above the limit
-        ("good", 0.5100, 0.0200),
-        ("worse", 0.5000, 0.0100),
-    ])
-    best, reason = svm.select_val(table)
-    assert best["name"] == "good"
-    assert "option A of D-015" in reason
-
-
-def test_val_selection_declares_when_nothing_is_admissible():
-    table = _val_table([("a", 0.5400, 0.1200), ("b", 0.5100, 0.0600)])
-    best, reason = svm.select_val(table)
-    assert best["name"] == "b"
-    assert "no config met" in reason
+def test_cv_helper_returns_a_cv5fold_row(frames):
+    """The baseline records its CV row, so its train-CV gap is checkable."""
+    sample = frames["train_70"].sample(n=300, random_state=RANDOM_STATE)
+    X, y = make_features_target(sample)
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
+    row, summary = svm._cross_validate_config("baseline", {}, X, y, cv, "2026-01-01T00:00:00Z")
+    assert row["partition"] == "cv5fold"
+    assert row["notes"].startswith("mean of 3 folds")
+    assert "train - CV gap" in row["notes"]
+    assert {"cv_macro_f1", "cv_macro_f1_sd", "train_cv_gap"} <= set(summary)
 
 
 def test_selected_params_come_from_the_grid():
@@ -163,17 +165,16 @@ def test_selected_params_come_from_the_grid():
     assert model.named_steps["model"].kernel == "rbf"
 
 
-def test_cli_default_rule_is_cv(monkeypatch):
-    captured = {}
+def test_cli_rejects_the_rejected_rule(monkeypatch):
+    """Option A of D-015 is rejected, so --rule must not be accepted."""
     monkeypatch.setattr(svm, "load_partitions", lambda: {"train_70": None, "val_15": None})
-    monkeypatch.setattr(svm, "run_tuning", lambda frames, record, rule: captured.update(rule=rule))
-    svm.main(["--stage", "tune"])
-    assert captured["rule"] == "cv"
+    with pytest.raises(SystemExit):
+        svm.main(["--stage", "tune", "--rule", "val"])
 
 
-def test_cli_accepts_the_val_rule(monkeypatch):
+def test_cli_runs_tuning_without_a_rule_flag(monkeypatch):
     captured = {}
     monkeypatch.setattr(svm, "load_partitions", lambda: {"train_70": None, "val_15": None})
-    monkeypatch.setattr(svm, "run_tuning", lambda frames, record, rule: captured.update(rule=rule))
-    svm.main(["--stage", "tune", "--rule", "val", "--no-record"])
-    assert captured["rule"] == "val"
+    monkeypatch.setattr(svm, "run_tuning", lambda frames, record: captured.update(ran=True))
+    svm.main(["--stage", "tune", "--no-record"])
+    assert captured["ran"]
