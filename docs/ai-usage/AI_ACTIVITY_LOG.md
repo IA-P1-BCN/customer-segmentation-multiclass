@@ -437,10 +437,10 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
-### A-024 — US-11: common selection rule, comparison table and freeze harness
+### A-028 — US-11: common selection rule, comparison table and freeze harness
 
 - **Date:** 2026-11-17
-- **Note:** Numbered A-024 because A-021 (SVM), A-022 (US-06 duplicates, PR #71) and A-023 (boosting, PR #65) are already used or reserved.
+- **Note:** Numbered A-028 because A-021 (SVM), A-022 (US-06 duplicates), A-023 (boosting), A-024 (logistic review), A-025 (US-12) and A-027 (D-017) are already in `develop` or reserved by open PRs; A-026 is left for the report draft (PR #74).
 - **Agent:** OpenCode (DeepSeek V4.1 Flash)
 - **Human owner:** Brian
 - **Objective:** US-11 (issue #27): make the approved D-015 rule reusable, assemble the D-010 comparison table and prepare the freeze of the winning model.

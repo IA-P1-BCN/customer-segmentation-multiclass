@@ -66,6 +66,20 @@ def test_build_table_skips_missing_and_unmarked_files(tmp_path):
     assert any("logistic_regression" in note for note in skipped)
 
 
+def test_load_selected_rows_accepts_the_logistic_marker(tmp_path):
+    """The logistic labels the choice with its hyperparameters and a D-015 note."""
+    path = tmp_path / "logistic_regression.csv"
+    note = "D-015 selected configuration; official check on the val_15 row of this run"
+    rows = [
+        ("2026-11-17T11:15:23Z", "C=1_l2_balanced", "train_70", 0.51, 0.50, 0.4, 0.3, 0.5, 0.7, note),
+        ("2026-11-17T11:15:23Z", "C=1_l2_balanced", "val_15", 0.50, 0.48, 0.4, 0.3, 0.5, 0.7, note),
+    ]
+    _write(path, rows)
+    train, val = cm.load_selected_rows(path)
+    assert train["config"] == "C=1_l2_balanced"
+    assert val["partition"] == "val_15"
+
+
 def test_choose_model_ignores_the_overfit_model(tmp_path):
     table = pd.DataFrame([
         {"model": "a", "gap_pp": 12.0, "macro_f1_val": 0.60},

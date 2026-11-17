@@ -47,12 +47,14 @@ _SD_PATTERNS = (
     r"sd macro-F1 ([\d.]+)",
     r"mean macro_f1 across folds=[\d.]+ \(sd ([\d.]+)\)",
     r"sd macro[- ]?f1[=: ]([\d.]+)",
+    r"macro_f1_std\s*=\s*([+-]?[\d.]+)",
 )
 _GAP_PATTERNS = (
     r"train - CV gap ([\d.]+) pts",
     r"train-CV gap ([\d.]+) pts",
     r"gap in-fold vs CV=([\d.]+) pp",
     r"gap in-fold vs CV=([\d.]+) pts",
+    r"train_cv_acc_gap\s*=\s*([+-]?[\d.]+)\s*pp",
 )
 
 

@@ -55,9 +55,11 @@ RESULTS_FILES = {
 }
 
 # A row is the chosen configuration when its label starts with "tuned" (random
-# forest, SVM) or its notes mark it (SVM "SELECTED", logistic "CANDIDATO").
+# forest, SVM) or its notes mark it. The logistic regression labels the chosen
+# configuration with its hyperparameters (`C=1_l2_balanced`) and writes
+# "D-015 selected configuration" / "seleccionada" in the notes.
 CHOSEN_PREFIXES = ("tuned",)
-CHOSEN_NOTES = ("SELECTED", "CANDIDATO")
+CHOSEN_NOTES = ("SELECTED", "selected", "seleccionada", "CANDIDATO")
 
 # model name -> how to build its Pipeline. ``call`` is "kwargs" when the
 # builder takes keyword arguments and "dict" when it takes one parameter dict.

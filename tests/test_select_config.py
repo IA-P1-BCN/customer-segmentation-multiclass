@@ -31,6 +31,15 @@ def test_parse_cv_notes_reads_both_formats_in_use(notes, sd, gap):
     assert parsed["train_cv_gap"] == pytest.approx(gap)
 
 
+def test_parse_cv_notes_reads_the_logistic_format():
+    """The logistic notebook records macro_f1_std= and train_cv_acc_gap= in points."""
+    note = ("PROVISIONAL | D-015 cv5fold media de 5 scores de fold; accuracy_std=0.010500; "
+            "macro_f1_std=0.010076; train_cv_acc_gap=+1.38 pp")
+    parsed = sc.parse_cv_notes(note)
+    assert parsed["cv_macro_f1_sd"] == pytest.approx(0.010076)
+    assert parsed["train_cv_gap"] == pytest.approx(0.0138)
+
+
 def test_parse_cv_notes_explains_what_is_missing():
     with pytest.raises(ValueError, match="fold sd of macro-F1"):
         sc.parse_cv_notes("OOF StratifiedKFold(5, seed src.config)")
