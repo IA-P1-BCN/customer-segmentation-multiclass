@@ -24,6 +24,14 @@ python -m pip install -r requirements.txt
 ```
 Reference environment: Python 3.12.3 (see A-009 / A-012).
 
+**macOS:** XGBoost (US-09) needs OpenMP. If `import xgboost` fails or the model
+test in `tests/test_train_boosting.py` crashes with a `libomp` error, install it
+once with Homebrew:
+
+```bash
+brew install libomp
+```
+
 ## Reproducibility
 - Global seed: `RANDOM_STATE = 42` in `src/config.py`. Always import it; never hardcode.
 - Split: `python src/split_data.py` generates `data/train_70.csv`, `data/val_15.csv` and `data/test_15.csv`.
@@ -44,6 +52,7 @@ AGENTS.md
 ## How to run
 - **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All".
 - **Models:** notebooks/scripts for logistic regression, random forest, boosting and SVM (importing the shared Pipeline from `src/`).
+- **Boosting (US-09):** `python src/train_boosting.py --baseline --grid --refine` records the 27 runs. `python src/train_boosting.py --select` cross-validates the 26 candidates and appends the configuration chosen with D-015, marked `SELECTED` in `results/boosting.csv`.
 - **App:** *(pending — US-15)* `streamlit run app.py`
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
 - **Tests:** `python -m pytest`

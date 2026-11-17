@@ -417,6 +417,22 @@ Its purpose is to help team members understand previous activities, identify com
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
 
+### A-027 — D-017 proposal: data used to fit the frozen model
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-027 because A-018, A-020 and A-023 to A-026 are used by open PRs. If A-027 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Sonnet 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Record as a proposed decision whether the frozen model of US-11 is fitted on `train_70` or on `train_70 + val_15`, after Isbel asked that it not be decided by whoever implements the code.
+- **Activities:**
+  - Searched `develop` and the branches of PRs #69, #72, #73 and #74 for an existing decision: none exists. `src/compare_models.py` (PR #72) offers both options with `train_70` as the default; `src/evaluate_final.py` (PR #73) refuses `val_15` when `trained_on` is `train_and_val`.
+  - Wrote D-017 (Proposed) with two alternatives, a recommendation for `train_70` only and the consequences of each option. Pedro's vote for `train_70` (team channel, relayed by Rita Pereira) is recorded; Brian's vote for `train_70` (same channel, relayed by Rita Pereira) and Isbel's vote for `train_70` (same channel, relayed by Rita Pereira) were added later the same day.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-017 added), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no model executed, no data read or modified, no metric created. Row counts come from D-013; the 21.4 % figure is 1,210 / 5,647.
+- **Outcome:** D-017 proposed in a PR into `develop`. The approval status is left to a human team member other than the author.
+- **Pending tasks:** Votes of Isbel and Brian; human approval; then US-11 freezes the model with the approved option.
+
+
 ### A-022 — US-06 EDA on train_70: duplicate profiles and integration
 
 - **Date:** 2026-11-17
@@ -471,3 +487,25 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** The evaluation instrument is ready and waiting for the frozen model of US-11 (open PR #72).
 - **Update 2026-11-17 after the review of PR #73 (Rita Pereira):** three fixes. (1) The script reads `trained_on` from the joblib payload: if the frozen model was fitted on `train_70 + val_15`, it refuses to score `val_15` (the metrics and importance would be optimistic) and skips the validation reference on `test_15`. (2) Permutation importance runs on `val_15` only; on `test_15` it is off unless `--importance` is passed, as issue #29 asks. (3) A second evaluation of `test_15` is refused when a report already exists, unless `--allow-test-rerun`; every test run writes its own timestamped report, so the single evaluation leaves a trace. Renumbered from A-023 to A-025 because A-023 is used by PR #65 and A-024 by PR #72.
 - **Pending tasks:** Merge PR #72 and the three model PRs (#65, #66, #67); freeze the winner on `train_70` (team decision recorded by Rita Pereira); run the evaluation once on `val_15`, then once on `test_15` with `--allow-test`; record the figures and the importance in the results registry and in the technical report (US-16).
+
+---
+
+### A-023 — US-09: boosting configuration chosen with cross-validation (D-015)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-023 because A-019, A-021 and A-022 are already in `develop` and A-020 is used by open PR #69.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** finish US-09 (issue #21) with D-015 approved: make `src/train_boosting.py` choose its configuration by cross-validation and record the choice in `results/boosting.csv`.
+- **Activities:**
+  - Added `--select` to `src/train_boosting.py`, with `select_cv()` implementing the approved rule (D-015 items 2, 3, 4 and 6) with the same wording as `src/train_svm.py`, so the four models of US-11 are chosen the same way. `val_15` takes no part in the decision.
+  - Ran it on 2026-11-17 over the 26 candidate configurations already recorded (18 grid + 8 refinement; the baseline with defaults is the reference, not a candidate). No retraining of the 27 recorded runs: the existing `cv5fold` rows already carried the fold means, the standard deviation and the train−CV gap that the rule needs.
+  - No candidate met the 5-point train−CV gap limit (the smallest is 6.19 points), so D-015 item 6 applies: the smallest gap wins, `refine n_estimators=300, learning_rate=0.05, min_child_weight=5` (`max_depth=3`, `subsample=1.0`, `colsample_bytree=0.8`, seed 42).
+  - Appended three rows marked `SELECTED` to `results/boosting.csv`: CV (accuracy 0.5215, macro-F1 0.5049), `train_70` (0.5762 / 0.5608) and `val_15` (accuracy 0.5430, macro-F1 0.5227, train−val gap 3.32 points, within the limit), the last one with per-class precision, recall and F1.
+  - Fixed `SELECTED_PARAMS` in the module so US-11 imports the choice instead of copying hyperparameters by hand.
+  - Added three tests: the tie within one standard error, the fallback when no configuration is admissible and the check that `SELECTED_PARAMS` is one of the recorded candidates. The suite passes (42 tests).
+  - README: macOS note (`brew install libomp`, needed by XGBoost) and the `--select` usage.
+- **Files:** Modified: `src/train_boosting.py`, `tests/test_train_boosting.py`, `README.md`, `results/boosting.csv` (three appended rows), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests` passes (42 tests). The selection run starts with the D-013 partition check (row counts, checksums and zero ID overlap between partitions; `test_15` is never read). The selected `val_15` figures (accuracy 0.5430, macro-F1 0.5227) match the independent calculation made by the reviewer of PR #65 from the same CV rows.
+- **Outcome:** PR #65 updated; not merged.
+- **Pending tasks:** Approval and merge of PR #65 by a team member other than the author; the chosen configuration feeds US-11.
