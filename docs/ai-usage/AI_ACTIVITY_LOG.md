@@ -467,6 +467,7 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** Documentation only; no model executed and no data modified. Every figure was read from a recorded results file, a merged report or an approved decision; `test_15` was not read. `git diff --check` passes.
 - **Outcome:** Draft committed with Rita Pereira's authorization. Not pushed yet.
 - **Pending tasks:** Sections 6 and 7 (US-12 by Brian, PR #73; US-14 by Pedro, not started); US-11 decision and freezing; check the figures against `develop` once PRs #65, #66, #67 and #69 are merged; review of each section by its owner and of the whole report by Pedro.
+- **Update 2026-11-17, afternoon (Claude Sonnet 5.5, with Rita Pereira's authorization):** D-017 was approved by Brian the same day (`train_70` only). Sections 1 and 3 now state it instead of leaving the choice pending, the references to PR #66 and PR #73 say "merged" (sections 3, 5 and 10), and D-017 is listed in the decision references (section 10). No figure was changed or recomputed and no data was read. Still pending: the final model and the test evaluation (US-11, US-12), the error analysis (US-14), checking the figures against `develop` once PR #65 and PR #67 are merged, and the review.
 ---
 
 ### A-025 — US-12: final evaluation script of the frozen model (test and importance)

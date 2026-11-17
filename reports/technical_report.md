@@ -25,7 +25,9 @@ The project predicts the segment (A, B, C or D) of a customer from nine demograp
 
 On the validation split (`val_15`), the four selected configurations meet the overfitting limit (train − validation accuracy below 5 points) and clearly beat the majority-class baseline: macro-F1 between 0.4786 and 0.5227, against 0.1097 for the baseline. **XGBoost has the highest validation macro-F1 (0.5227, accuracy 0.5430).** This ranking is provisional until the team records the US-11 decision and freezes the model.
 
-> **Pending (US-11, US-12):** chosen model, whether it is refitted on `train_70` or on `train_70 + val_15`, test metrics, confusion matrix and feature importance.
+> **Fixed by D-017 (Approved by Brian, 2026-11-17):** the frozen model is fitted on `train_70` only.
+>
+> **Pending (US-11, US-12):** chosen model, test metrics, confusion matrix and feature importance.
 
 All models find segment D easiest (F1 about 0.69–0.71) and segment B hardest (F1 about 0.30–0.37). B and C are the pair that the data themselves mix most often (section 4.4).
 
@@ -106,11 +108,13 @@ Every model chose its final configuration with the same rule, approved by the te
 
 Among the models that meet the overfitting limit on `val_15`, the one with the highest validation macro-F1 is chosen (D-010, Consequences, read as the comparison between models per D-015 item 9). The comparison table and the freezing tool are in PR #72.
 
-> **Pending (US-11):** decision recorded in the Decision Log, and the team's choice between refitting the frozen model on `train_70` or on `train_70 + val_15`.
+> **Decision D-017 (Approved by Brian, 2026-11-17; Pedro, Brian and Isbel voted for it):** the frozen model is fitted on `train_70` only, not on `train_70 + val_15`, so its `val_15` figures stay held-out figures and the official check of D-010 keeps its meaning.
+>
+> **Pending (US-11):** record the choice of the final model in the Decision Log.
 
 ### 3.5 Final evaluation (US-12)
 
-The frozen model is evaluated on `test_15` **once**. The evaluation script (PR #73) refuses to read `test_15` without an explicit flag.
+The frozen model is evaluated on `test_15` **once**. The evaluation script (PR #73, merged) refuses to read `test_15` without an explicit flag.
 
 ## 4. Exploratory analysis
 
@@ -156,7 +160,7 @@ The most frequent mixed pair is **B + C** (55 profiles), followed by A + B (30).
 
 ## 5. Models and validation results
 
-*Owner: Brian. Sources: `results/svm.csv` (merged), `results/random_forest.csv` (PR #67), `results/boosting.csv` (PR #65), `results/logistic_regression.csv` (PR #66).*
+*Owner: Brian. Sources: `results/svm.csv` (merged), `results/random_forest.csv` (PR #67), `results/boosting.csv` (PR #65), `results/logistic_regression.csv` (PR #66, merged).*
 
 ### 5.1 Models and configurations
 
@@ -306,7 +310,7 @@ python src/train_boosting.py --select              # XGBoost (PR #65)
 | 3.1 | Missing values, medians | `reports/data_quality.md`, D-011 |
 | 3.1 | 28 columns | D-014; checks in each model's tests |
 | 4 | EDA | `reports/eda_train70_sintesis.md`, `reports/duplicates_train_70.csv`; `ID` vs segment test in `03_eda_train70_brian_outliers_fuga.ipynb` |
-| 5 | Logistic regression | `results/logistic_regression.csv`, run 2026-11-17T11:15:23Z (PR #66); majority class from the same file |
+| 5 | Logistic regression | `results/logistic_regression.csv`, run 2026-11-17T11:15:23Z (PR #66, merged); majority class from the same file |
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
 | 5 | Random forest | `results/random_forest.csv`, baseline 2026-11-17T10:12:28Z and tuning 2026-11-17T08:49:04Z (PR #67) |
 | 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65) |
@@ -314,4 +318,4 @@ python src/train_boosting.py --select              # XGBoost (PR #65)
 
 ### 10.3 Decisions cited
 
-D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, proposed).
+D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, proposed), D-017 (data used to fit the frozen model, approved).
