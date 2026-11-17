@@ -346,6 +346,26 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-019 — D-015 proposal: common rule to select each model's configuration
+
+- **Date:** 2026-11-16
+- **Note:** Numbered A-019 because A-018 is used by open PR #67 (random forest). If A-019 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Document, as a proposal for team approval, a single rule for choosing each model's final configuration, after the review of PRs #65, #66 and #67 showed that the three models did not choose in the same way.
+- **Activities:**
+  - Reviewed PR #65 (XGBoost), PR #66 (logistic regression) and PR #67 (random forest) in temporary worktrees: the first two choose the best validation macro-F1 among the configurations evaluated on `val_15`; the third chooses with cross-validation on `train_70` only.
+  - Read the acceptance criteria of US-08 (issue #20) and D-010: the user stories say "compare in validation" and D-010 item 6 asks for cross-validation. Reported the contradiction to Rita Pereira, who raised it in the team channel with two options.
+  - Isbel agreed with choosing by cross-validation and asked for the standard-error formula to be explicit. Pedro and Brian had not answered when this entry was written.
+  - Wrote D-015 (Status: Proposed) in `docs/ai-usage/DECISION_LOG.md`. D-010 is not modified. Three details were added by the agent and have not been discussed by the team: the standard deviation convention (`ddof=0`), the use of the mean of the fold scores instead of pooled out-of-fold predictions, and what to do when the selected configuration fails the official check on `val_15`.
+  - Correction recorded: an earlier figure given by the agent for the smallest XGBoost train − CV gap (5.47 points) was an approximation from the full-fit training accuracy; the value recorded in the `notes` of PR #65 is 6.19 points. D-015 quotes the recorded value.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (new record D-015), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no code or data changed and no model executed for this entry. Figures quoted in D-015 were read from the results files of PRs #65, #66 and #67 (`C=0.1_l2` validation macro-F1 0.4806, `C=1_l2_balanced` CV macro-F1 0.4857, XGBoost smallest train − CV gap 6.19 points, random forest standard error 0.0034 and validation gap 4.78 points). The effect of the rule on logistic regression and XGBoost was not executed. `git diff --check` passes.
+- **Outcome:** Proposed; committed, pushed and opened as a pull request into `develop` with Rita Pereira's authorization. Not approved: only a human team member can approve D-015.
+- **Pending tasks:** Answers from Pedro and Brian; human approval of D-015; if approved, PRs #65 and #66 re-derive their selected configuration before US-11.
+- **Update 2026-11-17 (Claude Opus 5.5):** updated D-015 with Rita Pereira's authorization after the team discussion. Item 3: admissibility cut on the train − CV gap raised from 5 to 10 points on the cross-validation scale (Pedro's amendment, chosen by the team in the channel as relayed by Rita Pereira); the official 5-point check on `val_15` is unchanged. Item 6: Brian's precision (the fallback configuration must still pass the official check and the limitation is declared in US-16). Item 7: explicit fallback order, which the first version left undefined after the tied group (requested in Isbel's audit). Item 8: per-class precision, recall and F1 on `val_15` in the notes. Evidence: effect of the cut on the random forest from the run of 2026-11-17 (5 points: `max_depth=6`, `val_15` macro-F1 0.5080, gap 1.90; 10 points: `max_depth=10`, `min_samples_leaf=20`, macro-F1 0.5066, gap 4.73). Agreement: votes of Isbel, Brian and Pedro. The status stays Proposed: approval is left to a team member other than the proposer. Documentation only; `git diff --check` passes.
+- **Update 2026-11-17, later (Claude Opus 5.5):** Pedro changed his vote to 5 points for schedule reasons and the team kept 5 (relayed by Rita Pereira). With her authorization, item 3 was set back to 5 points and the 10-point cut, the reasons for not adopting it and its measured effect were recorded in Evidence and limits as known technical debt, as Pedro asked. Items 6, 7 and 8 keep the changes of the previous update. XGBoost figures are attributed to Pedro and were not re-executed. Status stays Proposed. Documentation only; `git diff --check` passes.
+
 ### A-021 — US-10: SVM baseline and improvement (D-015 option B)
 
 - **Date:** 2026-11-17
