@@ -1,0 +1,8 @@
+# Line-ending policy.
+#
+# The project checksums its data files with SHA-256 (D-013). Every CSV must
+# therefore reach every machine with the same bytes, so Git stores them with
+# LF and checks them out with LF on Windows, macOS and Linux. Without this
+# file, `core.autocrlf=true` on Windows would write CRLF and the checksums in
+# D-013 would only match on one operating system.
+*.csv text eol=lf
