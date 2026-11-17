@@ -291,7 +291,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   2. **Result:** C is the **provisional first priority** (292 High-spending customers, 34.2 % of all of them) and B is also a **segment of interest** (268, 31.4 %). The difference between them is small, so C is not presented as clearly ahead of B.
   3. **"On the train split"** means computed with the 5,647 customers of `data/train_70.csv`; not with the full `Train.csv`, `val_15`, `test_15` or the population of customers. Documents that cite these figures keep that reference explicit.
   4. The result is described as based on a proxy (`Spending_Score`) and on a description of `train_70`, not on revenue.
-- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in her review of PR #69 (2026-11-17), and asked for both to be recorded in this log.
+- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review), and asked for both to be recorded in this log.
 - **Approval:** Pending. To be approved by a human team member.
 - **Consequences:** `reports/segment_insights.md` (section 3) applies this rule; the technical report (US-16) and the business presentation (US-17) cite C as provisional first priority together with B. The campaign table (US-13 section 5, integrated by US-15) is not part of this record and is approved separately.
 
