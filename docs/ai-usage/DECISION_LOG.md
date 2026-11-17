@@ -281,7 +281,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 
 - **Date:** 2026-11-17
 - **Note:** Numbered D-016 when D-015 was still proposed in PR #68. D-015 and D-017 are now in `develop`, so D-016 is free; it sits before D-015 and D-017 only because of the merge order. If D-016 is taken when this is merged, use the next free number.
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Business analysis / Segment prioritisation
 - **Context:** US-13 (issue #13) asks to prioritise a segment "using the size of the segment and the % of High `Spending_Score` on the train split", with a rule approved by the team and the team confirming what "on the train split" means. The figures come from `src/segment_profile.py`, run on 2026-11-16 on `data/train_70.csv` (5,647 rows, SHA-256 checked against D-013) and recorded in `reports/segment_profile_train_70.csv`: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; share of High spending A 13.7 %, B 20.6 %, C 21.2 %, D 6.6 %; High-spending customers A 189, B 268, C 292, D 105 (854 in total). `Spending_Score` is a proxy of customer value: the dataset has no income or purchase amounts.
 - **Alternatives:** (1) most High-spending customers, the product of size and share of High spending; (2) highest share of High spending, which ignores size (C 21.2 %, almost tied with B 20.6 %); (3) size only, which selects D, the segment that spends the least (6.6 % High).
@@ -291,8 +291,8 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   2. **Result:** C is the **provisional first priority** (292 High-spending customers, 34.2 % of all of them) and B is also a **segment of interest** (268, 31.4 %). The difference between them is small, so C is not presented as clearly ahead of B.
   3. **"On the train split"** means computed with the 5,647 customers of `data/train_70.csv`; not with the full `Train.csv`, `val_15`, `test_15` or the population of customers. Documents that cite these figures keep that reference explicit.
   4. The result is described as based on a proxy (`Spending_Score`) and on a description of `train_70`, not on revenue.
-- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review), and asked for both to be recorded in this log.
-- **Approval:** Pending. To be approved by a human team member.
+- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review), and asked for both to be recorded in this log. Pedro approved the rule and the reading of "on the train split" as written here in his review of PR #69 (2026-11-17), after reproducing the figures, and asked for the status to be changed in this record; the change was made by Rita Pereira on his instruction.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #69, on 2026-11-17. "On the train split" = train_70; C is the provisional first priority and B a segment of interest (24 customers apart).
 - **Consequences:** `reports/segment_insights.md` (section 3) applies this rule; the technical report (US-16) and the business presentation (US-17) cite C as provisional first priority together with B. The campaign table (US-13 section 5, integrated by US-15) is not part of this record and is approved separately.
 
 ---

@@ -98,6 +98,16 @@ def test_spending_shares_add_up_to_100(profile: pd.DataFrame) -> None:
     assert profile[columns].sum(axis=1).tolist() == pytest.approx([100.0] * 3, abs=0.2)
 
 
+def test_spending_percentages_exclude_missing_values(toy: pd.DataFrame) -> None:
+    # One B customer loses its Average value: B becomes High, High, High and
+    # one missing -> 3 of 3 (100 %), not 3 of 4 (75 %).
+    toy.loc[7, "Spending_Score"] = None
+    profile = segment_profile.build_profile_table(toy).set_index("segment")
+    assert profile.loc["B", "pct_spending_high"] == 100.0
+    assert profile.loc["B", "pct_spending_average"] == 0.0
+    assert profile.loc["B", "n_spending_high"] == 3
+
+
 def test_distribution_table_keeps_levels_absent_from_a_segment(toy: pd.DataFrame) -> None:
     table = segment_profile.build_distribution_table(toy)
     assert list(table.columns) == [

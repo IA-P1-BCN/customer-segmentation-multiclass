@@ -13,9 +13,9 @@ The technical report (US-16) and the business presentation (US-17) cite the figu
 | Part | Status |
 |---|---|
 | Profile per segment (section 2) | Computed from a recorded run |
-| Prioritisation rule (section 3) | Proposed in D-016; agreed by Isbel in comments shared in the team channel, pending formal approval |
+| Prioritisation rule (section 3) | Approved in D-016 (review of PR #69 by Pedro, 2026-11-17) |
 | Feature importance from the model (section 4) | Pending US-12 |
-| Campaign table (section 5) | Draft revised after Isbel's comments in the team channel, pending team approval |
+| Campaign table (section 5) | Approved as business hypotheses (review of PR #69 by Pedro, 2026-11-17); not a model result |
 
 ## 1. Where the figures come from
 
@@ -86,9 +86,9 @@ B and C are very similar. The model can be expected to have trouble separating t
 
 ## 3. Segment to prioritise (N2)
 
-> **Status: proposed in D-016, pending formal approval.** Isbel agreed with the rule and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review). "On the train split" means computed with the 5,647 customers of `train_70.csv`, not with the full `Train.csv` and not with the population of customers.
+> **Status: approved in D-016 (review of PR #69 by Pedro, 2026-11-17).** Isbel had agreed with the rule and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review). "On the train split" means computed with the 5,647 customers of `train_70.csv`, not with the full `Train.csv` and not with the population of customers.
 
-**Proposed rule:** prioritise the segment with the most High-spending customers.
+**Rule:** prioritise the segment with the most High-spending customers.
 
 The reason is that the story asks for two criteria, the size of the segment and its share of High spending, and the number of High-spending customers is the product of the two. A large segment that spends little does not come first, and neither does a small one that spends a lot.
 
@@ -102,11 +102,11 @@ The reason is that the story asks for two criteria, the size of the segment and 
 
 **Result with this rule: C is the provisional first priority, and B is also a segment of interest.** C has 292 High-spending customers (34.2 % of all of them) and B is close behind with 268 (31.4 %), so C should not be presented as clearly ahead of B. Together they hold 65.6 % of the High-spending customers.
 
-The result depends on the rule, which is why the team has to approve it:
+The result depends on the rule, which is why it was recorded as a team decision (D-016):
 
 | Rule | Segment selected | Comment |
 |---|---|---|
-| Most High-spending customers (proposed) | C (292) | Combines size and spending |
+| Most High-spending customers (D-016) | C (292) | Combines size and spending |
 | Highest % of High spending | C (21.2 %) | Almost tied with B (20.6 %); ignores size |
 | Size only | D (28.1 %) | It is the segment that spends the least (6.6 % High) |
 
@@ -121,32 +121,33 @@ This section combines two sources. The second one does not exist yet.
 
 ### 4.1. What the EDA says
 
-Source: `02_eda_train70_gasto_estado_civil.ipynb`, section 8, on `train_70`. Cramér's V measures how much one variable helps to guess another: 0 is not at all and 1 is completely.
+Sources, all computed on `train_70`:
 
-| Variable | Cramér's V with the segment | Reading |
-|---|---:|---|
-| `Ever_Married` | 0.408 | The one that best separates D (29.0 % married) from the rest |
-| `Spending_Score` | 0.302 | Separates D (86.8 % Low) from B and C |
+- `02_eda_train70_gasto_estado_civil.ipynb`, section 8: Cramér's V, which measures how much one categorical variable helps to guess another (0 is not at all, 1 is completely).
+- `03_eda_train70_brian_outliers_fuga.ipynb` (PR #64, merged): the accuracy of a decision tree that uses only that variable, with 5-fold cross-validation, and the Kruskal-Wallis test for the numeric variables.
+- `reports/eda_train70_sintesis.md` (PR #71, merged): `eta²`, the share of a numeric variable's variance explained by the segment.
 
-The table in section 2 adds three descriptive hints, with no strength measure computed in a merged notebook:
+The reference for the one-variable accuracy is 0.2810, the share of the majority segment (D, 28.1 %): a variable at that level adds nothing on its own.
 
-- **Age:** D has a median of 29 years and the other three between 41 and 49.
-- **Graduation:** it ranges from 37.8 % in D to 81.7 % in C.
-- **Profession:** Healthcare dominates in D and Artist in C.
+| Variable | One-variable accuracy (CV) | Strength measure | Reading |
+|---|---:|---|---|
+| `Spending_Score` | 0.4059 | Cramér's V 0.302 | Separates D (86.8 % Low) from B and C |
+| `Age` | 0.3974 | Kruskal-Wallis H = 1120.0, p ≈ 1.6e-242; `eta²` 0.144 | Orders the segments (median 29 in D, 41 to 49 in the others) but the distributions overlap |
+| `Ever_Married` | 0.3896 | Cramér's V 0.408 (the highest) | Separates D (29.0 % married) from the rest |
+| `Graduated` | 0.3733 | — | Ranges from 37.8 % graduated in D to 81.7 % in C |
+| `Profession` | 0.3512 | — | Healthcare dominates in D and Artist in C |
+| `Family_Size` | 0.3053 | Kruskal-Wallis H = 205.6, p ≈ 2.6e-44; `eta²` 0.032 | A little more than the reference. Its missing values are concentrated in D (47.1 % of them) |
+| `Var_1` | 0.3016 | — | Almost at the reference |
+| `Gender` | 0.2810 | — | Equal to the reference |
+| `Work_Experience` | 0.2810 | Kruskal-Wallis H = 30.0, p ≈ 1.4e-06; `eta²` 0.009 | Equal to the reference: a significant test but almost no strength of association |
+
+The two rankings do not fully agree: `Spending_Score` gives the best one-variable accuracy, while `Ever_Married` has the higher Cramér's V. Both measure association in different ways, so the table shows both.
 
 Three clarifications:
 
-- **No single variable is enough.** The associations are moderate. The segment comes from combining several variables.
+- **No single variable is enough.** The associations are moderate and no variable reaches 0.41 accuracy on its own. The segment comes from combining several variables.
 - **Marital status and spending overlap.** Every customer in `train_70` who has never married has Low spending (V = 0.669 between the two variables). Part of what one contributes is already contributed by the other.
 - **`Spending_Score` and `Profession` are proxies.** They stand in for income level, which is not in the dataset. Executive (65.4 % High) and Lawyer (51.6 % High) are the only professions where High spending is the majority.
-
-The numeric variables are measured in `03_eda_train70_brian_outliers_fuga.ipynb` (PR #64, merged) and summarised in `reports/eda_train70_sintesis.md` (PR #71, merged), also on `train_70`. The `eta²` column is the share of the variable's variance explained by the segment; the last column is the accuracy of a decision tree that uses only that variable, against 0.2810 for always guessing the majority segment.
-
-| Variable | `eta²` | One-variable tree accuracy | Reading |
-|---|---:|---:|---|
-| `Age` | 0.144 | 0.397 | Orders the segments (median 29 in D, 41 to 49 in the others) but the distributions overlap: it does not separate them on its own |
-| `Family_Size` | 0.032 | 0.3053 | A little more than work experience, much less than age. Its missing values are concentrated in D (47.1 % of them) |
-| `Work_Experience` | 0.009 | 0.2810 | Equal to the baseline: a significant test but almost no strength of association |
 
 ### 4.2. What the model says
 
@@ -156,7 +157,7 @@ Two warnings must be kept when it is added: importance is not causality, and two
 
 ## 5. Proposed campaign per segment
 
-> **Status: draft revised after Isbel's comments in the team channel, pending team approval.** All four campaigns are **business hypotheses, not model results** (US-15). The dataset contains no campaigns, products, channels, vehicle type or income.
+> **Status: approved as business hypotheses in the review of PR #69 by Pedro (2026-11-17), after Isbel's comments in the team channel.** All four campaigns are **business hypotheses, not model results** (US-15). The dataset contains no campaigns, products, channels, vehicle type or income.
 
 The short text is what the app would show (US-15). Each row separates the profile traits measured in `train_70` from the ideas that still have to be tested and have no data behind them.
 
@@ -178,7 +179,8 @@ Changes after Isbel's comments on PR #69, shared in the team channel (2026-11-17
 
 ## 7. Pending
 
-- [ ] A team member approves D-016: prioritisation rule and meaning of "on the train split" (section 3).
+- [x] A team member approves D-016: prioritisation rule and meaning of "on the train split" (section 3). Approved by Pedro in the review of PR #69 (2026-11-17).
 - [ ] Add the feature importance from US-12 (section 4.2).
 - [x] Add the figures from the numeric EDA (section 4.1): PR #64 and PR #71 are in `develop`.
-- [ ] The team approves the campaign table and Isbel integrates it into the app (section 5).
+- [x] The team approves the campaign table as business hypotheses (section 5). Approved by Pedro in the review of PR #69 (2026-11-17).
+- [ ] Isbel integrates the campaign table into the app (US-15).

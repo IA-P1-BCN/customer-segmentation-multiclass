@@ -108,7 +108,9 @@ def profile_group(group: pd.DataFrame, total_rows: int, total_high: int) -> dict
     row["pct_top_profession"] = pct(professions.iloc[0], professions.sum())
     row["profession_missing"] = int(group["Profession"].isna().sum())
 
-    spending = group["Spending_Score"]
+    # Missing values are excluded from the denominator, like the other
+    # categorical percentages (train_70 has none in this column).
+    spending = group["Spending_Score"].dropna()
     for level in SPENDING_LEVELS:
         row[f"pct_spending_{level.lower()}"] = pct((spending == level).sum(), len(spending))
     n_high = int((spending == "High").sum())
