@@ -96,13 +96,17 @@ def test_choose_model_stops_when_nothing_is_admissible():
         cm.choose_model(table)
 
 
+def test_registry_knows_the_four_models():
+    assert set(cm.FROZEN_MODELS) == {"svm", "boosting", "random_forest", "logistic_regression"}
+
+
 def test_frozen_pipeline_explains_which_modules_are_ready():
     with pytest.raises(SystemExit, match="unknown model"):
         cm.frozen_pipeline("nope")
-    # The boosting module is not in develop yet, so the registry knows it but
-    # cannot import it: the message says so instead of failing with an ImportError.
+    # The random forest module is not in develop yet: the registry knows it but
+    # cannot import it, and the message says so instead of raising ImportError.
     with pytest.raises(SystemExit, match="is not in develop yet"):
-        cm.frozen_pipeline("boosting")
+        cm.frozen_pipeline("random_forest")
 
 
 def test_fallback_rows_are_not_mistaken_for_the_choice(tmp_path):
