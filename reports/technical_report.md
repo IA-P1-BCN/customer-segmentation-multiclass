@@ -23,7 +23,7 @@
 
 The project predicts the segment (A, B, C or D) of a customer from nine demographic and behavioural variables, using `Train.csv` from the Kaggle Customer Segmentation dataset. Four models were trained on the same shared partition and preprocessing: multinomial logistic regression, SVM, random forest and XGBoost. Each chose its configuration with the same rule (D-015).
 
-On the validation split (`val_15`), the four selected configurations meet the overfitting limit (train − validation accuracy below 5 points) and clearly beat the majority-class baseline: macro-F1 between 0.4786 and 0.5227, against 0.1097 for the baseline. **XGBoost has the highest validation macro-F1 (0.5227, accuracy 0.5430).** This ranking is provisional until the team records the US-11 decision and freezes the model.
+On the validation split (`val_15`), the four selected configurations meet the overfitting limit (train − validation accuracy below 5 points) and clearly beat the majority-class baseline: macro-F1 between 0.4786 and 0.5227, against 0.1097 for the baseline. **XGBoost has the highest validation macro-F1 (0.5227, accuracy 0.5430).** The `val_15` figures of the four models are final; the choice of the frozen model and its test metrics are pending (US-11, US-12).
 
 > **Fixed by D-017 (Approved by Brian, 2026-11-17):** the frozen model is fitted on `train_70` only.
 >
@@ -110,7 +110,7 @@ Among the models that meet the overfitting limit on `val_15`, the one with the h
 
 > **Decision D-017 (Approved by Brian, 2026-11-17; Pedro, Brian and Isbel voted for it):** the frozen model is fitted on `train_70` only, not on `train_70 + val_15`, so its `val_15` figures stay held-out figures and the official check of D-010 keeps its meaning.
 >
-> **Pending (US-11):** record the choice of the final model in the Decision Log.
+> **Recorded in D-017 (Approved):** the frozen model is fitted on `train_70` only. **Pending (US-11):** run the freeze and record the choice of the final model.
 
 ### 3.5 Final evaluation (US-12)
 
@@ -218,7 +218,7 @@ Against the criterion of section 3.2:
 - **Ranking on `val_15`:** XGBoost 0.5227 > random forest 0.5080 > SVM 0.4853 > logistic regression 0.4786 (macro-F1). The difference between the first two is small (0.0147) and has not been tested statistically.
 - **Ceiling:** about half of the customers are classified correctly. Section 4.4 shows that contradictory profiles explain only 3 %; the rest reflects the limited information in nine variables (section 9).
 
-> **Pending (US-11):** the four model PRs are merged; confirm the ranking with the comparison table of PR #72 and record the decision.
+> **Pending (US-11):** the `val_15` ranking is final for the four models. Confirm it with the comparison table of PR #72 and freeze the model (D-017: fitted on `train_70` only).
 
 ## 6. Final model and test evaluation
 
@@ -235,7 +235,7 @@ Against the criterion of section 3.2:
 Preview from validation and the EDA, to be confirmed with the test results:
 
 - B is the weakest segment in every model (recall 0.26–0.33 on `val_15`, section 5.3).
-- B and C are the pair most often mixed in the data (55 contradictory profiles, section 4.4) and they have similar profiles (section 8.1). *Hypothesis:* many B errors go to C. To be checked with the confusion matrix.
+- B and C are the pair most often mixed in the data (55 contradictory profiles, section 4.4) and they have similar profiles (section 8.1). *Hypothesis:* many B errors go to C, and some to A (B has the lowest recall in the four models). To be checked with the confusion matrix (US-12, US-14).
 
 ## 8. Segments and business reading
 
@@ -312,7 +312,7 @@ python src/train_boosting.py --select              # XGBoost
 | 4 | EDA | `reports/eda_train70_sintesis.md`, `reports/duplicates_train_70.csv`; `ID` vs segment test in `03_eda_train70_brian_outliers_fuga.ipynb` |
 | 5 | Logistic regression | `results/logistic_regression.csv`, run 2026-11-17T11:15:23Z (PR #66, merged); majority class from the same file |
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
-| 5 | Random forest | `results/random_forest.csv`, baseline 2026-11-17T10:12:28Z and tuning 2026-11-17T08:49:04Z (PR #67, merged) |
+| 5 | Random forest | `results/random_forest.csv`, tuning 2026-11-17T08:49:04Z and baseline 2026-11-17T10:12:28Z (PR #67, merged; the baseline was repeated later to add per-class precision and recall) |
 | 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65, merged) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69) |
 
