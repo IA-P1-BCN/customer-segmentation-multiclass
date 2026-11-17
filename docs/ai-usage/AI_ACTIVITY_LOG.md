@@ -405,3 +405,22 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** Notebook executed from a clean kernel (12 code cells, execution counts 1–12, no error outputs); figures inspected; only `data/train_70.csv` is read and `val_15`/`test_15` are not opened; no CSV in `data/` is modified. An independent read-only script reproduced the figures: 5,246 distinct profiles, 322 repeated, 158 ambiguous, 365 ambiguous rows, 171 unlearnable rows, 14 null-only rows and 151 complete-case ambiguous profiles. Rita Pereira re-executed the previous version and reproduced the twelve outputs; the updated notebook keeps twelve code cells.
 - **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
 - **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
+
+---
+
+### A-023 — US-12: final evaluation script of the frozen model (test and importance)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-023 because A-022 is used by open PR #72 (US-11 harness). Not executed on `test_15`; the entry records the instrument, not the final figures.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-12 (issue #29): evaluate the frozen model once on `test_15` and report accuracy, macro-F1, per-class metrics, confusion matrices and the importance of the original variables.
+- **Activities:**
+  - Created `src/evaluate_final.py`: loads the joblib written by `src.compare_models --stage freeze`; verifies the partition against D-013 (rows and SHA-256 with LF) before reading it; reports accuracy, macro-F1 and per-class precision, recall and F1 (D-010); builds the confusion matrix in counts and normalised by row; compares with the majority-class baseline and, for `test_15`, with `val_15`; and computes permutation importance with macro-F1 as the score.
+  - Importance is computed on the **raw** columns of the Pipeline, so the one-hot columns of a variable are grouped by construction (one row per original variable) instead of being permuted one dummy at a time.
+  - `test_15` is refused unless `--allow-test` is passed, to keep the single evaluation of D-012 item 4 explicit.
+  - Created `tests/test_evaluate_final.py` (7 tests: D-013 reference values, metric names, row-normalised confusion with an absent class, the test guard, the checksum check, importance ordering and the majority-class baseline).
+- **Files:** Created: `src/evaluate_final.py`, `tests/test_evaluate_final.py`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests -q` -> 54 passed. The script was not run against `test_15`; `load_partition` refuses it without `--allow-test`. No repository data file and no prediction on the test split were produced.
+- **Outcome:** The evaluation instrument is ready and waiting for the frozen model of US-11 (open PR #72).
+- **Pending tasks:** Merge PR #72 and the three model PRs (#65, #66, #67); freeze the winner; run the evaluation once on `val_15`, then once on `test_15` with `--allow-test`; record the figures and the importance in the results registry and in the technical report (US-16).
