@@ -10,7 +10,8 @@ Esta página es el paso de integración que el acuerdo del 13-11 dejó a cargo d
 | Sección | Notebook | PR | Evidencia |
 |---|---|---|---|
 | Gasto y estado civil | `02_eda_train70_gasto_estado_civil.ipynb` | #58 | `eda_spending_by_profession.png`, `eda_spending_by_graduated.png`, `eda_spending_by_segment.png`, `eda_married_by_segment.png` |
-| Edad, experiencia, outliers, correlación y fuga | `03_eda_train70_brian_outliers_fuga.ipynb` | #64 | `eda_boxplots_numeric_by_segment.png`, `eda_correlation_matrix.png`, `outliers_train_70.csv`, `nulls_train_70.csv` |
+| Edad, experiencia, outliers, correlación y fuga | `03_eda_train70_brian_outliers_fuga.ipynb` | #64 | `eda_boxplots_numeric_by_segment.png`, `eda_correlation_matrix.png`, `outliers_train_70.csv` |
+| Diagnóstico de nulos (US-04) | `src/data_quality.py` | #49 | `data_quality.md`, `nulls_train_70.csv` |
 | Duplicados y perfiles ambiguos | `04_eda_train70_duplicados.ipynb` | este PR | `eda_duplicate_profiles.png`, `eda_ambiguous_segment_pairs.png`, `duplicates_train_70.csv` |
 | EDA inicial (contexto, `Train.csv` completo) | `01_eda_inicial.ipynb` | #46 | figura del notebook |
 
@@ -63,7 +64,7 @@ Hallazgo adicional de la sección de Rita: **el 100 % de los no casados (n = 2.2
 
 **El estado civil sí, sobre todo para D. El tamaño de familia, poco.**
 
-Casados alguna vez, sin contar nulos:
+Casados alguna vez, sobre el total del segmento (los nulos de `Ever_Married` cuentan en el denominador):
 
 | Segmento | % casados |
 |---|---:|
@@ -112,7 +113,7 @@ No hay multicolinealidad grave entre las numéricas: ningún par con `|r| ≥ 0,
 
 ![Segmentos que aparecen juntos en los perfiles ambiguos](figures/eda_ambiguous_segment_pairs.png)
 
-**Lectura:** los duplicados no explican el error de los modelos. Están en torno al 52–55 % de accuracy; el suelo de error que imponen los datos es del 3 %. El margen está en la capacidad del modelo y en las variables, no en los duplicados. D-009 se cumple: no se elimina ninguna fila.
+**Lectura:** los duplicados no explican el error de los modelos. Están en torno al 50–54 % de accuracy; el suelo de error que imponen los datos es del 3 %. El margen está en la capacidad del modelo y en las variables, no en los duplicados. D-009 se cumple: no se elimina ninguna fila.
 
 La pareja **B–C** es la más confundida, lo que anticipa dónde fallará el modelo (US-14). D es el segmento con menos filas ambiguas: su perfil (joven, gasto bajo, a menudo no casado) es el más distintivo.
 
@@ -122,6 +123,7 @@ La pareja **B–C** es la más confundida, lo que anticipa dónde fallará el mo
 - **El árbol de una variable es un suelo**, no la contribución final de esa variable al modelo.
 - **La matriz de correlación es solo de las tres numéricas** (Pearson). Para las categóricas se usa la V de Cramér.
 - **El split es por filas, no por perfil** (D-013): un mismo perfil puede caer en `train_70` y en `val_15`. Afecta a la lectura de la accuracy absoluta en validación, no al ranking: los cuatro modelos usan el mismo split. Se comentó en el issue #10.
+- **Los nulos cuentan como un valor más** en el `groupby` (`dropna=False`): 14 de las 365 filas ambiguas solo coinciden por un nulo; con solo filas completas quedan 151 perfiles ambiguos en vez de 158. No cambia ninguna conclusión.
 - **Los outliers no se eliminan**: los rangos observados (`Age` 18–89, `Work_Experience` 0–14, `Family_Size` 1–9) son plausibles y se documentan en `outliers_train_70.csv`.
 - **Los nulos no se imputan aquí**: el EDA los muestra como `Missing` y D-011 se aplica en el Pipeline.
 
