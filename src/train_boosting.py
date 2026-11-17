@@ -27,7 +27,21 @@ Usage (from the repository root):
     python src/train_boosting.py --baseline   # baseline: CV + train + val_15
     python src/train_boosting.py --grid       # the 18 candidate configurations
     python src/train_boosting.py --refine     # second stage around max_depth=3
+    python src/train_boosting.py --select     # choose the configuration (D-015)
     python src/train_boosting.py --baseline --grid --refine
+
+Selection rule (D-015, Approved on 2026-11-17)
+----------------------------------------------
+The final configuration is chosen with 5-fold cross-validation on ``train_70``
+and never with ``val_15``. Among the configurations whose train - CV accuracy
+gap is below 5 points, those within one standard error of the best CV macro-F1
+are treated as tied and the smallest gap wins; if none meets the limit, the
+configuration with the smallest gap is chosen and the limitation is declared.
+``val_15`` keeps its role as the official overfitting check (D-010 item 3) and
+as the comparison split of US-11. ``--select`` cross-validates the 26 candidate
+configurations of ``--grid`` and ``--refine`` (the baseline with defaults is the
+reference, not a candidate), applies ``select_cv`` and appends the chosen run
+marked ``SELECTED``.
 
 Every executed run appends rows to ``results/boosting.csv`` following the
 convention in ``results/README.md`` (append-only, one file per model).
@@ -85,6 +99,22 @@ RESULTS_COLUMNS = [
     "f1_D",
     "notes",
 ]
+
+CV_FOLDS = 5  # D-010 item 6: 5-fold stratified cross-validation on train_70
+MAX_ACCURACY_GAP = 0.05  # D-010 item 3: overfitting limit, in accuracy points
+
+# Configuration chosen by the D-015 run recorded on 2026-11-17 in
+# results/boosting.csv (selection rule: cross-validation). US-11 imports this
+# instead of copying the hyperparameters by hand, so the frozen model cannot
+# drift from the recorded run.
+SELECTED_PARAMS: dict[str, object] = {
+    "n_estimators": 300,
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "subsample": 1.0,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 5,
+}
 
 # ---------------------------------------------------------------------------
 # D-011 IMPUTATION IN THE NOMINAL SLOT
@@ -522,6 +552,97 @@ def split_notes(gap_pp: float) -> str:
     return f"; train-val accuracy gap={gap_pp:.2f} pp ({verdict} the 5 pp limit)"
 
 
+# --- Selection (D-015) ------------------------------------------------------
+def select_cv(table: pd.DataFrame) -> tuple[pd.Series, str]:
+    """Choose one configuration of the CV summary table (D-015, approved rule).
+
+    The rule is the same one ``src/train_svm.py`` implements, so the four
+    models of US-11 are chosen the same way:
+
+    1. Keep the configurations whose train - CV accuracy gap is below the
+       D-010 limit (5 points).
+    2. Among them, treat as tied those whose CV macro-F1 is within one standard
+       error of the best one (fold standard deviation of the best / sqrt(folds)).
+    3. Among the tied ones, select the smallest gap; if equal, the highest CV
+       macro-F1. If none meets the gap limit, the smallest gap is selected and
+       the record says so (D-015 item 6).
+
+    ``table`` needs one row per configuration with ``test_accuracy``-derived
+    means: ``cv_accuracy``, ``cv_macro_f1``, ``cv_macro_f1_sd`` and
+    ``train_cv_gap``.
+    """
+    eligible = table[table["train_cv_gap"] < MAX_ACCURACY_GAP]
+    if eligible.empty:
+        best = table.sort_values("train_cv_gap").iloc[0]
+        return best, (
+            "no configuration met the CV gap limit; smallest train-CV gap "
+            "(D-015 item 6)"
+        )
+    top = eligible.sort_values("cv_macro_f1", ascending=False).iloc[0]
+    std_error = top["cv_macro_f1_sd"] / np.sqrt(CV_FOLDS)
+    tied = eligible[eligible["cv_macro_f1"] >= top["cv_macro_f1"] - std_error]
+    best = tied.sort_values(
+        ["train_cv_gap", "cv_macro_f1"], ascending=[True, False]
+    ).iloc[0]
+    config_word = "configuration" if len(tied) == 1 else "configurations"
+    reason = (
+        f"selected with CV (D-015, approved 2026-11-17): smallest train-CV gap "
+        f"among {len(tied)} {config_word} within one standard error "
+        f"({std_error:.4f}) of the best CV macro-F1 ({top['cv_macro_f1']:.4f}); "
+        f"{len(eligible)}/{len(table)} configurations with gap < 5 pts"
+    )
+    return best, reason
+
+
+def run_selection(
+    configs: dict[str, dict[str, object]],
+    datasets: dict[str, pd.DataFrame],
+    folds: int,
+    output_path: Path,
+) -> pd.Series:
+    """Cross-validate the candidates, apply ``select_cv`` and record the choice.
+
+    ``val_15`` takes no part in the decision: it is only scored after the
+    configuration has been chosen, as the official D-010 check.
+    """
+    X_train, y_train = make_features_target(datasets["train_70"])
+    print(
+        f"\nCross-validating {len(configs)} candidate configurations "
+        f"({folds}-fold stratified on train_70, rule: D-015) ..."
+    )
+
+    table: list[dict[str, object]] = []
+    for index, (name, params) in enumerate(configs.items(), start=1):
+        cv = cross_validate(X_train, y_train, params, folds)
+        gap = cv["accuracy_train_mean"] - cv["accuracy_mean"]
+        table.append(
+            {
+                "config": name,
+                "params": params,
+                "cv_accuracy": cv["accuracy_mean"],
+                "cv_macro_f1": cv["macro_f1_mean"],
+                "cv_macro_f1_sd": cv["macro_f1_sd"],
+                "train_cv_gap": gap,
+            }
+        )
+        print(
+            f"  {index:02d}/{len(configs)} {name}: "
+            f"CV macro-F1 {cv['macro_f1_mean']:.4f}, "
+            f"CV accuracy {cv['accuracy_mean']:.4f}, "
+            f"train-CV gap {gap * 100:.2f} pp"
+        )
+
+    best, reason = select_cv(pd.DataFrame(table))
+    print(f"\n{reason}")
+    print(f"chosen configuration: {best['config']} -> {best['params']}")
+
+    rows = run_config(str(best["config"]), dict(best["params"]), datasets, folds)
+    for row in rows:
+        row["notes"] = f"SELECTED; {reason}; {row['notes']}"
+    append_results(rows, output_path)
+    return best
+
+
 def append_results(rows: list[dict[str, object]], output_path: Path) -> None:
     """Append rows to the model CSV, creating it with the header if needed."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -603,11 +724,23 @@ def main() -> None:
     parser.add_argument(
         "--refine", action="store_true", help="run the 8 refinement configurations"
     )
+    parser.add_argument(
+        "--select",
+        action="store_true",
+        help="cross-validate the 26 candidates and record the D-015 choice",
+    )
     parser.add_argument("--folds", type=int, default=5, help="CV folds (D-010: 5)")
     parser.add_argument("--output", default=OUTPUT_CSV, help="results CSV path")
     args = parser.parse_args()
 
-    if not (args.check or args.dry_run or args.baseline or args.grid or args.refine):
+    if not (
+        args.check
+        or args.dry_run
+        or args.baseline
+        or args.grid
+        or args.refine
+        or args.select
+    ):
         parser.print_help()
         return
 
@@ -633,6 +766,18 @@ def main() -> None:
         dry_run(datasets)
         return
 
+    output_path = (PROJECT_ROOT / args.output).resolve()
+
+    if args.select:
+        # Candidates only: the baseline with defaults is the reference of the
+        # model, not a candidate configuration (same criterion as
+        # ``src/train_svm.py``).
+        candidates: dict[str, dict[str, object]] = {}
+        candidates.update(grid_configurations())
+        candidates.update(refine_configurations())
+        run_selection(candidates, datasets, args.folds, output_path)
+        return
+
     configs: dict[str, dict[str, object]] = {}
     if args.baseline:
         configs["baseline"] = dict(BASELINE_PARAMS)
@@ -646,7 +791,6 @@ def main() -> None:
     for name, params in configs.items():
         rows.extend(run_config(name, params, datasets, args.folds))
 
-    output_path = (PROJECT_ROOT / args.output).resolve()
     append_results(rows, output_path)
 
 

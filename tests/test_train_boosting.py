@@ -319,3 +319,60 @@ def test_build_model_uses_the_global_seed_and_the_given_params():
     assert params["random_state"] == RANDOM_STATE
     assert params["n_estimators"] == 10
     assert params["max_depth"] == 3
+
+
+# --- Selection rule (D-015) --------------------------------------------------
+
+
+def _cv_table(rows):
+    """Build the CV summary table consumed by ``select_cv`` (no training)."""
+    return pd.DataFrame(
+        [
+            {
+                "config": name,
+                "params": {"max_depth": 3},
+                "cv_accuracy": accuracy,
+                "cv_macro_f1": macro_f1,
+                "cv_macro_f1_sd": sd,
+                "train_cv_gap": gap,
+            }
+            for name, accuracy, macro_f1, sd, gap in rows
+        ]
+    )
+
+
+def test_select_cv_prefers_the_smallest_gap_within_one_standard_error():
+    # The best CV macro-F1 is cfg_a, but cfg_b is inside one standard error of
+    # it and has a smaller train-CV gap, so the rule picks cfg_b. cfg_c has the
+    # smallest gap of all and must be ignored: it lies outside the tie.
+    table = _cv_table(
+        [
+            ("cfg_a", 0.52, 0.5200, 0.0200, 0.020),
+            ("cfg_b", 0.51, 0.5150, 0.0100, 0.005),
+            ("cfg_c", 0.50, 0.4900, 0.0100, 0.001),
+        ]
+    )
+    best, reason = train_boosting.select_cv(table)
+    assert best["config"] == "cfg_b"
+    assert "D-015" in reason
+    assert "configurations with gap < 5 pts" in reason
+
+
+def test_select_cv_declares_the_limitation_when_none_meets_the_gap():
+    table = _cv_table(
+        [
+            ("cfg_x", 0.52, 0.5200, 0.0100, 0.090),
+            ("cfg_y", 0.51, 0.5100, 0.0100, 0.060),
+        ]
+    )
+    best, reason = train_boosting.select_cv(table)
+    assert best["config"] == "cfg_y"
+    assert "no configuration met the CV gap limit" in reason
+
+
+def test_selected_params_is_one_of_the_recorded_candidates():
+    # The recorded choice feeds US-11, so it must be a configuration this
+    # script actually evaluated and not a hand-written hyperparameter set.
+    grid = train_boosting.grid_configurations()
+    refine = train_boosting.refine_configurations()
+    assert train_boosting.SELECTED_PARAMS in [*grid.values(), *refine.values()]
