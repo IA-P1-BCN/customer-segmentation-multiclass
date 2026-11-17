@@ -386,6 +386,35 @@ Its purpose is to help team members understand previous activities, identify com
 - **Pending tasks:** Human review and squash-merge; re-run if the shared Pipeline phase 2 lands (D-013 Consequences); US-11 compares the four models on `val_15` with the same rule.
 ---
 
+### A-024 — US-07 review: D-015 re-selection, CV standard deviations, precision/recall and column names
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-024 because A-018–A-020 are reserved by open PR #69 and A-021–A-023 are used on `develop` (SVM, EDA and US-15 app). This entry is added on the PR #66 branch without rewriting previous records.
+- **Agent:** opencode (deepseek-v4.1-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Address the technical review of PR #66: re-derive the logistic-regression configuration with the approved D-015 rule, record the fold standard deviation of macro-F1 in the `cv5fold` rows, add per-class precision and recall to the official `val_15` row of the selected configuration, align the feature names with the RF/XGB pipelines and correct the contradictory CV conclusion. Verify the expected selection (`C=1_l2_balanced`, `val_15` macro-F1 ≈ 0.4786) by an executed run, not by assumption.
+- **Activities:**
+  - Inspected the PR branch and created an isolated worktree at `feature/model-logistic-regression` to avoid touching the uncommitted US-15 work on `feature/streamlit-app`; no unrelated branch or stash was modified.
+  - Set `verbose_feature_names_out=False` on the inner nominal-imputer `ColumnTransformer` in `src/model_logreg.py`; the transformed names are now `Gender_Male`, `Var_1_Cat_*` and `Profession_*` without the `mode__`/`unknown__` prefixes, matching the random-forest and XGBoost pipelines (US-12 grouping). Verified 28 columns by an executed fit on `train_70`.
+  - Reworked notebook section 8 to apply D-015 exactly: `StratifiedKFold(5, shuffle=True, random_state=42)` on `train_70`, full Pipeline passed to `cross_validate`, mean and standard deviation of the five fold scores (NumPy `ddof=0`), admissibility by mean train − CV accuracy gap < 5 pp, standard-error tie rule (`std / sqrt(5)`) and smallest train − CV gap as the final tie-break. Selection uses CV only; `val_15` is evaluated once for the official D-010 check.
+  - Re-executed all nine notebook code cells (execution counts 1–9, no error outputs). The run selected `C=1_l2_balanced`: CV macro-F1 mean 0.485673, fold std 0.010076, standard error 0.004506; all six configurations meet the CV gap cut, and the tied group contains only `C=1_l2_balanced`. Official `val_15`: accuracy 0.495868, macro-F1 0.478583 (0.4786), accuracy gap +1.64 pp, which meets D-010.
+  - Recorded per-class `val_15` precision/recall/F1 for the selected configuration: A 0.3949/0.4189/0.4066; B 0.3493/0.2616/0.2992; C 0.4908/0.5424/0.5153; D 0.6731/0.7147/0.6933.
+  - Appended 8 rows to `results/logistic_regression.csv` without editing the 20 previous rows: six `cv5fold` rows (mean accuracy/macro-F1, with `accuracy_std`, `macro_f1_std` and train − CV gap in `notes`) plus `train_70` and `val_15` rows for the selected configuration (the `val_15` notes include precision/recall/F1 by class).
+  - Corrected the previous conclusion that called `C=0.1_l2` "also first" in CV: it is second in CV macro-F1 (0.479499); `C=1_l2_balanced` leads the CV (0.485673). The previous `val_15`-based selection of `C=0.1_l2` is superseded by D-015.
+  - Added `tests/test_model_logreg.py`, which fits the pipeline on `train_70` and checks 28 columns, the expected unprefixed names and the absence of `__` prefixes.
+- **Files:** Modified: `src/model_logreg.py`, `notebooks/03_modeling/01_logistic_regression.ipynb`, `results/logistic_regression.csv`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). Created: `tests/test_model_logreg.py`.
+- **Verification:** Notebook re-executed in an isolated `jupyter_client` kernel with 9 code cells, execution counts 1–9 and no error outputs; CSV has 28 rows (20 previous + 8 new) and the selection reproduces Brian's expected `C=1_l2_balanced` with `val_15` macro-F1 0.4785827259899149; `pytest -q` → 17 passed (1 known `penalty` FutureWarning); `git diff --check` clean; only `train_70` is fitted and `val_15` is evaluated; `test_15.csv` is not read.
+- **Outcome:** PR #66 changes implemented locally in the PR worktree and verified; the PR itself is not modified remotely yet.
+- **Pending tasks:** Human review of the new result rows and notebook conclusions; explicit authorization to commit and push to `feature/model-logistic-regression`; re-run when US-05 phase 2 lands (D-013 Consequences).
+- **Update 2026-11-17 (Claude Sonnet 5.5, with Rita Pereira's authorization, after Isbel's agent became unavailable):** the two lines above were written before commit `ce39771` reached the PR branch. Remaining review points of PR #66 handled on the branch:
+  - Merged `develop` (SVM #70, EDA #71, D-015 #68). The conflict in this file was resolved by keeping develop's entries followed by A-024; no record was changed.
+  - D-013 item 6 (Brian's blocking point 3): added `load_partitions()` and the reference `PARTITIONS` to `src/model_logreg.py` (row counts, SHA-256 with line endings normalised to LF, no shared `ID`; `test_15` is not loaded). The notebook now loads its data through it, so the check runs and prints every time. `tests/test_model_logreg.py` gained 2 tests (real data passes; a wrong checksum raises).
+  - Notebook re-executed from a clean kernel in a temporary copy of the repository, so `results/logistic_regression.csv` was **not** appended a third time (the recording cell appends on every execution). All numeric outputs are identical to the committed ones; the differences are the new D-013 lines and a path separator (`results\` to `results/`). 9 code cells, execution counts 1-9, no error outputs, kernel `python3`.
+  - `pytest -q` -> 35 passed on the merged branch. `test_15` is not read.
+  - Not changed: `results/logistic_regression.csv` stays append-only and untouched. `src.select_config` (PR #72) cannot read the `cv5fold` notes because they use `macro_f1_std=` and `train_cv_acc_gap=` instead of the wording of the other models; the selected rows are not marked `SELECTED`; the baseline `val_15` row has no per-class precision and recall. These are left for the team to decide (harness patterns in #72, or an appended block).
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
 
 ### A-022 — US-06 EDA on train_70: duplicate profiles and integration
