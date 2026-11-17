@@ -15,7 +15,7 @@
 | 9. Limitations | Rita | Draft |
 | 10. Reproducibility and sources | Rita | Draft |
 
-**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. Some sources are still in open pull requests and are marked with their number (for example, "PR #67"). When those PRs are merged, the figures must be checked again against `develop`.
+**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. The model results (sections 3 and 5) were checked against `develop` on 2026-11-17, after the four model PRs were merged. The segment figures (section 8) are still in an open pull request (PR #69) and must be checked again against `develop` when it is merged.
 
 ---
 
@@ -160,7 +160,7 @@ The most frequent mixed pair is **B + C** (55 profiles), followed by A + B (30).
 
 ## 5. Models and validation results
 
-*Owner: Brian. Sources: `results/svm.csv` (merged), `results/random_forest.csv` (PR #67), `results/boosting.csv` (PR #65), `results/logistic_regression.csv` (PR #66, merged).*
+*Owner: Brian. Sources: `results/svm.csv` (merged), `results/random_forest.csv` (PR #67, merged), `results/boosting.csv` (PR #65, merged), `results/logistic_regression.csv` (PR #66, merged).*
 
 ### 5.1 Models and configurations
 
@@ -218,7 +218,7 @@ Against the criterion of section 3.2:
 - **Ranking on `val_15`:** XGBoost 0.5227 > random forest 0.5080 > SVM 0.4853 > logistic regression 0.4786 (macro-F1). The difference between the first two is small (0.0147) and has not been tested statistically.
 - **Ceiling:** about half of the customers are classified correctly. Section 4.4 shows that contradictory profiles explain only 3 %; the rest reflects the limited information in nine variables (section 9).
 
-> **Pending (US-11):** confirm the ranking with the comparison table of PR #72 once the four model PRs are merged, and record the decision.
+> **Pending (US-11):** the four model PRs are merged; confirm the ranking with the comparison table of PR #72 and record the decision.
 
 ## 6. Final model and test evaluation
 
@@ -292,13 +292,13 @@ The campaign per segment that the app shows (US-15) is a **business hypothesis, 
 
 ### 10.1 Environment
 
-Python 3.12, packages pinned in `requirements.txt`; one seed for every stochastic step (`RANDOM_STATE = 42` in `src/config.py`). On macOS, XGBoost needs `brew install libomp` (README, PR #65).
+Python 3.12, packages pinned in `requirements.txt`; one seed for every stochastic step (`RANDOM_STATE = 42` in `src/config.py`). On macOS, XGBoost needs `brew install libomp` (README).
 
 ```
 python src/split_data.py --check                   # partitions match the committed files
-python -m src.train_random_forest --stage tune     # random forest (PR #67)
+python -m src.train_random_forest --stage tune     # random forest
 python -m src.train_svm --stage tune               # SVM
-python src/train_boosting.py --select              # XGBoost (PR #65)
+python src/train_boosting.py --select              # XGBoost
 ```
 
 ### 10.2 Sources of the figures
@@ -312,8 +312,8 @@ python src/train_boosting.py --select              # XGBoost (PR #65)
 | 4 | EDA | `reports/eda_train70_sintesis.md`, `reports/duplicates_train_70.csv`; `ID` vs segment test in `03_eda_train70_brian_outliers_fuga.ipynb` |
 | 5 | Logistic regression | `results/logistic_regression.csv`, run 2026-11-17T11:15:23Z (PR #66, merged); majority class from the same file |
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
-| 5 | Random forest | `results/random_forest.csv`, baseline 2026-11-17T10:12:28Z and tuning 2026-11-17T08:49:04Z (PR #67) |
-| 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65) |
+| 5 | Random forest | `results/random_forest.csv`, baseline 2026-11-17T10:12:28Z and tuning 2026-11-17T08:49:04Z (PR #67, merged) |
+| 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65, merged) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69) |
 
 ### 10.3 Decisions cited
