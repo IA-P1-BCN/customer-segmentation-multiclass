@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +54,10 @@ PARTITIONS = {
 
 def _sha256_lf(path: Path) -> str:
     return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 def load_partition(name: str) -> pd.DataFrame:
@@ -101,6 +106,21 @@ def importance(model: Any, X: pd.DataFrame, y: pd.Series, repeats: int = 5) -> p
             .sort_values("importance_mean", ascending=False).reset_index(drop=True))
 
 
+def wants_importance(partition: str, flag: bool) -> bool:
+    """Permutation importance runs on validation; on test only if asked explicitly.
+
+    Issue #29 proposes permutation on ``val_15``. Computing it on ``test_15``
+    would add extra passes over the split that must be read once, so it is off
+    by default there and ``--importance`` is the deliberate opt-in.
+    """
+    return flag or partition == "val_15"
+
+
+def existing_test_outputs(reports_dir: Path) -> list[Path]:
+    """Reports already written by a previous evaluation of test_15."""
+    return sorted(reports_dir.glob("final_metrics_test_15*.csv"))
+
+
 def baseline_metrics(df: pd.DataFrame) -> dict[str, float]:
     """Majority-class baseline on the same partition (D-010 item 4)."""
     _, y = make_features_target(df)
@@ -108,13 +128,27 @@ def baseline_metrics(df: pd.DataFrame) -> dict[str, float]:
 
 
 def evaluate(model_path: Path, partition: str, allow_test: bool, repeats: int,
-             write: bool) -> dict[str, float]:
+             write: bool, force_importance: bool = False,
+             allow_test_rerun: bool = False) -> dict[str, float]:
     if partition == "test_15" and not allow_test:
         raise SystemExit("test_15 is opened once, in US-12. Pass --allow-test when the model "
                          "is frozen; otherwise evaluate val_15 (D-012 item 4).")
+    if partition == "test_15" and not allow_test_rerun and existing_test_outputs(REPORTS_DIR):
+        raise SystemExit(
+            "a previous evaluation of test_15 is already recorded in reports/. Re-running it "
+            "turns the test split into another tuning set; if the team decides to repeat it, "
+            "pass --allow-test-rerun and the previous report is kept."
+        )
 
     payload = __import__("joblib").load(model_path)
     model = payload["model"] if isinstance(payload, dict) else payload
+    trained_on = payload.get("trained_on", "train_70") if isinstance(payload, dict) else "unknown"
+    if trained_on == "train_and_val" and partition == "val_15":
+        raise SystemExit(
+            "the frozen model was fitted on train_70 + val_15, so val_15 is not held out for "
+            "it: its metrics and importance would be optimistic. Evaluate test_15 (once) "
+            "instead, or freeze on train_70 only."
+        )
 
     df = load_partition(partition)
     X, y = make_features_target(df)
@@ -122,7 +156,7 @@ def evaluate(model_path: Path, partition: str, allow_test: bool, repeats: int,
     scores = metrics(y, pred)
 
     counts, normalised = confusion(y, pred)
-    print(f"\n{partition}: {len(df)} rows, model {model_path.name}")
+    print(f"\n{partition}: {len(df)} rows, model {model_path.name}, trained on {trained_on}")
     print(f"accuracy {scores['accuracy']:.4f} | macro-F1 {scores['macro_f1']:.4f}")
     print(counts.to_string())
     print("\nnormalised by row:")
@@ -133,25 +167,39 @@ def evaluate(model_path: Path, partition: str, allow_test: bool, repeats: int,
           f"macro-F1 {baseline['macro_f1']:.4f}")
 
     if partition == "test_15":
-        val = load_partition("val_15")
-        X_val, y_val = make_features_target(val)
-        val_scores = metrics(y_val, model.predict(X_val))
-        print(f"\nvalidation reference: accuracy {val_scores['accuracy']:.4f} | "
-              f"macro-F1 {val_scores['macro_f1']:.4f}")
-        print(f"test - validation: accuracy {scores['accuracy'] - val_scores['accuracy']:+.4f} | "
-              f"macro-F1 {scores['macro_f1'] - val_scores['macro_f1']:+.4f}")
+        if trained_on == "train_and_val":
+            print("\nvalidation reference skipped: the frozen model was fitted on "
+                  "train_70 + val_15, so that comparison would be optimistic.")
+        else:
+            val = load_partition("val_15")
+            X_val, y_val = make_features_target(val)
+            val_scores = metrics(y_val, model.predict(X_val))
+            print(f"\nvalidation reference: accuracy {val_scores['accuracy']:.4f} | "
+                  f"macro-F1 {val_scores['macro_f1']:.4f}")
+            print(f"test - validation: accuracy "
+                  f"{scores['accuracy'] - val_scores['accuracy']:+.4f} | "
+                  f"macro-F1 {scores['macro_f1'] - val_scores['macro_f1']:+.4f}")
 
-    importance_table = importance(model, X, y, repeats=repeats)
-    print("\npermutation importance (original variables, macro-F1 drop):")
-    print(importance_table.round(4).to_string(index=False))
+    importance_table = None
+    if wants_importance(partition, force_importance):
+        importance_table = importance(model, X, y, repeats=repeats)
+        print("\npermutation importance (original variables, macro-F1 drop):")
+        print(importance_table.round(4).to_string(index=False))
+    else:
+        print("\npermutation importance skipped on test_15: it runs on val_15 (issue #29); "
+              "pass --importance only if the team asks for it.")
 
     if write:
         REPORTS_DIR.mkdir(exist_ok=True)
-        scores_df = pd.DataFrame([{"partition": partition, **scores}])
-        scores_df.to_csv(REPORTS_DIR / f"final_metrics_{partition}.csv", index=False)
-        counts.to_csv(REPORTS_DIR / f"confusion_counts_{partition}.csv")
-        normalised.to_csv(REPORTS_DIR / f"confusion_normalised_{partition}.csv")
-        importance_table.to_csv(REPORTS_DIR / f"feature_importance_{partition}.csv", index=False)
+        suffix = partition
+        if partition == "test_15":
+            suffix = f"{partition}_{_now()}"  # every test run keeps its own file
+        scores_df = pd.DataFrame([{"partition": partition, "trained_on": trained_on, **scores}])
+        scores_df.to_csv(REPORTS_DIR / f"final_metrics_{suffix}.csv", index=False)
+        counts.to_csv(REPORTS_DIR / f"confusion_counts_{suffix}.csv")
+        normalised.to_csv(REPORTS_DIR / f"confusion_normalised_{suffix}.csv")
+        if importance_table is not None:
+            importance_table.to_csv(REPORTS_DIR / f"feature_importance_{suffix}.csv", index=False)
         print(f"\nwritten to {REPORTS_DIR.relative_to(ROOT)}/ (metrics, confusion, importance)")
     return scores
 
@@ -164,6 +212,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-test", action="store_true",
                         help="required to evaluate test_15; use it once, after the freeze")
     parser.add_argument("--repeats", type=int, default=5, help="permutation repeats")
+    parser.add_argument("--importance", action="store_true",
+                        help="also compute permutation importance on test_15 (off by default: "
+                             "issue #29 asks for it on val_15)")
+    parser.add_argument("--allow-test-rerun", action="store_true",
+                        help="allow a second evaluation of test_15; each run keeps its own "
+                             "timestamped report")
     parser.add_argument("--no-write", action="store_true",
                         help="print the results without writing the report files")
     args = parser.parse_args(argv)
@@ -172,7 +226,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {args.model} not found; freeze the model first "
               "(python -m src.compare_models --stage freeze --model <name>)", file=sys.stderr)
         return 2
-    evaluate(args.model, args.partition, args.allow_test, args.repeats, write=not args.no_write)
+    evaluate(args.model, args.partition, args.allow_test, args.repeats,
+             write=not args.no_write, force_importance=args.importance,
+             allow_test_rerun=args.allow_test_rerun)
     return 0
 
 

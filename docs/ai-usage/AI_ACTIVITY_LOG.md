@@ -408,10 +408,10 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
-### A-023 — US-12: final evaluation script of the frozen model (test and importance)
+### A-025 — US-12: final evaluation script of the frozen model (test and importance)
 
 - **Date:** 2026-11-17
-- **Note:** Numbered A-023 because A-022 is used by open PR #72 (US-11 harness). Not executed on `test_15`; the entry records the instrument, not the final figures.
+- **Note:** Numbered A-025 because A-022 (PR #71), A-023 (PR #65) and A-024 (PR #72) are already used or reserved. Not executed on `test_15`; the entry records the instrument, not the final figures.
 - **Agent:** OpenCode (DeepSeek V4.1 Flash)
 - **Human owner:** Brian
 - **Objective:** US-12 (issue #29): evaluate the frozen model once on `test_15` and report accuracy, macro-F1, per-class metrics, confusion matrices and the importance of the original variables.
@@ -421,6 +421,7 @@ Its purpose is to help team members understand previous activities, identify com
   - `test_15` is refused unless `--allow-test` is passed, to keep the single evaluation of D-012 item 4 explicit.
   - Created `tests/test_evaluate_final.py` (7 tests: D-013 reference values, metric names, row-normalised confusion with an absent class, the test guard, the checksum check, importance ordering and the majority-class baseline).
 - **Files:** Created: `src/evaluate_final.py`, `tests/test_evaluate_final.py`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
-- **Verification:** `python -m pytest tests -q` -> 54 passed. The script was not run against `test_15`; `load_partition` refuses it without `--allow-test`. No repository data file and no prediction on the test split were produced.
+- **Verification:** `python -m pytest tests -q` -> 42 passed on this branch alone. The script was not run against `test_15`; `load_partition` refuses it without `--allow-test`. No repository data file and no prediction on the test split were produced.
 - **Outcome:** The evaluation instrument is ready and waiting for the frozen model of US-11 (open PR #72).
-- **Pending tasks:** Merge PR #72 and the three model PRs (#65, #66, #67); freeze the winner; run the evaluation once on `val_15`, then once on `test_15` with `--allow-test`; record the figures and the importance in the results registry and in the technical report (US-16).
+- **Update 2026-11-17 after the review of PR #73 (Rita Pereira):** three fixes. (1) The script reads `trained_on` from the joblib payload: if the frozen model was fitted on `train_70 + val_15`, it refuses to score `val_15` (the metrics and importance would be optimistic) and skips the validation reference on `test_15`. (2) Permutation importance runs on `val_15` only; on `test_15` it is off unless `--importance` is passed, as issue #29 asks. (3) A second evaluation of `test_15` is refused when a report already exists, unless `--allow-test-rerun`; every test run writes its own timestamped report, so the single evaluation leaves a trace. Renumbered from A-023 to A-025 because A-023 is used by PR #65 and A-024 by PR #72.
+- **Pending tasks:** Merge PR #72 and the three model PRs (#65, #66, #67); freeze the winner on `train_70` (team decision recorded by Rita Pereira); run the evaluation once on `val_15`, then once on `test_15` with `--allow-test`; record the figures and the importance in the results registry and in the technical report (US-16).

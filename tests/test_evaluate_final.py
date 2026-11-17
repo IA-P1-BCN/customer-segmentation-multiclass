@@ -41,7 +41,7 @@ def test_confusion_matrix_normalises_by_row():
     assert normalised.loc["D"].sum() == 0.0  # class absent from y: zeros, not NaN
 
 
-def test_test_partition_is_refused_without_the_flag():
+def test_partition_is_refused_without_the_flag():
     with pytest.raises(SystemExit, match="--allow-test"):
         ev.evaluate(Path("unused.joblib"), "test_15", allow_test=False, repeats=1, write=False)
 
@@ -79,3 +79,24 @@ def test_baseline_is_the_majority_class():
     })
     scores = ev.baseline_metrics(df)
     assert scores["accuracy"] == pytest.approx(0.8)
+
+
+def test_importance_runs_on_validation_and_not_on_test_by_default():
+    assert ev.wants_importance("val_15", False) is True
+    assert ev.wants_importance("test_15", False) is False
+    assert ev.wants_importance("test_15", True) is True
+
+
+def test_a_second_test_evaluation_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(ev, "REPORTS_DIR", tmp_path)
+    (tmp_path / "final_metrics_test_15_20261117T090000Z.csv").write_text("partition\n")
+    with pytest.raises(SystemExit, match="previous evaluation of test_15"):
+        ev.evaluate(Path("unused.joblib"), "test_15", allow_test=True, repeats=1, write=False)
+
+
+def test_a_model_fitted_on_train_and_val_cannot_be_scored_on_val(tmp_path):
+    import joblib
+    model_path = tmp_path / "final_model.joblib"
+    joblib.dump({"model": LogisticRegression(), "trained_on": "train_and_val"}, model_path)
+    with pytest.raises(SystemExit, match="not held out"):
+        ev.evaluate(model_path, "val_15", allow_test=False, repeats=1, write=False)
