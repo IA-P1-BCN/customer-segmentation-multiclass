@@ -45,18 +45,39 @@ Usage (from the repository root):
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
 from typing import Any
 
+import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from src.config import RANDOM_STATE
+from src.config import ID_COLUMN, RANDOM_STATE
 from src.preprocessing import build_preprocessing
 
-__all__ = ["build_logreg_pipeline", "CANDIDATE_CONFIGS", "D014_ENCODER_PARAMS"]
+__all__ = [
+    "build_logreg_pipeline",
+    "load_partitions",
+    "CANDIDATE_CONFIGS",
+    "D014_ENCODER_PARAMS",
+    "PARTITIONS",
+]
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "data"
+
+# D-013 item 1: expected rows and SHA-256 of each partition, computed over the
+# content with line endings normalised to LF (the repository stores LF; see
+# `.gitattributes`). `test_15` is deliberately absent: this module never
+# reads it (D-012).
+PARTITIONS = {
+    "train_70": (5647, "58da50146ebd3ceaff7ac539f4a9c1c1cb21f7055f3d2262b923feaf3e49e754"),
+    "val_15": (1210, "f7243496ce9a93cdfb9104e6e6d7fb045c50788bdf5fd70f7586e5045bcb2db1"),
+}
 
 # --- Approved preprocessing: D-011 imputers (Approved by Brian, 2026-11-13) ---
 
@@ -164,3 +185,35 @@ def build_logreg_pipeline(
             ),
         ]
     )
+
+
+def _sha256_lf(path: Path) -> str:
+    """SHA-256 of the file with line endings normalised to LF."""
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def load_partitions() -> dict[str, pd.DataFrame]:
+    """Load ``train_70`` and ``val_15`` after the D-013 item 6 checks.
+
+    Verifies, before returning anything, the row count and the SHA-256 (LF) of
+    each partition against the reference values of D-013, and that no ``ID``
+    appears in both. Any deviation raises ``RuntimeError`` so a model is never
+    trained or compared on a partition that differs from the shared one.
+    """
+    frames = {}
+    for name, (rows, expected) in PARTITIONS.items():
+        path = DATA_DIR / f"{name}.csv"
+        actual = _sha256_lf(path)
+        df = pd.read_csv(path)
+        if len(df) != rows or actual != expected:
+            raise RuntimeError(
+                f"{name}: expected {rows} rows and SHA-256 {expected[:12]}..., "
+                f"got {len(df)} rows and {actual[:12]}... (D-013)."
+            )
+        frames[name] = df
+        print(f"{name}: {len(df)} rows, SHA-256 (LF) {actual[:12]}... OK")
+    overlap = set(frames["train_70"][ID_COLUMN]) & set(frames["val_15"][ID_COLUMN])
+    if overlap:
+        raise RuntimeError(f"{len(overlap)} IDs appear in both train_70 and val_15 (D-013).")
+    print("No ID overlap between train_70 and val_15.")
+    return frames
