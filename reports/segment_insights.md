@@ -8,7 +8,7 @@ This document answers three business questions with the project data:
 
 The technical report (US-16) and the business presentation (US-17) cite the figures from here.
 
-**Status: draft.** Three parts are pending and are marked in the text:
+**Status: draft.** Parts still pending are marked in the text:
 
 | Part | Status |
 |---|---|
@@ -140,7 +140,13 @@ Three clarifications:
 - **Marital status and spending overlap.** Every customer in `train_70` who has never married has Low spending (V = 0.669 between the two variables). Part of what one contributes is already contributed by the other.
 - **`Spending_Score` and `Profession` are proxies.** They stand in for income level, which is not in the dataset. Executive (65.4 % High) and Lawyer (51.6 % High) are the only professions where High spending is the majority.
 
-The EDA on outliers and data leakage (PR #64) measures the strength of the numeric variables, including age. Its figures will be added here once it is merged into `develop`.
+The numeric variables are measured in `03_eda_train70_brian_outliers_fuga.ipynb` (PR #64, merged) and summarised in `reports/eda_train70_sintesis.md` (PR #71, merged), also on `train_70`. The `eta²` column is the share of the variable's variance explained by the segment; the last column is the accuracy of a decision tree that uses only that variable, against 0.2810 for always guessing the majority segment.
+
+| Variable | `eta²` | One-variable tree accuracy | Reading |
+|---|---:|---:|---|
+| `Age` | 0.144 | 0.397 | Orders the segments (median 29 in D, 41 to 49 in the others) but the distributions overlap: it does not separate them on its own |
+| `Family_Size` | 0.032 | 0.3053 | A little more than work experience, much less than age. Its missing values are concentrated in D (47.1 % of them) |
+| `Work_Experience` | 0.009 | 0.2810 | Equal to the baseline: a significant test but almost no strength of association |
 
 ### 4.2. What the model says
 
@@ -174,5 +180,5 @@ Changes after Isbel's comments on PR #69, shared in the team channel (2026-11-17
 
 - [ ] A team member approves D-016: prioritisation rule and meaning of "on the train split" (section 3).
 - [ ] Add the feature importance from US-12 (section 4.2).
-- [ ] Add the figures from the numeric EDA once PR #64 is in `develop` (section 4.1).
+- [x] Add the figures from the numeric EDA (section 4.1): PR #64 and PR #71 are in `develop`.
 - [ ] The team approves the campaign table and Isbel integrates it into the app (section 5).

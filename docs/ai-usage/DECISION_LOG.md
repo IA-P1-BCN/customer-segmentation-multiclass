@@ -280,7 +280,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-016 — Segment prioritisation rule and meaning of "on the train split" (US-13)
 
 - **Date:** 2026-11-17
-- **Note:** Numbered D-016 because D-015 is proposed in PR #68 (open, not yet in `develop`). If D-016 is taken when this is merged, use the next free number.
+- **Note:** Numbered D-016 when D-015 was still proposed in PR #68. D-015 and D-017 are now in `develop`, so D-016 is free; it sits before D-015 and D-017 only because of the merge order. If D-016 is taken when this is merged, use the next free number.
 - **Status:** Proposed
 - **Area:** Business analysis / Segment prioritisation
 - **Context:** US-13 (issue #13) asks to prioritise a segment "using the size of the segment and the % of High `Spending_Score` on the train split", with a rule approved by the team and the team confirming what "on the train split" means. The figures come from `src/segment_profile.py`, run on 2026-11-16 on `data/train_70.csv` (5,647 rows, SHA-256 checked against D-013) and recorded in `reports/segment_profile_train_70.csv`: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; share of High spending A 13.7 %, B 20.6 %, C 21.2 %, D 6.6 %; High-spending customers A 189, B 268, C 292, D 105 (854 in total). `Spending_Score` is a proxy of customer value: the dataset has no income or purchase amounts.
