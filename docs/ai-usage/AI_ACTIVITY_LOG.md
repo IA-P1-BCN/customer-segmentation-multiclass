@@ -346,4 +346,24 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-021 — US-10: SVM baseline and improvement (D-015 option B)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-021 because A-018, A-019 and A-020 are used by open PRs #67, #68 and #69. If any of them merges first, resolve the conflict by keeping the entries in numeric order.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** Implement US-10 (issue #22): SVM on the shared Pipeline, baseline and improvement, with the selection rule approved by the team (D-015 option B: choose with cross-validation on `train_70` and keep `val_15` for the official check).
+- **Activities:**
+  - Created branch `feature/model-svm` from `develop` (`efd6a72`) and `src/train_svm.py`: Pipeline `preprocessing → StandardScaler → SVC` (scaling is this model's own step, D-013 item 3), D-013 item 6 checks (row counts, `ID` overlap, SHA-256 with LF line endings), `--stage baseline|tune` and `--rule cv|val` defaulting to `cv` (the approved rule). The rule in force is written in the `notes` of every recorded row.
+  - Created `tests/test_train_svm.py` (15 tests: partitions, 28-column matrix, `Profession_Unknown`, scaler placement, global seed, results format, both selection rules and the CLI default).
+  - Executed the baseline: rbf, C=1, gamma=scale → `val_15` accuracy 0.5240, macro-F1 0.5063, gap 6.38 points (fails the 5-point limit), fit time 15.24 s.
+  - Executed the 9-configuration grid (linear and rbf kernels): 6 configurations meet the CV gap limit; selected `rbf, C=1.0, gamma=0.01` with CV macro-F1 0.4923 and CV gap 3.54 points, `val_15` accuracy 0.5025, macro-F1 0.4853, gap 3.89 points and fit time 2.88 s. `val_15` took no part in the choice.
+  - Recorded 31 rows in `results/svm.csv` (baseline, 9 configurations × cv5fold/train_70/val_15, and the selected configuration marked `SELECTED`). Training time and the absolute and relative accuracy gaps are in `notes`, as issue #22 requires.
+- **Files:** Created: `src/train_svm.py`, `tests/test_train_svm.py`, `results/svm.csv`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests/test_train_svm.py -q` → 15 passed. `python -m src.train_svm --stage baseline` and `--stage tune --rule cv` print the D-013 row counts and SHA-256 (LF) of `train_70` and `val_15` and confirm the absence of `ID` overlap. `test_15` is never read. Every recorded row comes from an executed run.
+- **Outcome:** US-10 implemented and submitted as a PR into `develop`. The frozen configuration for US-11 is `kernel=rbf, C=1.0, gamma=0.01`.
+- **Pending tasks:** Human review and squash-merge; re-run if the shared Pipeline phase 2 lands (D-013 Consequences); US-11 compares the four models on `val_15` with the same rule.
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
