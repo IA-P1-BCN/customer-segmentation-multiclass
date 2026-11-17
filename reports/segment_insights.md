@@ -13,9 +13,9 @@ The technical report (US-16) and the business presentation (US-17) cite the figu
 | Part | Status |
 |---|---|
 | Profile per segment (section 2) | Computed from a recorded run |
-| Prioritisation rule (section 3) | Proposed, pending team approval |
+| Prioritisation rule (section 3) | Proposed in D-016; agreed by Isbel in the PR #69 review, pending formal approval |
 | Feature importance from the model (section 4) | Pending US-12 |
-| Campaign table (section 5) | Draft, pending team approval |
+| Campaign table (section 5) | Draft revised after the PR #69 review, pending team approval |
 
 ## 1. Where the figures come from
 
@@ -86,7 +86,7 @@ B and C are very similar. The model can be expected to have trouble separating t
 
 ## 3. Segment to prioritise (N2)
 
-> **Status: proposed, pending team approval.** The team also has to confirm what "on the train split" means in the user story; here it is read as "computed with the 5,647 customers of `train_70`".
+> **Status: proposed in D-016, pending formal approval.** Isbel agreed with the rule and with the reading of "on the train split" in the PR #69 review (2026-11-17). "On the train split" means computed with the 5,647 customers of `train_70.csv`, not with the full `Train.csv` and not with the population of customers.
 
 **Proposed rule:** prioritise the segment with the most High-spending customers.
 
@@ -100,7 +100,7 @@ The reason is that the story asks for two criteria, the size of the segment and 
 | D | 1,587 | 6.6 | 105 | 12.3 |
 | All | 5,647 | 15.1 | 854 | 100 |
 
-**Result with this rule: C**, with 292 High-spending customers, 34.2 % of all of them. B is close behind (268). Together they hold 65.6 % of the High-spending customers.
+**Result with this rule: C is the provisional first priority, and B is also a segment of interest.** C has 292 High-spending customers (34.2 % of all of them) and B is close behind with 268 (31.4 %), so C should not be presented as clearly ahead of B. Together they hold 65.6 % of the High-spending customers.
 
 The result depends on the rule, which is why the team has to approve it:
 
@@ -150,18 +150,18 @@ Two warnings must be kept when it is added: importance is not causality, and two
 
 ## 5. Proposed campaign per segment
 
-> **Status: draft, pending team approval.** The campaigns are **business hypotheses**, not model results. The dataset contains no campaigns, products, vehicle type or income.
+> **Status: draft revised after the PR #69 review, pending team approval.** All four campaigns are **business hypotheses, not model results** (US-15). The dataset contains no campaigns, products, channels, vehicle type or income.
 
-The short text is what the app would show (US-15).
+The short text is what the app would show (US-15). Each row separates the profile traits measured in `train_70` from the ideas that still have to be tested and have no data behind them.
 
-| Segment | Text for the app | Profile trait it is based on |
-|---|---|---|
-| A | General offer with options for small households. | Profile close to the average; smallest families (mean 2.49); 69.1 % Low spending |
-| B | Mid-range offer for families. | 73.7 % married; spending split between Low (48.7 %) and Average (30.7 %) |
-| C | Mid-range and high-end offer with preferential service. | Prioritised segment (section 3); 45.2 % Average and 21.2 % High; median age 49 |
-| D | Entry-level offer at an affordable price, through digital channels. | The youngest (median age 29); 86.8 % Low spending |
+| Segment | Text for the app | Profile trait it is based on (measured) | Hypothesis to test (no data) |
+|---|---|---|---|
+| A | Basic offer for small households, with entry-level options. | Smallest families (mean 2.49); 69.1 % Low spending | — |
+| B | Offer with options at several price levels. | Spending split between Low (48.7 %), Average (30.7 %) and High (20.6 %) | — |
+| C | Mid-range and high-end offer. | Provisional first priority (section 3); 45.2 % Average and 21.2 % High | Preferential service |
+| D | Entry-level offer at an affordable price. | 86.8 % Low spending | Digital channels, suggested by its median age of 29 |
 
-The digital channel for D is an assumption based on age; the dataset has no channel data.
+Changes after the PR #69 review (Isbel, 2026-11-17): B is no longer described as a family or mid-range segment, which the data do not support; preferential service for C and digital channels for D moved to the hypothesis column; the text for A is more specific.
 
 ## 6. Limitations
 
@@ -172,7 +172,7 @@ The digital channel for D is an assumption based on age; the dataset has no chan
 
 ## 7. Pending
 
-- [ ] The team approves the prioritisation rule and confirms what "on the train split" means (section 3).
+- [ ] A team member approves D-016: prioritisation rule and meaning of "on the train split" (section 3).
 - [ ] Add the feature importance from US-12 (section 4.2).
 - [ ] Add the figures from the numeric EDA once PR #64 is in `develop` (section 4.1).
 - [ ] The team approves the campaign table and Isbel integrates it into the app (section 5).
