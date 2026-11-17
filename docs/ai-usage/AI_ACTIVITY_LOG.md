@@ -346,6 +346,46 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-019 — D-015 proposal: common rule to select each model's configuration
+
+- **Date:** 2026-11-16
+- **Note:** Numbered A-019 because A-018 is used by open PR #67 (random forest). If A-019 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Document, as a proposal for team approval, a single rule for choosing each model's final configuration, after the review of PRs #65, #66 and #67 showed that the three models did not choose in the same way.
+- **Activities:**
+  - Reviewed PR #65 (XGBoost), PR #66 (logistic regression) and PR #67 (random forest) in temporary worktrees: the first two choose the best validation macro-F1 among the configurations evaluated on `val_15`; the third chooses with cross-validation on `train_70` only.
+  - Read the acceptance criteria of US-08 (issue #20) and D-010: the user stories say "compare in validation" and D-010 item 6 asks for cross-validation. Reported the contradiction to Rita Pereira, who raised it in the team channel with two options.
+  - Isbel agreed with choosing by cross-validation and asked for the standard-error formula to be explicit. Pedro and Brian had not answered when this entry was written.
+  - Wrote D-015 (Status: Proposed) in `docs/ai-usage/DECISION_LOG.md`. D-010 is not modified. Three details were added by the agent and have not been discussed by the team: the standard deviation convention (`ddof=0`), the use of the mean of the fold scores instead of pooled out-of-fold predictions, and what to do when the selected configuration fails the official check on `val_15`.
+  - Correction recorded: an earlier figure given by the agent for the smallest XGBoost train − CV gap (5.47 points) was an approximation from the full-fit training accuracy; the value recorded in the `notes` of PR #65 is 6.19 points. D-015 quotes the recorded value.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (new record D-015), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no code or data changed and no model executed for this entry. Figures quoted in D-015 were read from the results files of PRs #65, #66 and #67 (`C=0.1_l2` validation macro-F1 0.4806, `C=1_l2_balanced` CV macro-F1 0.4857, XGBoost smallest train − CV gap 6.19 points, random forest standard error 0.0034 and validation gap 4.78 points). The effect of the rule on logistic regression and XGBoost was not executed. `git diff --check` passes.
+- **Outcome:** Proposed; committed, pushed and opened as a pull request into `develop` with Rita Pereira's authorization. Not approved: only a human team member can approve D-015.
+- **Pending tasks:** Answers from Pedro and Brian; human approval of D-015; if approved, PRs #65 and #66 re-derive their selected configuration before US-11.
+- **Update 2026-11-17 (Claude Opus 5.5):** updated D-015 with Rita Pereira's authorization after the team discussion. Item 3: admissibility cut on the train − CV gap raised from 5 to 10 points on the cross-validation scale (Pedro's amendment, chosen by the team in the channel as relayed by Rita Pereira); the official 5-point check on `val_15` is unchanged. Item 6: Brian's precision (the fallback configuration must still pass the official check and the limitation is declared in US-16). Item 7: explicit fallback order, which the first version left undefined after the tied group (requested in Isbel's audit). Item 8: per-class precision, recall and F1 on `val_15` in the notes. Evidence: effect of the cut on the random forest from the run of 2026-11-17 (5 points: `max_depth=6`, `val_15` macro-F1 0.5080, gap 1.90; 10 points: `max_depth=10`, `min_samples_leaf=20`, macro-F1 0.5066, gap 4.73). Agreement: votes of Isbel, Brian and Pedro. The status stays Proposed: approval is left to a team member other than the proposer. Documentation only; `git diff --check` passes.
+- **Update 2026-11-17, later (Claude Opus 5.5):** Pedro changed his vote to 5 points for schedule reasons and the team kept 5 (relayed by Rita Pereira). With her authorization, item 3 was set back to 5 points and the 10-point cut, the reasons for not adopting it and its measured effect were recorded in Evidence and limits as known technical debt, as Pedro asked. Items 6, 7 and 8 keep the changes of the previous update. XGBoost figures are attributed to Pedro and were not re-executed. Status stays Proposed. Documentation only; `git diff --check` passes.
+
+### A-021 — US-10: SVM baseline and improvement (D-015, approved 2026-11-17)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-021 because A-018 and A-020 are used by open PRs #67 and #69; A-019 was merged into `develop` with PR #68 and is kept immediately before this entry.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** Implement US-10 (issue #22): SVM on the shared Pipeline, baseline and improvement, choosing the configuration with D-015 as approved on 2026-11-17 (5-fold cross-validation on `train_70`; `val_15` only for the official overfitting check and the US-11 comparison).
+- **Activities:**
+  - Created branch `feature/model-svm` from `develop` (`efd6a72`) and `src/train_svm.py`: Pipeline `preprocessing → StandardScaler → SVC` (scaling is this model's own step, D-013 item 3); D-013 item 6 checks (row counts, `ID` overlap, SHA-256 with LF line endings); `--stage baseline|tune`. Only the approved D-015 rule is available: after the review, the `--rule` flag and the rejected option A path were removed, so a run cannot record a result under the discarded rule.
+  - Created `tests/test_train_svm.py` (16 tests: partitions, 28-column matrix, `Profession_Unknown`, scaler placement, global seed, results format, the D-015 selection rule and its fallback, the per-class precision/recall note, the CV helper and the CLI rejecting the rejected rule).
+  - Baseline (rbf, C=1, gamma=scale): CV macro-F1 0.4952 with a 7.85-point train-CV gap; `val_15` accuracy 0.5240, macro-F1 0.5063, gap 6.38 points (fails the 5-point limit), fit time 15.24 s. Its CV row is recorded so the gap is checkable in the CSV.
+  - Nine-configuration grid (linear and rbf kernels): 6 configurations meet the CV gap limit; selected `rbf, C=1.0, gamma=0.01` with CV macro-F1 0.4923 and CV gap 3.54 points, `val_15` accuracy 0.5025, macro-F1 0.4853, gap 3.89 points and fit time 2.88 s. `val_15` took no part in the choice.
+  - The selected configuration scores below the baseline on `val_15` (0.4853 against 0.5063) because the baseline fails the gap limit; that effect of the 5-point cut is recorded in D-015 as a known limitation.
+  - Recorded 32 rows in `results/svm.csv` (baseline x3, 9 configurations x cv5fold/train_70/val_15, and the selected configuration marked `SELECTED`). Training time, the absolute and relative accuracy gaps and the per-class precision, recall and F1 are in `notes`, as issue #22 and D-010 require.
+- **Files:** Created: `src/train_svm.py`, `tests/test_train_svm.py`, `results/svm.csv`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests/test_train_svm.py -q` -> 16 passed. `python -m src.train_svm --stage baseline` and `--stage tune` print the D-013 row counts and SHA-256 (LF) of `train_70` and `val_15` and confirm the absence of `ID` overlap. `test_15` is never read. Every recorded row comes from an executed run.
+- **Outcome:** US-10 implemented and submitted as PR #70 into `develop`. The frozen configuration for US-11 is `kernel=rbf, C=1.0, gamma=0.01`.
+- **Pending tasks:** Human review and squash-merge; re-run if the shared Pipeline phase 2 lands (D-013 Consequences); US-11 compares the four models on `val_15` with the same rule.
+---
+
 ### A-024 — US-07 review: D-015 re-selection, CV standard deviations, precision/recall and column names
 
 - **Date:** 2026-11-17
@@ -367,4 +407,24 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** PR #66 changes implemented locally in the PR worktree and verified; the PR itself is not modified remotely yet.
 - **Pending tasks:** Human review of the new result rows and notebook conclusions; explicit authorization to commit and push to `feature/model-logistic-regression`; re-run when US-05 phase 2 lands (D-013 Consequences).
 
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
+
+### A-022 — US-06 EDA on train_70: duplicate profiles and integration
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-022 because A-020 is used by open PR #69 (segment insights) and A-021 by open PR #70 (SVM). If a different number is free when this is merged, renumber.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** Pedro's section of US-06 (issue #10): repeated and ambiguous profiles on `train_70`, plus the integration of the three EDA sections with written answers to the issue questions.
+- **Activities:**
+  - Reviewed the merged sections of Rita Pereira (#58) and Brian (#64) and the initial EDA (#46), and measured the duplicates strictly on the training partition.
+  - Created branch `feature/eda-duplicados` and notebook `04_eda_train70_duplicados.ipynb`: shape, types, nulls and target distribution; repeated profiles (322 profiles, 723 rows); ambiguous profiles with more than one segment (158 profiles, 365 rows, 6.5 %); most repeated segment pairs; an example profile; the ambiguity ceiling (171 rows, 3.0 %); and a sensitivity check with complete rows only (151 profiles, 14 rows matching only through a null).
+  - Added `reports/duplicates_train_70.csv` (one row per repeated profile) and two figures: `eda_duplicate_profiles.png` and `eda_ambiguous_segment_pairs.png`.
+  - Wrote `reports/eda_train70_sintesis.md`: integration of the three sections, answers to the four questions of the issue, a ranking of single-variable separation, an acceptance-criteria map and limitations.
+  - Addressed the review of PR #71 by Rita Pereira: corrected the married-table denominator label (nulls included, as in #58), changed the model accuracy range from 52–55 % to 50–54 %, attributed `nulls_train_70.csv` to US-04 (#49) instead of #64, and documented the null-grouping sensitivity in the notebook and the synthesis.
+- **Files:** Created: `04_eda_train70_duplicados.ipynb`, `reports/duplicates_train_70.csv`, `reports/eda_train70_sintesis.md`, `reports/figures/eda_duplicate_profiles.png`, `reports/figures/eda_ambiguous_segment_pairs.png`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Notebook executed from a clean kernel (12 code cells, execution counts 1–12, no error outputs); figures inspected; only `data/train_70.csv` is read and `val_15`/`test_15` are not opened; no CSV in `data/` is modified. An independent read-only script reproduced the figures: 5,246 distinct profiles, 322 repeated, 158 ambiguous, 365 ambiguous rows, 171 unlearnable rows, 14 null-only rows and 151 complete-case ambiguous profiles. Rita Pereira re-executed the previous version and reproduced the twelve outputs; the updated notebook keeps twelve code cells.
+- **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
+- **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
