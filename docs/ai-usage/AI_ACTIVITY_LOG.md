@@ -417,6 +417,22 @@ Its purpose is to help team members understand previous activities, identify com
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
 
+### A-027 — D-017 proposal: data used to fit the frozen model
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-027 because A-018, A-020 and A-023 to A-026 are used by open PRs. If A-027 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Sonnet 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Record as a proposed decision whether the frozen model of US-11 is fitted on `train_70` or on `train_70 + val_15`, after Isbel asked that it not be decided by whoever implements the code.
+- **Activities:**
+  - Searched `develop` and the branches of PRs #69, #72, #73 and #74 for an existing decision: none exists. `src/compare_models.py` (PR #72) offers both options with `train_70` as the default; `src/evaluate_final.py` (PR #73) refuses `val_15` when `trained_on` is `train_and_val`.
+  - Wrote D-017 (Proposed) with two alternatives, a recommendation for `train_70` only and the consequences of each option. Pedro's vote for `train_70` (team channel, relayed by Rita Pereira) is recorded; Brian's vote for `train_70` (same channel, relayed by Rita Pereira) and Isbel's vote for `train_70` (same channel, relayed by Rita Pereira) were added later the same day.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-017 added), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no model executed, no data read or modified, no metric created. Row counts come from D-013; the 21.4 % figure is 1,210 / 5,647.
+- **Outcome:** D-017 proposed in a PR into `develop`. The approval status is left to a human team member other than the author.
+- **Pending tasks:** Votes of Isbel and Brian; human approval; then US-11 freezes the model with the approved option.
+
+
 ### A-022 — US-06 EDA on train_70: duplicate profiles and integration
 
 - **Date:** 2026-11-17
