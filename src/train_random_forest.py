@@ -14,7 +14,7 @@ tune
     Compares a grid of configurations with 5-fold stratified cross-validation
     on ``train_70`` (D-010 item 6), passing the full Pipeline so imputation and
     encoding are fitted inside each fold. Selection uses CV results only (see
-    ``select_configuration``): among the configurations whose train - CV
+    ``select_configuration``, D-015): among the configurations whose train - CV
     accuracy gap is below 5 points, those within one standard error of the
     best CV macro-F1 are treated as tied, and the one with the smallest gap
     is selected. It is then refitted on ``train_70`` and evaluated on
@@ -49,7 +49,8 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import (accuracy_score, classification_report, f1_score,
+                             precision_recall_fscore_support)
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -62,7 +63,14 @@ DATA_DIR = ROOT / "data"
 RESULTS_PATH = ROOT / "results" / "random_forest.csv"
 MODEL_NAME = "random_forest"
 CLASSES = ("A", "B", "C", "D")
-MAX_ACCURACY_GAP = 0.05  # D-010 item 3: train - validation accuracy < 5 points
+# Official overfitting check, applied only to train_70 vs val_15 (D-010 item 3):
+# accuracy(train) - accuracy(val_15) < 5 points.
+MAX_ACCURACY_GAP = 0.05
+# Admissibility cut applied to the train - CV gap during selection (D-015 item 3).
+# It is a different quantity from the official check: each CV fold trains on
+# 80 % of train_70, so this gap is larger by construction. The team kept
+# 5 points on 2026-11-17; a cut on the CV scale is recorded as known debt in D-015.
+CV_GAP_LIMIT = 0.05
 CV_FOLDS = 5  # D-010 item 6
 
 # D-013 item 1: expected rows and SHA-256 of each partition. The hashes are
@@ -156,6 +164,19 @@ def evaluate(model: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict[str, float]
     return metrics
 
 
+def per_class_note(y: pd.Series, pred) -> str:
+    """Per-class precision, recall and F1 on validation as text for ``notes`` (D-010).
+
+    Same layout as the boosting results (PR #65), so the four models can be
+    read the same way in US-11 without changing the shared CSV columns.
+    """
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        y, pred, labels=list(CLASSES), zero_division=0)
+    parts = [f"{c} P={p:.3f} R={r:.3f} F1={f:.3f}"
+             for c, p, r, f in zip(CLASSES, precision, recall, f1)]
+    return "per-class val " + "; ".join(parts)
+
+
 # --- Recording --------------------------------------------------------------
 
 def append_results(rows: list[dict[str, Any]]) -> None:
@@ -200,10 +221,12 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
           f"gap {gap * 100:.2f} points ({gap / train_m['accuracy'] * 100:.1f} % relative) -> "
           f"{'meets' if passed else 'DOES NOT meet'} the < 5 points limit")
     print(f"  macro-F1  train {train_m['macro_f1']:.4f} | val {val_m['macro_f1']:.4f} | gap {f1_gap:.4f}")
+    val_pred = model.predict(X_val)
     print("  Per-class report on val_15:")
-    print(classification_report(y_val, model.predict(X_val), digits=3))
+    print(classification_report(y_val, val_pred, digits=3))
     note = (f"accuracy gap {gap * 100:.2f} pts ({'meets' if passed else 'fails'} < 5); "
-            f"macro-F1 gap {f1_gap:.4f}; preprocessing D-011 + D-014 (Approved, 28 columns)")
+            f"macro-F1 gap {f1_gap:.4f}; {per_class_note(y_val, val_pred)}; "
+            f"preprocessing D-011 + D-014 (Approved, 28 columns)")
     if extra_note:
         note = f"{extra_note}; {note}"
     common = {"run_timestamp_utc": timestamp, "seed": RANDOM_STATE, "model": MODEL_NAME,
@@ -216,11 +239,39 @@ def train_and_validate(label: str, params: dict[str, Any], frames, timestamp: st
 
 # --- Selection --------------------------------------------------------------
 
+def rank_configurations(table: pd.DataFrame) -> tuple[pd.DataFrame, str]:
+    """Order the CV summary table for D-015 item 7 (fallback); returns it and a reason.
+
+    The first row is the selected configuration (``select_configuration``).
+    If it fails the official check on ``val_15``, the next rows are tried in
+    this order: the rest of the tied group (smallest gap first), then the other
+    admissible configurations (highest CV macro-F1 first), then the
+    non-admissible ones (smallest gap first).
+    """
+    eligible = table[table["train_cv_gap"] < CV_GAP_LIMIT]
+    if eligible.empty:
+        ranked = table.sort_values(["train_cv_gap", "cv_macro_f1"], ascending=[True, False])
+        return ranked, "no config met the CV gap limit; smallest train-CV gap"
+    top = eligible.sort_values("cv_macro_f1", ascending=False).iloc[0]
+    std_error = top["cv_macro_f1_sd"] / np.sqrt(CV_FOLDS)
+    is_tied = eligible["cv_macro_f1"] >= top["cv_macro_f1"] - std_error
+    tied = eligible[is_tied].sort_values(["train_cv_gap", "cv_macro_f1"], ascending=[True, False])
+    rest = eligible[~is_tied].sort_values(["cv_macro_f1", "train_cv_gap"], ascending=[False, True])
+    others = table.drop(index=eligible.index).sort_values(
+        ["train_cv_gap", "cv_macro_f1"], ascending=[True, False])
+    reason = (f"selected: smallest train-CV gap among {len(tied)} configs within one standard "
+              f"error ({std_error:.4f}) of the best CV macro-F1 ({top['cv_macro_f1']:.4f}); "
+              f"{len(eligible)}/{len(table)} configs with train-CV gap < "
+              f"{CV_GAP_LIMIT * 100:.0f} pts (D-015)")
+    return pd.concat([tied, rest, others]), reason
+
+
 def select_configuration(table: pd.DataFrame) -> tuple[pd.Series, str]:
     """Choose one row of the CV summary table; returns the row and the reason.
 
     1. Keep the configurations whose train - CV accuracy gap is below the
-       D-010 limit (5 points).
+       D-015 cut (``CV_GAP_LIMIT``, 5 points). The official 5-point check of
+       D-010 (``MAX_ACCURACY_GAP``) is applied later, on ``val_15``.
     2. Among them, treat as tied those whose CV macro-F1 is within one standard
        error of the best one (standard error = fold standard deviation of the
        best configuration / sqrt(number of folds)): differences smaller than
@@ -230,18 +281,8 @@ def select_configuration(table: pd.DataFrame) -> tuple[pd.Series, str]:
 
     Only cross-validation results on ``train_70`` are used.
     """
-    eligible = table[table["train_cv_gap"] < MAX_ACCURACY_GAP]
-    if eligible.empty:
-        best = table.sort_values("train_cv_gap").iloc[0]
-        return best, "no config met the CV gap limit; smallest train-CV gap"
-    top = eligible.sort_values("cv_macro_f1", ascending=False).iloc[0]
-    std_error = top["cv_macro_f1_sd"] / np.sqrt(CV_FOLDS)
-    tied = eligible[eligible["cv_macro_f1"] >= top["cv_macro_f1"] - std_error]
-    best = tied.sort_values(["train_cv_gap", "cv_macro_f1"], ascending=[True, False]).iloc[0]
-    reason = (f"selected: smallest train-CV gap among {len(tied)} configs within one standard "
-              f"error ({std_error:.4f}) of the best CV macro-F1 ({top['cv_macro_f1']:.4f}); "
-              f"{len(eligible)}/{len(table)} configs with train-CV gap < 5 pts")
-    return best, reason
+    ranked, reason = rank_configurations(table)
+    return ranked.iloc[0], reason
 
 
 # --- Stages -----------------------------------------------------------------
@@ -281,11 +322,22 @@ def run_tuning(frames, record: bool) -> None:
         print(f"  {i:02d}/{len(configs)} {params} -> CV macro-F1 {f1:.4f}, "
               f"CV accuracy {acc:.4f}, train-CV gap {gap * 100:.2f} pts")
 
-    best, reason = select_configuration(pd.DataFrame(summary))
-    best_params = {k: _py(best[k]) for k in keys}
-    print(f"\n{reason}: {best_params}")
-
-    final_rows = train_and_validate("tuned", best_params, frames, timestamp, extra_note=reason)
+    ranked, reason = rank_configurations(pd.DataFrame(summary))
+    final_rows = []
+    # D-015 item 7: the selected configuration is evaluated once on val_15; if it
+    # fails the official < 5 points check, the next one in the ranking is tried.
+    # Every evaluation is recorded.
+    for attempt, (_, row) in enumerate(ranked.iterrows()):
+        params = {k: _py(row[k]) for k in keys}
+        label = "tuned" if attempt == 0 else f"tuned-fallback-{attempt}"
+        note = reason if attempt == 0 else (
+            f"D-015 item 7 fallback {attempt}: previous configuration failed the official "
+            f"check on val_15; {reason}")
+        print(f"\n{note}: {params}")
+        rows = train_and_validate(label, params, frames, timestamp, extra_note=note)
+        final_rows += rows
+        if rows[0]["accuracy"] - rows[1]["accuracy"] < MAX_ACCURACY_GAP:
+            break
     if record:
         append_results(cv_rows + final_rows)
 
@@ -296,7 +348,9 @@ def _py(value: Any) -> Any:
         return None
     if isinstance(value, np.integer):
         return int(value)
-    if isinstance(value, np.floating):
+    # Plain Python floats too: iterating over the ranked table row by row
+    # (D-015 item 7 fallback) turns numpy floats into Python floats.
+    if isinstance(value, (float, np.floating)):
         return int(value) if float(value).is_integer() and value > 1 else float(value)
     return value
 

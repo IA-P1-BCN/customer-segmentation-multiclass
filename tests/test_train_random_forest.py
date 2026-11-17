@@ -98,7 +98,7 @@ def _cv_table(rows):
 def test_selection_breaks_ties_by_smallest_gap():
     # Standard error of the best = 0.0100 / sqrt(5) = 0.0045 -> tie threshold 0.5055.
     table = _cv_table([
-        ("overfits", 0.5300, 0.0100, 0.0800),    # best score but gap above the limit
+        ("overfits", 0.5300, 0.0100, 0.0800),    # best score but gap above the CV cut
         ("best", 0.5100, 0.0100, 0.0490),
         ("tied", 0.5070, 0.0100, 0.0300),        # within one standard error, smaller gap
         ("too_low", 0.5000, 0.0100, 0.0100),     # smallest gap but clearly worse
@@ -119,3 +119,54 @@ def test_selection_falls_back_to_smallest_gap():
     best, reason = rf.select_configuration(table)
     assert best["name"] == "b"
     assert "no config met" in reason
+
+
+def test_cv_cut_and_official_check_are_five_points():
+    # D-015 item 3 (team kept 5 points on 2026-11-17) and D-010 item 3.
+    assert rf.CV_GAP_LIMIT == 0.05
+    assert rf.MAX_ACCURACY_GAP == 0.05
+    table = _cv_table([("just_below", 0.5100, 0.0050, 0.0499), ("at_cut", 0.5300, 0.0050, 0.0500)])
+    assert rf.select_configuration(table)[0]["name"] == "just_below"
+
+
+def test_ranking_order_for_the_fallback():
+    # D-015 item 7: tied group by gap, then other admissible by CV macro-F1, then the rest by gap.
+    table = _cv_table([
+        ("not_admissible", 0.5400, 0.0100, 0.0800),
+        ("best", 0.5100, 0.0100, 0.0450),
+        ("tied", 0.5070, 0.0100, 0.0300),
+        ("admissible_low", 0.5000, 0.0100, 0.0100),
+        ("admissible_lower", 0.4900, 0.0100, 0.0050),
+    ])
+    ranked, _ = rf.rank_configurations(table)
+    assert list(ranked["name"]) == ["tied", "best", "admissible_low", "admissible_lower",
+                                    "not_admissible"]
+    assert rf.select_configuration(table)[0]["name"] == "tied"
+
+
+def test_per_class_note_has_precision_recall_and_f1():
+    y = pd.Series(["A", "A", "B", "C", "D", "D"])
+    pred = ["A", "B", "B", "C", "D", "A"]
+    note = rf.per_class_note(y, pred)
+    assert note.startswith("per-class val A P=0.500 R=0.500 F1=0.500")
+    assert "B P=0.500 R=1.000 F1=0.667" in note
+    assert "D P=1.000 R=0.500 F1=0.667" in note
+
+
+def test_ranked_rows_give_valid_forest_parameters():
+    # Regression: iterating the ranked table returned max_depth=6.0, which
+    # RandomForestClassifier rejects. Parameters must come back as int / None / str.
+    table = pd.DataFrame([
+        {"n_estimators": 300, "max_depth": 6, "min_samples_leaf": 10, "max_features": 0.5,
+         "cv_macro_f1": 0.51, "cv_macro_f1_sd": 0.01, "train_cv_gap": 0.03},
+        {"n_estimators": 300, "max_depth": None, "min_samples_leaf": 1, "max_features": "sqrt",
+         "cv_macro_f1": 0.50, "cv_macro_f1_sd": 0.01, "train_cv_gap": 0.02},
+    ])
+    ranked, _ = rf.rank_configurations(table)
+    keys = ["n_estimators", "max_depth", "min_samples_leaf", "max_features"]
+    params = [{k: rf._py(row[k]) for k in keys} for _, row in ranked.iterrows()]
+    assert params[0] == {"n_estimators": 300, "max_depth": 6, "min_samples_leaf": 10,
+                         "max_features": 0.5}
+    assert type(params[0]["max_depth"]) is int
+    assert params[1]["max_depth"] is None and type(params[1]["min_samples_leaf"]) is int
+    rf.build_model(**params[0])  # builds without error
