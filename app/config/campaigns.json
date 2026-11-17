@@ -1,0 +1,19 @@
+{
+  "status": "Borrador (US-13, PR #69; D-016 pendiente de aprobación)",
+  "source": "reports/segment_insights.md (PR #69, US-13)",
+  "disclaimer": "Las campañas son un borrador de trabajo y no están aprobadas; no deben presentarse como recomendaciones definitivas.",
+  "segments": {
+    "A": {
+      "campaign": "Basic offer for small households, with entry-level options."
+    },
+    "B": {
+      "campaign": "Offer with options at several price levels."
+    },
+    "C": {
+      "campaign": "Mid-range and high-end offer."
+    },
+    "D": {
+      "campaign": "Entry-level offer at an affordable price."
+    }
+  }
+}

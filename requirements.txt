@@ -5,6 +5,7 @@
 # Versions below are the ones verified by recorded project runs:
 #   - A-009 (PR #47): environment inspection and import/version checks.
 #   - D-011 (PR #49): data-quality run with pandas 3.1.1 on Python 3.12.3.
+#   - A-023 (US-15 Phase 1): streamlit 1.67.0 installed and smoke-tested.
 #
 # Install with:
 #   python -m pip install --upgrade pip
@@ -23,6 +24,9 @@ matplotlib==3.11.2
 seaborn==0.13.2
 kagglehub==1.0.3
 ipykernel==7.4.0
+
+# --- App (US-15) ---
+streamlit==1.67.0
 
 # --- Development (tests, US-05) ---
 pytest==9.2.0

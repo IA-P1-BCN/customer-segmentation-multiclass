@@ -33,6 +33,7 @@ Reference environment: Python 3.12.3 (see A-009 / A-012).
 ```
 data/            # Train.csv + splits (train_70, val_15, test_15)
 src/             # split_data.py, config.py, data_quality.py, (Pipeline US-05)
+app/             # Streamlit app (US-15): form, validation, campaign catalogue
 results/         # per-model metrics (convention in results/README.md)
 reports/         # data-quality report (data_quality.md, nulls_train_70.csv)
 docs/ai-usage/   # DECISION_LOG.md, AI_ACTIVITY_LOG.md
@@ -44,7 +45,7 @@ AGENTS.md
 ## How to run
 - **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All".
 - **Models:** notebooks/scripts for logistic regression, random forest, boosting and SVM (importing the shared Pipeline from `src/`).
-- **App:** *(pending — US-15)* `streamlit run app.py`
+- **App:** `python -m streamlit run app/app.py` (US-15, Phase 1: form, validation and campaign catalogue; prediction waits for the US-11 frozen model)
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
 - **Tests:** `python -m pytest`
 
