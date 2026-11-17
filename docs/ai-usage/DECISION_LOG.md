@@ -312,7 +312,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 
 - **Date:** 2026-11-17
 - **Note:** Numbered D-017 because D-015 is in `develop` and D-016 is proposed in PR #69. If D-017 is taken when this is merged, use the next free number.
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Methodology / Model selection
 - **Context:** US-11 (issue #27) freezes the winning model and US-12 (issue #29) evaluates it once on `test_15`. The issue leaves open whether the frozen model is fitted on `train_70` only or on `train_70 + val_15`, and nothing in the repository decides it. PR #72 (`src/compare_models.py`) implements both through `--train-with train_70|train_and_val`, with `train_70` as the default; that default was chosen by whoever wrote the script, not by the team. PR #73 (`src/evaluate_final.py`) reads the `trained_on` field stored in the frozen file: if it is `train_and_val`, it refuses to score `val_15` and omits the test − validation comparison. D-013 item 4 says each member owns the model and its hyperparameters, but nothing else is decided individually, and AGENTS.md section 2 requires explicit human approval to select the definitive model or methodology. The decision therefore belongs to the team, not to the person who implements US-11.
 - **Alternatives:**
@@ -329,7 +329,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   3. If the team chooses B instead, this record is changed before freezing, the frozen file records `trained_on = train_and_val`, and the technical report (US-16) states that the `val_15` metrics and the `val_15` importance of the frozen model are not held-out figures. `src/evaluate_final.py` already refuses `val_15` in that case.
   4. Nobody implementing US-11 or US-12 changes this default on their own.
 - **Agreement so far:** Raised by Isbel in the team channel on 2026-11-17 (the decision must not be taken unilaterally by whoever implements the code). Proposed here by Rita Pereira. Pedro voted for option A (`train_70` only) in the team channel on 2026-11-17 and asked for the decision to be written and approved before freezing, by someone other than its author (relayed by Rita Pereira). Brian voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Isbel voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Pedro, Brian and Isbel voted for option A, the one proposed by Rita Pereira; no vote is pending. The approval status is left to a human team member.
-- **Approval:** Pending. A human team member other than the agent that wrote this draft sets the status.
+- **Approval:** Approved by Brian, 2026-11-17.
 - **Consequences:** If approved as written, US-11 can freeze the winner and US-12 can evaluate it without changes to the scripts. If B is chosen, the freeze is run with `--train-with train_and_val`, the validation figures of the frozen model are omitted or labelled as not held out, and US-16 explains why.
 
 ---
