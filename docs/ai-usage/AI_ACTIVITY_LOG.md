@@ -405,3 +405,22 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** Notebook executed from a clean kernel (12 code cells, execution counts 1–12, no error outputs); figures inspected; only `data/train_70.csv` is read and `val_15`/`test_15` are not opened; no CSV in `data/` is modified. An independent read-only script reproduced the figures: 5,246 distinct profiles, 322 repeated, 158 ambiguous, 365 ambiguous rows, 171 unlearnable rows, 14 null-only rows and 151 complete-case ambiguous profiles. Rita Pereira re-executed the previous version and reproduced the twelve outputs; the updated notebook keeps twelve code cells.
 - **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
 - **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
+
+---
+
+### A-022 — US-11: common selection rule, comparison table and freeze harness
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-022 because A-021 is used by PR #70 (SVM, merged).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-11 (issue #27): make the approved D-015 rule reusable, assemble the D-010 comparison table and prepare the freeze of the winning model.
+- **Activities:**
+  - Created `src/select_config.py`: the D-015 rule as a module plus a CLI (`python -m src.select_config results/<model>.csv`). It reads the `cv5fold` rows, keeps the last batch of each configuration, parses the fold standard deviation and the train - CV gap from `notes` (the two formats in use) and applies items 2-6 of D-015. When the notes lack those two numbers it stops with an actionable message, because D-015 item 8 requires them.
+  - Created `src/compare_models.py`: reads the four results files, keeps the rows each owner marked as the chosen configuration (`tuned`/`SELECTED`/`CANDIDATO`), prints accuracy and macro-F1 on `train_70` and `val_15`, the gap in points, the per-class F1 and the majority-class baseline; selects the winner by validation macro-F1 among the models with gap < 5 points (D-010 Consequences, between models) and freezes it with joblib (serialise, reload in a fresh object, predict one row). The registry only knows the modules that expose `SELECTED_PARAMS`; today that is the SVM.
+  - Added `joblib==1.6.0` to `requirements.txt` as a direct dependency (installed version, verified in this run). Installing or upgrading dependencies needs human approval (AGENTS.md section 2), so the change is flagged for the team.
+  - Created `tests/test_select_config.py` and `tests/test_compare_models.py` (15 tests: both notes formats, missing fields, last-batch handling, tie rule, fallback, table assembly, skipped models, winner choice and the freeze registry).
+- **Files:** Created: `src/select_config.py`, `src/compare_models.py`, `tests/test_select_config.py`, `tests/test_compare_models.py`. Modified: `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests/test_select_config.py tests/test_compare_models.py -q` -> 15 passed. `python -m src.select_config results/svm.csv` returns `grid-07 {C: 1.0, gamma: 0.01, kernel: rbf}` with CV macro-F1 0.4923 and a 3.54-point train - CV gap, matching the configuration recorded in PR #70. `python -m src.compare_models --stage table` builds the table with the SVM and lists the other three files as not yet available. No data file and no `test_15` were read.
+- **Outcome:** The D-015 rule is reusable and the comparison harness is ready. The table cannot be completed yet: `results/boosting.csv` (PR #65) has no row marked as the chosen configuration, and `results/logistic_regression.csv` (PR #66) records pooled out-of-fold metrics without the fold standard deviation or the train - CV gap, so `select_config` stops with the message that D-015 item 8 requires them. Both owners need to re-derive and record their selection.
+- **Pending tasks:** Merge #65, #66 and #67; complete the table; team approval of the `joblib` dependency and of the choice between training the frozen model on `train_70` or on `train_70 + val_15`; then freeze the winner and record the US-11 decision.
