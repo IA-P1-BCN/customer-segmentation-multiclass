@@ -24,5 +24,12 @@ seaborn==0.13.2
 kagglehub==1.0.3
 ipykernel==7.4.0
 
+# --- Modelling: boosting (US-09, issue #21) ---
+# Installed and smoke-tested in the reference environment (Python 3.12.3,
+# xgboost 3.4.1) before writing src/train_boosting.py. The model is chosen in
+# the US-09 record: better scikit-learn API and documentation than LightGBM,
+# and training speed is irrelevant with 5,647 rows.
+xgboost==3.4.1
+
 # --- Development (tests, US-05) ---
 pytest==9.2.0
