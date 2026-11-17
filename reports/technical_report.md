@@ -15,7 +15,7 @@
 | 9. Limitations | Rita | Draft |
 | 10. Reproducibility and sources | Rita | Draft |
 
-**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. The model results (sections 3 and 5) were checked against `develop` on 2026-11-17, after the four model PRs were merged. The segment figures (section 8) are still in an open pull request (PR #69) and must be checked again against `develop` when it is merged.
+**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. The model results (sections 3 and 5) were checked against `develop` on 2026-11-17, after the four model PRs were merged. The segment figures (section 8) were checked against `develop` on 2026-11-17, after PR #69 was merged.
 
 ---
 
@@ -239,7 +239,7 @@ Preview from validation and the EDA, to be confirmed with the test results:
 
 ## 8. Segments and business reading
 
-*Owner: Rita. Source: `reports/segment_insights.md` and `reports/segment_profile_train_70.csv` (PR #69, US-13 part 1), computed on `train_70`.*
+*Owner: Rita. Source: `reports/segment_insights.md` and `reports/segment_profile_train_70.csv` (PR #69, merged, US-13 part 1), computed on `train_70`.*
 
 ### 8.1 Profile of each segment
 
@@ -264,13 +264,13 @@ The names below are **team hypotheses** used to talk about the segments, not fac
 
 ### 8.2 Segment to prioritise
 
-> **Proposed rule (D-016, pending approval):** prioritise the segment with the most High-spending customers in `train_70`.
+> **Approved rule (D-016, approved by Pedro in the review of PR #69, 2026-11-17):** prioritise the segment with the most High-spending customers in `train_70`.
 
 C is the **provisional first priority** (292 High-spending customers, 34.2 % of all of them), and B is also a segment of interest (268, 31.4 %). `Spending_Score` is a proxy of customer value: the dataset has no income or revenue.
 
 ### 8.3 Campaigns
 
-The campaign per segment that the app shows (US-15) is a **business hypothesis, not a model result**. The draft table is in `reports/segment_insights.md`, section 5, pending team approval.
+The campaign per segment that the app shows (US-15) is a **business hypothesis, not a model result**. The table is in `reports/segment_insights.md`, section 5, approved as business hypotheses in the review of PR #69 (Pedro, 2026-11-17).
 
 ### 8.4 Which variables matter
 
@@ -314,8 +314,8 @@ python src/train_boosting.py --select              # XGBoost
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
 | 5 | Random forest | `results/random_forest.csv`, tuning 2026-11-17T08:49:04Z and baseline 2026-11-17T10:12:28Z (PR #67, merged; the baseline was repeated later to add per-class precision and recall) |
 | 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65, merged) |
-| 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69) |
+| 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69, merged) |
 
 ### 10.3 Decisions cited
 
-D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, proposed), D-017 (data used to fit the frozen model, approved).
+D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, approved), D-017 (data used to fit the frozen model, approved).
