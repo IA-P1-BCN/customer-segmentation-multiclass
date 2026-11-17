@@ -369,3 +369,21 @@ Its purpose is to help team members understand previous activities, identify com
 ---
 
 <!-- Add new activities below using the same structure. Preserve previous records. -->
+
+### A-022 — US-06 EDA on train_70: duplicate profiles and integration
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-022 because A-020 is used by open PR #69 (segment insights) and A-021 by open PR #70 (SVM). If a different number is free when this is merged, renumber.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** Pedro's section of US-06 (issue #10): repeated and ambiguous profiles on `train_70`, plus the integration of the three EDA sections with written answers to the issue questions.
+- **Activities:**
+  - Reviewed the merged sections of Rita Pereira (#58) and Brian (#64) and the initial EDA (#46), and measured the duplicates strictly on the training partition.
+  - Created branch `feature/eda-duplicados` and notebook `04_eda_train70_duplicados.ipynb`: shape, types, nulls and target distribution; repeated profiles (322 profiles, 723 rows); ambiguous profiles with more than one segment (158 profiles, 365 rows, 6.5 %); most repeated segment pairs; an example profile; the ambiguity ceiling (171 rows, 3.0 %); and a sensitivity check with complete rows only (151 profiles, 14 rows matching only through a null).
+  - Added `reports/duplicates_train_70.csv` (one row per repeated profile) and two figures: `eda_duplicate_profiles.png` and `eda_ambiguous_segment_pairs.png`.
+  - Wrote `reports/eda_train70_sintesis.md`: integration of the three sections, answers to the four questions of the issue, a ranking of single-variable separation, an acceptance-criteria map and limitations.
+  - Addressed the review of PR #71 by Rita Pereira: corrected the married-table denominator label (nulls included, as in #58), changed the model accuracy range from 52–55 % to 50–54 %, attributed `nulls_train_70.csv` to US-04 (#49) instead of #64, and documented the null-grouping sensitivity in the notebook and the synthesis.
+- **Files:** Created: `04_eda_train70_duplicados.ipynb`, `reports/duplicates_train_70.csv`, `reports/eda_train70_sintesis.md`, `reports/figures/eda_duplicate_profiles.png`, `reports/figures/eda_ambiguous_segment_pairs.png`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Notebook executed from a clean kernel (12 code cells, execution counts 1–12, no error outputs); figures inspected; only `data/train_70.csv` is read and `val_15`/`test_15` are not opened; no CSV in `data/` is modified. An independent read-only script reproduced the figures: 5,246 distinct profiles, 322 repeated, 158 ambiguous, 365 ambiguous rows, 171 unlearnable rows, 14 null-only rows and 151 complete-case ambiguous profiles. Rita Pereira re-executed the previous version and reproduced the twelve outputs; the updated notebook keeps twelve code cells.
+- **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
+- **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
