@@ -405,3 +405,20 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** Notebook executed from a clean kernel (12 code cells, execution counts 1–12, no error outputs); figures inspected; only `data/train_70.csv` is read and `val_15`/`test_15` are not opened; no CSV in `data/` is modified. An independent read-only script reproduced the figures: 5,246 distinct profiles, 322 repeated, 158 ambiguous, 365 ambiguous rows, 171 unlearnable rows, 14 null-only rows and 151 complete-case ambiguous profiles. Rita Pereira re-executed the previous version and reproduced the twelve outputs; the updated notebook keeps twelve code cells.
 - **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
 - **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
+
+### A-026 — US-16: first draft of the technical report
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-026 because A-018, A-020 and A-023 to A-025 are used by open PRs (#67, #69, #65, #66 and #72, #73). A-024 is currently used by both #66 and #72; whichever is renumbered should take A-027. If A-026 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Opus 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Start US-16 (issue #36): integrate the technical report from the work already recorded, leaving marked gaps for what depends on US-11, US-12 and US-14.
+- **Activities:**
+  - Read issue #36 and the criteria of US-11 (#27), US-12 (#29) and US-14 (#32); D-006, D-009, D-010, D-011, D-012, D-013, D-014, D-015 and D-016 (proposed); `reports/eda_train70_sintesis.md`, `reports/data_quality.md` and `reports/segment_insights.md` (PR #69).
+  - Extracted the baseline and selected-configuration metrics of the four models from their results files, each read from its own branch: `results/svm.csv` (`develop`), `results/random_forest.csv` (PR #67), `results/boosting.csv` (PR #65) and `results/logistic_regression.csv` (PR #66, D-015 re-selection of 2026-11-17 11:15 UTC). Gaps are quoted as recorded in each run's `notes`.
+  - Created branch `feature/technical-report` from `develop` (`ecaa580`) and `reports/technical_report.md` in English, like the other reports (decision of Rita Pereira): ten sections with the owner of each one as listed in issue #36, a sources table for every figure, and marked gaps for the final model, the test evaluation, the feature importance (US-11, US-12) and the error analysis (US-14). Figures taken from open PRs are marked with the PR number.
+  - At Rita Pereira's request, a sentence comparing the XGBoost − random forest difference with the cross-validation fold variability was replaced by a plain statement that the difference (0.0147) is small and was not tested statistically: the fold standard deviation does not measure the variability of a paired difference on the same validation rows.
+- **Files:** Created: `reports/technical_report.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no model executed and no data modified. Every figure was read from a recorded results file, a merged report or an approved decision; `test_15` was not read. `git diff --check` passes.
+- **Outcome:** Draft committed with Rita Pereira's authorization. Not pushed yet.
+- **Pending tasks:** Sections 6 and 7 (US-12 by Brian, PR #73; US-14 by Pedro, not started); US-11 decision and freezing; check the figures against `develop` once PRs #65, #66, #67 and #69 are merged; review of each section by its owner and of the whole report by Pedro.
