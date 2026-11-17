@@ -27,10 +27,14 @@ Preprocessing status wired by this module:
   lands (D-013 Consequences: re-run before the final US-11 comparison).
 
 Metrics follow D-010: macro-F1 is the primary metric, accuracy is always
-reported, and the overfitting check is ``accuracy(train_70) −
+reported, and the overfitting check is ``accuracy(train_70) -
 accuracy(val_15) < 5`` percentage points, absolute (exactly 5 does not
-pass). Improvement configurations are compared with 5-fold stratified CV
-on ``train_70`` passing the full Pipeline (D-010 item 6).
+pass). Candidate configurations are compared with 5-fold stratified CV on
+``train_70`` passing the full Pipeline (D-010 item 6), and the final
+configuration is chosen with the common rule of D-015: highest mean CV
+macro-F1 among the configurations whose mean train - CV accuracy gap is
+below 5 points, using the standard-error tie rule and then the smallest
+train - CV gap.
 
 Usage (from the repository root):
 
@@ -70,6 +74,11 @@ _D011_NOMINAL_IMPUTER = ColumnTransformer(
         ),
     ],
     remainder="drop",
+    # Keep the final names aligned with the random forest and XGBoost
+    # pipelines (`Gender_Male`, `Profession_*`) instead of prefixing them
+    # with the imputer branch (`mode__`, `unknown__`). US-12 groups feature
+    # importances by name, so the four models must expose the same labels.
+    verbose_feature_names_out=False,
 )
 
 D011_IMPUTER_PARAMS = {
@@ -96,9 +105,9 @@ D014_ENCODER_PARAMS = {
 
 # --- Candidate configurations for the improvement phase (D-010 item 6) --------
 
-# Evaluated later with 5-fold stratified CV on train_70 (full Pipeline) and
-# officially compared train vs val_15 (D-010). Labels match the `config`
-# column of results/logistic_regression.csv (US-03 convention).
+# Compared with 5-fold stratified CV on train_70 (full Pipeline), selected
+# with D-015 and evaluated officially on val_15 (D-010). Labels match the
+# `config` column of results/logistic_regression.csv (US-03 convention).
 CANDIDATE_CONFIGS = (
     {"config": "baseline", "C": 1.0, "penalty": "l2", "solver": "lbfgs", "class_weight": None},
     {"config": "C=0.01_l2", "C": 0.01, "penalty": "l2", "solver": "lbfgs", "class_weight": None},
