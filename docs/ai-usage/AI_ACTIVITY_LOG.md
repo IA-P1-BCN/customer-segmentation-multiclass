@@ -346,6 +346,45 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-018 — US-08: random forest baseline and improvement
+
+- **Date:** 2026-11-13
+- **Note:** Numbered A-018 because A-017 is Rita's EDA (PR #58, merged). If A-018 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Opus 5.5 / Claude Fable 5.2)
+- **Human owner:** Rita Pereira
+- **Objective:** Train the random forest on the shared Pipeline, first as a baseline and then improved, and record the metrics required by D-010 (issue #20, US-08).
+- **Activities:**
+  - Read the results convention (`results/README.md`), `src/config.py`, `src/preprocessing.py`, D-010, D-011, D-013 and D-014. Rita Pereira chose a script plus a notebook, and to start with D-014 while it is still Proposed.
+  - Created branch `feature/model-random-forest` from `develop` (`51024c7`) and `src/train_random_forest.py`: D-013 checks (row counts, no ID overlap, SHA-256), D-011 imputation and D-014 encoding passed through the parameters of `build_preprocessing()` (shared module not modified), `RandomForestClassifier` with `RANDOM_STATE`, and two stages (`baseline`, `tune`) that append to `results/random_forest.csv`.
+  - Finding on D-013: the SHA-256 values listed there correspond to a Windows checkout (CRLF line endings). Git stores the CSV files with LF, so a macOS/Linux checkout gives different hashes for the same content (verified: converting the LF files to CRLF reproduces the four D-013 hashes). The script hashes the content with line endings normalised to LF. Not changed in the Decision Log; to be raised with the team.
+  - Ran `python -m src.train_random_forest --stage baseline` and `--stage tune` (60 configurations: `max_depth` 4/6/8/10/12/None × `min_samples_leaf` 1/5/10/20/40 × `max_features` sqrt/0.5, 300 trees; 5-fold stratified CV on `train_70`, full Pipeline inside each fold, D-010 item 6). Selection rule: best CV macro-F1 among configurations with train − CV accuracy gap < 5 points; `val_15` was not used to choose.
+  - Created `03_model_random_forest.ipynb`, which reads the recorded results, refits the selected configuration (reproducing the recorded validation accuracy) and produces the tuning plot, the confusion matrix and the feature importances, with written conclusions.
+  - Created `tests/test_train_random_forest.py` (7 structural tests).
+- **Files:** Created: `src/train_random_forest.py`, `tests/test_train_random_forest.py`, `results/random_forest.csv`, `03_model_random_forest.ipynb`, `reports/figures/rf_tuning_cv.png`, `rf_confusion_matrix_val.png`, `rf_feature_importance.png`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Recorded runs (Python 3.12.10, scikit-learn 1.9.1, seed 42), 64 rows in `results/random_forest.csv`. Baseline: accuracy 0.9683 train / 0.4983 val (gap 47.00 points, fails the < 5 limit), macro-F1 val 0.4849. Selected configuration (`n_estimators=300`, `max_depth=12`, `min_samples_leaf=20`, `max_features="sqrt"`): accuracy 0.5628 train / 0.5421 val (gap 2.06 points, meets the limit), macro-F1 0.5442 train / 0.5197 val; per-class F1 on val A 0.448, B 0.359, C 0.556, D 0.715; CV macro-F1 0.5084 (sd 0.0101), 35 of 60 configurations within the CV gap limit. `pytest tests` → 23 passed (16 existing + 7 new). Notebook executed from a clean kernel (execution counts 1–13, no error outputs). `test_15` never read.
+- **Outcome:** Implemented and executed; not committed (awaiting Rita's review). The selected configuration is fixed for US-11.
+- **Pending tasks:** Rita reviews the notebook; commit and PR into `develop`; re-run both stages if D-014 is changed before approval; raise the D-013 checksum finding with the team.
+- **Update 2026-11-16 (re-run after D-014 approval, Claude Fable 5.2):**
+  - D-014 was approved in PR #61 with a change to item 2: nominal columns use `OneHotEncoder(drop="if_binary", handle_unknown="ignore")`, so `Gender` yields one column (28 columns instead of 29). The D-013 checksum finding was resolved by PR #59 (LF hashes in the Decision Log).
+  - Changed `build_preprocessor()` accordingly, updated the width test (29 → 28) and the outdated comments, and re-ran both stages. The file is append-only: the 64 rows of 2026-11-13 are kept (their notes say "D-014 (Proposed)") and 64 new rows were appended (notes say "D-014 (Approved, 28 columns)"), 128 rows in total.
+  - Rebuilt and re-executed `03_model_random_forest.ipynb`: it now uses only the latest run of each stage and adds a comparison with the earlier run.
+  - Verification: `pytest tests` → 23 passed. Baseline: accuracy 0.9683 train / 0.4959 val (gap 47.24 points, fails), macro-F1 val 0.4830. Selected configuration (`n_estimators=300`, `max_depth=None`, `min_samples_leaf=20`, `max_features=0.5`): accuracy 0.5792 train / 0.5314 val (gap 4.78 points, meets the limit), macro-F1 0.5656 train / 0.5102 val; per-class F1 on val A 0.409, B 0.373, C 0.552, D 0.707; CV macro-F1 0.5116 (sd 0.0077), CV gap 4.94 points; 37 of 60 configurations within the CV gap limit. `test_15` never read.
+  - Finding: that configuration is within 0.3 points of the gap limit (CV gap 4.94, validation gap 4.78) and leads the next admissible ones by 0.002 CV macro-F1, less than its standard error (0.0034).
+  - Selection rule changed by decision of Rita Pereira (2026-11-16, after seeing the result above; proposed by the agent): among the configurations with train − CV gap < 5 points, those within one standard error of the best CV macro-F1 are treated as tied and the smallest gap is selected (`select_configuration()`, 3 new tests). Only CV results on `train_70` are used; `val_15` does not take part in the choice. Re-ran `--stage tune` (62 more rows appended, 190 in total; the previous run is kept for traceability).
+  - Final verification: `pytest tests` → 26 passed. Six configurations tied; selected `n_estimators=300`, `max_depth=6`, `min_samples_leaf=10`, `max_features=0.5` (CV macro-F1 0.5082, sd 0.0086, CV gap 3.01 points; its CV macro-F1 equals the tie threshold to four decimals). On `train_70` / `val_15`: accuracy 0.5438 / 0.5248 (gap 1.90 points, meets the limit), macro-F1 0.5321 / 0.5080; per-class F1 on val A 0.419, B 0.356, C 0.551, D 0.706. Compared with the rule without tie-break on `val_15`: macro-F1 0.5102 → 0.5080, accuracy gap 4.78 → 1.90 points. Notebook re-executed from a clean kernel (14 code cells, no errors); it uses the latest run of each stage and shows the three recorded runs side by side.
+  - Outcome: committed and pushed on 2026-11-16 with Rita's authorization; pull request into `develop` pending. The rule change should be communicated to the team before US-11.
+- **Update 2026-11-17 (Claude Opus 5.5 / Claude Fable 5.2, PR #67 review and D-015):**
+  - Context: the tie-break rule was proposed to the whole team as D-015 (PR #68, Proposed). Isbel's audit of PR #67 asked for per-class precision and recall in the results file and for the fallback required by D-015.
+  - `src/train_random_forest.py`: separate constants for the official check on `val_15` (`MAX_ACCURACY_GAP`, D-010 item 3) and for the admissibility cut on the train − CV gap (`CV_GAP_LIMIT`, D-015 item 3), as Pedro pointed out that the old label described only the first; per-class precision, recall and F1 on `val_15` written to `notes` in the same format as the boosting results (PR #65); `rank_configurations()` and the D-015 item 7 fallback (if the selected configuration fails the official check, the next one is evaluated and every evaluation is recorded). Pedro noted that item 6 (no admissible configuration) was already implemented; item 7 was not.
+  - Ran `--stage tune` at 08:11 UTC with `CV_GAP_LIMIT = 0.10`, while the team was considering Pedro's 10-point amendment: selected `max_depth=10`, `min_samples_leaf=20`, `max_features=0.5`; `val_15` accuracy 0.5289, macro-F1 0.5066, gap 4.73 points. The team kept 5 points (relayed by Rita Pereira); these 62 rows stay in the append-only file as a record (notes say "< 10 pts").
+  - Error found and fixed: the first run with the fallback stopped before writing any row because iterating over the ranked table returned `max_depth=6.0` and `RandomForestClassifier` rejected it. `_py()` now also converts plain Python floats; a regression test covers it.
+  - Ran `--stage tune` at 08:49 UTC with `CV_GAP_LIMIT = 0.05`: same selection and metrics as the 2026-11-16 run with tie-break (`max_depth=6`, `min_samples_leaf=10`, `max_features=0.5`; `val_15` accuracy 0.5248, macro-F1 0.5080, gap 1.90 points), passing the official check at the first attempt. Per-class precision / recall on `val_15`: A 0.442 / 0.399, B 0.381 / 0.333, C 0.537 / 0.566, D 0.662 / 0.756. `results/random_forest.csv`: 314 rows.
+  - `03_model_random_forest.ipynb`: rebuilt from the committed version (a local execution at 09:28 had changed the kernel metadata and was overwritten with Rita's authorization), with five runs described, a precision/recall table, the comparison table extended and the conclusions updated (D-015, 10-point test not adopted). Executed from a clean kernel with `jupyter nbconvert --execute` (15 code cells, no errors; the refit reproduces the recorded accuracy); kernel metadata unchanged; the three figures came out byte-identical.
+  - Verification: `pytest tests` → 30 passed. `test_15` never read.
+  - Review follow-up 2026-11-17 (Claude Sonnet 5.5, with Rita Pereira's authorization): the baseline rows had no per-class precision and recall in `notes` (US-08 criterion 2, D-010 Consequences). Re-ran `--stage baseline` (2 rows appended, 316 rows in total): same metrics as before (accuracy 0.9683 train / 0.4959 val, macro-F1 val 0.4830, gap 47.24 points) and per-class precision / recall now in `notes` (val: A 0.390 / 0.358, B 0.391 / 0.362, C 0.520 / 0.529, D 0.624 / 0.697). Merged `develop` (D-015 Approved, #68) into the branch; the conflict in this file was resolved by keeping A-018 followed by A-019. The notebook was re-executed from a clean kernel so that its outputs list the new run.
+
+---
+
 ### A-019 — D-015 proposal: common rule to select each model's configuration
 
 - **Date:** 2026-11-16
@@ -386,7 +425,52 @@ Its purpose is to help team members understand previous activities, identify com
 - **Pending tasks:** Human review and squash-merge; re-run if the shared Pipeline phase 2 lands (D-013 Consequences); US-11 compares the four models on `val_15` with the same rule.
 ---
 
+### A-024 — US-07 review: D-015 re-selection, CV standard deviations, precision/recall and column names
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-024 because A-018–A-020 are reserved by open PR #69 and A-021–A-023 are used on `develop` (SVM, EDA and US-15 app). This entry is added on the PR #66 branch without rewriting previous records.
+- **Agent:** opencode (deepseek-v4.1-flash-free)
+- **Human owner:** Isbel
+- **Objective:** Address the technical review of PR #66: re-derive the logistic-regression configuration with the approved D-015 rule, record the fold standard deviation of macro-F1 in the `cv5fold` rows, add per-class precision and recall to the official `val_15` row of the selected configuration, align the feature names with the RF/XGB pipelines and correct the contradictory CV conclusion. Verify the expected selection (`C=1_l2_balanced`, `val_15` macro-F1 ≈ 0.4786) by an executed run, not by assumption.
+- **Activities:**
+  - Inspected the PR branch and created an isolated worktree at `feature/model-logistic-regression` to avoid touching the uncommitted US-15 work on `feature/streamlit-app`; no unrelated branch or stash was modified.
+  - Set `verbose_feature_names_out=False` on the inner nominal-imputer `ColumnTransformer` in `src/model_logreg.py`; the transformed names are now `Gender_Male`, `Var_1_Cat_*` and `Profession_*` without the `mode__`/`unknown__` prefixes, matching the random-forest and XGBoost pipelines (US-12 grouping). Verified 28 columns by an executed fit on `train_70`.
+  - Reworked notebook section 8 to apply D-015 exactly: `StratifiedKFold(5, shuffle=True, random_state=42)` on `train_70`, full Pipeline passed to `cross_validate`, mean and standard deviation of the five fold scores (NumPy `ddof=0`), admissibility by mean train − CV accuracy gap < 5 pp, standard-error tie rule (`std / sqrt(5)`) and smallest train − CV gap as the final tie-break. Selection uses CV only; `val_15` is evaluated once for the official D-010 check.
+  - Re-executed all nine notebook code cells (execution counts 1–9, no error outputs). The run selected `C=1_l2_balanced`: CV macro-F1 mean 0.485673, fold std 0.010076, standard error 0.004506; all six configurations meet the CV gap cut, and the tied group contains only `C=1_l2_balanced`. Official `val_15`: accuracy 0.495868, macro-F1 0.478583 (0.4786), accuracy gap +1.64 pp, which meets D-010.
+  - Recorded per-class `val_15` precision/recall/F1 for the selected configuration: A 0.3949/0.4189/0.4066; B 0.3493/0.2616/0.2992; C 0.4908/0.5424/0.5153; D 0.6731/0.7147/0.6933.
+  - Appended 8 rows to `results/logistic_regression.csv` without editing the 20 previous rows: six `cv5fold` rows (mean accuracy/macro-F1, with `accuracy_std`, `macro_f1_std` and train − CV gap in `notes`) plus `train_70` and `val_15` rows for the selected configuration (the `val_15` notes include precision/recall/F1 by class).
+  - Corrected the previous conclusion that called `C=0.1_l2` "also first" in CV: it is second in CV macro-F1 (0.479499); `C=1_l2_balanced` leads the CV (0.485673). The previous `val_15`-based selection of `C=0.1_l2` is superseded by D-015.
+  - Added `tests/test_model_logreg.py`, which fits the pipeline on `train_70` and checks 28 columns, the expected unprefixed names and the absence of `__` prefixes.
+- **Files:** Modified: `src/model_logreg.py`, `notebooks/03_modeling/01_logistic_regression.ipynb`, `results/logistic_regression.csv`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). Created: `tests/test_model_logreg.py`.
+- **Verification:** Notebook re-executed in an isolated `jupyter_client` kernel with 9 code cells, execution counts 1–9 and no error outputs; CSV has 28 rows (20 previous + 8 new) and the selection reproduces Brian's expected `C=1_l2_balanced` with `val_15` macro-F1 0.4785827259899149; `pytest -q` → 17 passed (1 known `penalty` FutureWarning); `git diff --check` clean; only `train_70` is fitted and `val_15` is evaluated; `test_15.csv` is not read.
+- **Outcome:** PR #66 changes implemented locally in the PR worktree and verified; the PR itself is not modified remotely yet.
+- **Pending tasks:** Human review of the new result rows and notebook conclusions; explicit authorization to commit and push to `feature/model-logistic-regression`; re-run when US-05 phase 2 lands (D-013 Consequences).
+- **Update 2026-11-17 (Claude Sonnet 5.5, with Rita Pereira's authorization, after Isbel's agent became unavailable):** the two lines above were written before commit `ce39771` reached the PR branch. Remaining review points of PR #66 handled on the branch:
+  - Merged `develop` (SVM #70, EDA #71, D-015 #68). The conflict in this file was resolved by keeping develop's entries followed by A-024; no record was changed.
+  - D-013 item 6 (Brian's blocking point 3): added `load_partitions()` and the reference `PARTITIONS` to `src/model_logreg.py` (row counts, SHA-256 with line endings normalised to LF, no shared `ID`; `test_15` is not loaded). The notebook now loads its data through it, so the check runs and prints every time. `tests/test_model_logreg.py` gained 2 tests (real data passes; a wrong checksum raises).
+  - Notebook re-executed from a clean kernel in a temporary copy of the repository, so `results/logistic_regression.csv` was **not** appended a third time (the recording cell appends on every execution). All numeric outputs are identical to the committed ones; the differences are the new D-013 lines and a path separator (`results\` to `results/`). 9 code cells, execution counts 1-9, no error outputs, kernel `python3`.
+  - `pytest -q` -> 35 passed on the merged branch. `test_15` is not read.
+  - Not changed: `results/logistic_regression.csv` stays append-only and untouched. `src.select_config` (PR #72) cannot read the `cv5fold` notes because they use `macro_f1_std=` and `train_cv_acc_gap=` instead of the wording of the other models; the selected rows are not marked `SELECTED`; the baseline `val_15` row has no per-class precision and recall. These are left for the team to decide (harness patterns in #72, or an appended block).
+
+---
+
 <!-- Add new activities below using the same structure. Preserve previous records. -->
+
+### A-027 — D-017 proposal: data used to fit the frozen model
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-027 because A-018, A-020 and A-023 to A-026 are used by open PRs. If A-027 is taken when this is merged, use the next free number.
+- **Agent:** Claude Code (Claude Sonnet 5.5)
+- **Human owner:** Rita Pereira
+- **Objective:** Record as a proposed decision whether the frozen model of US-11 is fitted on `train_70` or on `train_70 + val_15`, after Isbel asked that it not be decided by whoever implements the code.
+- **Activities:**
+  - Searched `develop` and the branches of PRs #69, #72, #73 and #74 for an existing decision: none exists. `src/compare_models.py` (PR #72) offers both options with `train_70` as the default; `src/evaluate_final.py` (PR #73) refuses `val_15` when `trained_on` is `train_and_val`.
+  - Wrote D-017 (Proposed) with two alternatives, a recommendation for `train_70` only and the consequences of each option. Pedro's vote for `train_70` (team channel, relayed by Rita Pereira) is recorded; Brian's vote for `train_70` (same channel, relayed by Rita Pereira) and Isbel's vote for `train_70` (same channel, relayed by Rita Pereira) were added later the same day.
+- **Files:** Modified: `docs/ai-usage/DECISION_LOG.md` (D-017 added), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Documentation only; no model executed, no data read or modified, no metric created. Row counts come from D-013; the 21.4 % figure is 1,210 / 5,647.
+- **Outcome:** D-017 proposed in a PR into `develop`. The approval status is left to a human team member other than the author.
+- **Pending tasks:** Votes of Isbel and Brian; human approval; then US-11 freezes the model with the approved option.
+
 
 ### A-022 — US-06 EDA on train_70: duplicate profiles and integration
 
@@ -406,27 +490,78 @@ Its purpose is to help team members understand previous activities, identify com
 - **Outcome:** PR #71 open into `develop`; reviewed by Rita Pereira with changes requested. Not merged.
 - **Pending tasks:** Approval of PR #71 and merge by a team member other than the author; then the acceptance criteria of issue #10.
 
-### A-023 — US-15 Phase 1: Streamlit app scaffold, validation, campaigns and model seam
+---
+
+### A-025 — US-12: final evaluation script of the frozen model (test and importance)
 
 - **Date:** 2026-11-17
-- **Agent:** opencode (deepseek-v4.1-flash-free)
-- **Human owner:** Isbel
-- **Objective:** Start Phase 1 of US-15 (issue #35) after explicit human approval of the defaults: `app/app.py`, `python -m streamlit run app/app.py`, Spanish UI, `Age`/`Gender`/`Spending_Score` as required fields and campaigns read from a JSON draft. Phase 1 covers the form, input validation, campaign catalogue and the model seam, without integrating the US-11 frozen model or touching `develop`. Installing dependencies was outside the initial scope and was approved separately later in the session.
+- **Note:** Numbered A-025 because A-022 (PR #71), A-023 (PR #65) and A-024 (PR #72) are already used or reserved. Not executed on `test_15`; the entry records the instrument, not the final figures.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-12 (issue #29): evaluate the frozen model once on `test_15` and report accuracy, macro-F1, per-class metrics, confusion matrices and the importance of the original variables.
 - **Activities:**
-  - Inspected the working tree and branch state before acting: started on `feature/model-logistic-regression` (PR #66, HEAD `bc5cca5`), clean tree; `origin/develop` at `6e3c217`. Created the task branch `feature/streamlit-app` from `origin/develop`; no existing work was modified.
-  - Reused `src.config.FEATURE_COLUMNS` and the observed `train_70` schema (read-only): Gender Female/Male; Ever_Married Yes/No; Graduated Yes/No; Profession 9 levels; Spending_Score Low/Average/High; Var_1 Cat_1–Cat_7; Age 18–89; Work_Experience 0–14; Family_Size 1–9.
-  - Created the app scaffold: `app/__init__.py`, `app/utils/__init__.py`, `app/app.py`, `app/utils/validation.py`, `app/utils/campaigns.py`, `app/utils/model.py` and `app/config/campaigns.json`.
-  - Implemented validation: required `Age`/`Gender`/`Spending_Score`, optional remaining features, category whitelists, numeric ranges, empty values treated as missing, payload immutability and a one-row DataFrame in `FEATURE_COLUMNS` order. The app builds features directly from `FEATURE_COLUMNS` because `src.preprocessing.make_features_target` requires the target.
-  - Implemented the campaign loader and catalogue: exact A–D draft texts from `reports/segment_insights.md` (PR #69), with `status`, `source` and `disclaimer`; the catalogue remains explicitly marked as a draft pending D-016. No campaign copy was invented.
-  - Implemented the model seam: a `Predictor` protocol, `load_predictor` for a future joblib artifact, and `predict_segment` with one-row/column/label validation. The Phase 1 app accepts an injected predictor; without one it validates the form and explains that prediction waits for US-11. No model was loaded, trained or serialized.
-  - Implemented the Spanish Streamlit UI with required and optional fields, a draft-campaign notice, validation feedback, and the predicted segment plus campaign when a predictor is injected.
-  - Updated `README.md`: added `app/` to the repository structure and replaced the pending app command with `python -m streamlit run app/app.py`, noting the Phase 1 scope.
-  - Added 50 tests across `tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_model.py` and `tests/test_app_smoke.py`, including a fake predictor, a joblib round-trip and a fake-Streamlit smoke test of `main()`.
-  - Updated the branch with `origin/develop` (`ecaa580`, including PR #68, #70 and #71) before closing Phase 1; resolved the activity-log conflict by keeping A-019, A-021, A-022 and then A-023, preserving the existing history and the template comment. No source-code conflict.
-  - With explicit human approval, installed `streamlit==1.67.0` in `.venv` and pinned it in `requirements.txt` under a new App (US-15) section. `pip check` reports no broken requirements; the existing pandas 3.1.1, numpy 2.5.4 and scikit-learn 1.9.1 pins were not changed.
-  - Started the real app headless on port 8501 and confirmed `GET /_stcore/health` returns HTTP 200 `ok`; the process was stopped afterward. No prediction was made because the US-11 artifact is still pending.
-  - Numbered this entry A-023 after PR #70 (A-021) and PR #71 (A-022) merged into `develop`; A-018–A-020 remain reserved by the unmerged PR #69. Previous log entries were preserved.
-- **Files:** Created: `app/__init__.py`, `app/app.py`, `app/config/campaigns.json`, `app/utils/__init__.py`, `app/utils/validation.py`, `app/utils/campaigns.py`, `app/utils/model.py`, `tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_model.py`, `tests/test_app_smoke.py`. Modified: `README.md`, `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
-- **Verification:** `python -m py_compile app/app.py app/utils/validation.py app/utils/campaigns.py app/utils/model.py tests/test_app_validation.py tests/test_app_campaigns.py tests/test_app_model.py tests/test_app_smoke.py` exits 0; `pytest tests/test_app_validation.py tests/test_app_campaigns.py tests/test_app_model.py tests/test_app_smoke.py -q` → 50 passed; `pytest -q` → 82 passed after updating with `develop` (`ecaa580`; 64 passed before the update) on Python 3.12.10, pandas 3.1.1, scikit-learn 1.9.1 and pytest 9.2.0 in `.venv`; `pip check` → no broken requirements; `streamlit version` → 1.67.0; headless app health check on port 8501 → HTTP 200 `ok`; `git diff --check` clean; `git status` shows only the new app/test files and the README/requirements/activity-log changes; `/data` diff empty; `test_15.csv` and `val_15.csv` were not used.
-- **Outcome:** Phase 1 implemented on `feature/streamlit-app`, now up to date with `develop` (`ecaa580`), as uncommitted changes. The app can validate a record, load the draft campaign catalogue, start under Streamlit 1.67.0 and report healthy; real prediction remains intentionally disconnected from US-11.
-- **Pending tasks:** Human review of the Phase 1 diff and manual UI review in a browser; US-11 frozen-model artifact and its loading contract; US-13/D-016 campaign approval; create the PR into `develop` only with explicit authorization.
+  - Created `src/evaluate_final.py`: loads the joblib written by `src.compare_models --stage freeze`; verifies the partition against D-013 (rows and SHA-256 with LF) before reading it; reports accuracy, macro-F1 and per-class precision, recall and F1 (D-010); builds the confusion matrix in counts and normalised by row; compares with the majority-class baseline and, for `test_15`, with `val_15`; and computes permutation importance with macro-F1 as the score.
+  - Importance is computed on the **raw** columns of the Pipeline, so the one-hot columns of a variable are grouped by construction (one row per original variable) instead of being permuted one dummy at a time.
+  - `test_15` is refused unless `--allow-test` is passed, to keep the single evaluation of D-012 item 4 explicit.
+  - Created `tests/test_evaluate_final.py` (7 tests: D-013 reference values, metric names, row-normalised confusion with an absent class, the test guard, the checksum check, importance ordering and the majority-class baseline).
+- **Files:** Created: `src/evaluate_final.py`, `tests/test_evaluate_final.py`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests -q` -> 42 passed on this branch alone. The script was not run against `test_15`; `load_partition` refuses it without `--allow-test`. No repository data file and no prediction on the test split were produced.
+- **Outcome:** The evaluation instrument is ready and waiting for the frozen model of US-11 (open PR #72).
+- **Update 2026-11-17 after the review of PR #73 (Rita Pereira):** three fixes. (1) The script reads `trained_on` from the joblib payload: if the frozen model was fitted on `train_70 + val_15`, it refuses to score `val_15` (the metrics and importance would be optimistic) and skips the validation reference on `test_15`. (2) Permutation importance runs on `val_15` only; on `test_15` it is off unless `--importance` is passed, as issue #29 asks. (3) A second evaluation of `test_15` is refused when a report already exists, unless `--allow-test-rerun`; every test run writes its own timestamped report, so the single evaluation leaves a trace. Renumbered from A-023 to A-025 because A-023 is used by PR #65 and A-024 by PR #72.
+- **Pending tasks:** Merge PR #72 and the three model PRs (#65, #66, #67); freeze the winner on `train_70` (team decision recorded by Rita Pereira); run the evaluation once on `val_15`, then once on `test_15` with `--allow-test`; record the figures and the importance in the results registry and in the technical report (US-16).
+
+---
+
+### A-023 — US-09: boosting configuration chosen with cross-validation (D-015)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-023 because A-019, A-021 and A-022 are already in `develop` and A-020 is used by open PR #69.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash Free)
+- **Human owner:** Pedro
+- **Objective:** finish US-09 (issue #21) with D-015 approved: make `src/train_boosting.py` choose its configuration by cross-validation and record the choice in `results/boosting.csv`.
+- **Activities:**
+  - Added `--select` to `src/train_boosting.py`, with `select_cv()` implementing the approved rule (D-015 items 2, 3, 4 and 6) with the same wording as `src/train_svm.py`, so the four models of US-11 are chosen the same way. `val_15` takes no part in the decision.
+  - Ran it on 2026-11-17 over the 26 candidate configurations already recorded (18 grid + 8 refinement; the baseline with defaults is the reference, not a candidate). No retraining of the 27 recorded runs: the existing `cv5fold` rows already carried the fold means, the standard deviation and the train−CV gap that the rule needs.
+  - No candidate met the 5-point train−CV gap limit (the smallest is 6.19 points), so D-015 item 6 applies: the smallest gap wins, `refine n_estimators=300, learning_rate=0.05, min_child_weight=5` (`max_depth=3`, `subsample=1.0`, `colsample_bytree=0.8`, seed 42).
+  - Appended three rows marked `SELECTED` to `results/boosting.csv`: CV (accuracy 0.5215, macro-F1 0.5049), `train_70` (0.5762 / 0.5608) and `val_15` (accuracy 0.5430, macro-F1 0.5227, train−val gap 3.32 points, within the limit), the last one with per-class precision, recall and F1.
+  - Fixed `SELECTED_PARAMS` in the module so US-11 imports the choice instead of copying hyperparameters by hand.
+  - Added three tests: the tie within one standard error, the fallback when no configuration is admissible and the check that `SELECTED_PARAMS` is one of the recorded candidates. The suite passes (42 tests).
+  - README: macOS note (`brew install libomp`, needed by XGBoost) and the `--select` usage.
+- **Files:** Modified: `src/train_boosting.py`, `tests/test_train_boosting.py`, `README.md`, `results/boosting.csv` (three appended rows), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests` passes (42 tests). The selection run starts with the D-013 partition check (row counts, checksums and zero ID overlap between partitions; `test_15` is never read). The selected `val_15` figures (accuracy 0.5430, macro-F1 0.5227) match the independent calculation made by the reviewer of PR #65 from the same CV rows.
+- **Outcome:** PR #65 updated; not merged.
+- **Pending tasks:** Approval and merge of PR #65 by a team member other than the author; the chosen configuration feeds US-11.
+
+---
+
+### A-029 — US-15: Streamlit application, validation, campaigns and model adapter
+
+- **Date:** 2026-11-17
+- **Agent:** Antigravity (Gemini 3.8 Flash)
+- **Human owner:** Isbel
+- **Objective:** Complete adjustments requested by Rita Pereira in the review of PR #76 (issue #35), adapt `load_predictor` to the US-11 contract (`payload["model"]`), expand model loader tests, synchronize `feature/streamlit-app` with `develop`, resolve conflicts, and prepare the branch and PR #76 for re-review.
+- **Activities:**
+  - Addressed review feedback from Rita Pereira on PR #76.
+  - Adapted `load_predictor()` in `app/utils/model.py` to support the US-11 artifact contract (`models/final_model.joblib`), where the object is serialized as a dictionary with keys `model`, `frozen_params`, `trained_on` and `rows`. Following the pattern in `src/evaluate_final.py`, prediction is executed on `payload["model"]`. Preserved backward compatibility with directly serialized models/pipelines, verified presence of the `"model"` key when a dict is loaded, and enforced that the extracted model has a callable `predict` method, raising `ModelArtifactError` with clear error messages when absent or invalid.
+  - Expanded `tests/test_app_model.py` with 3 new tests (13 tests total in module, 82 tests in US-15 app suite):
+    - Loading a directly serialized predictor.
+    - Loading a dictionary payload containing the `"model"` key and making successful predictions.
+    - Controlled `ModelArtifactError` if a dictionary payload lacks the `"model"` key.
+    - Controlled `ModelArtifactError` if the extracted object lacks a `predict` method (tested both direct and dict payloads).
+    - Preserved existing behavior when an artifact does not exist.
+  - Integrated `origin/develop` (`e4efd0ba9`) into `feature/streamlit-app` via a standard merge (no rebase), pulling in merged PRs #65 (US-09 XGBoost), #66 (US-07 Logistic Regression), #67 (US-08 Random Forest), #73 (US-12 Final evaluation script) and #75 (D-017 proposal).
+  - Resolved merge conflicts manually:
+    - `README.md`: retained `develop` documentation changes (macOS `libomp` installation note and US-09 boosting CLI commands) alongside the US-15 Streamlit execution instructions (`python -m streamlit run app/app.py`).
+    - `requirements.txt`: preserved `develop` dependencies (`xgboost==3.4.1`), retained US-15 `streamlit==1.67.0` and `pytest==9.2.0`, and updated the header reference to A-029. Documented dependency contract of PR #72: `joblib` remains a transitive dependency pending team approval for direct pinning once PR #72 is merged.
+    - `docs/ai-usage/AI_ACTIVITY_LOG.md`: preserved all historical entries from both branches without overwriting (retained A-025 for US-12 and A-023 for US-09 from `develop`), and documented the complete US-15 work under entry A-029 (releasing A-023 to US-09).
+  - Maintained provisional D-016 references in `app/config/campaigns.json` and `app/app.py` because PR #69 is still open and unmerged in `develop`. Preserved the disclaimer indicating campaigns are business hypotheses rather than model outputs, and kept the campaign texts in English pending explicit team consensus on translation.
+  - Verified that original CSVs, notebooks, `src/split_data.py` and other team members' work were not modified.
+- **Files:** Modified: `app/utils/model.py`, `tests/test_app_model.py`, `README.md`, `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Verification:**
+  - `python -m py_compile` executed cleanly (code 0) on `app/app.py`, `app/utils/model.py`, `app/utils/validation.py`, `app/utils/campaigns.py`, `tests/test_app_model.py`, `tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_smoke.py`.
+  - US-15 test suite (`tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_model.py`, `tests/test_app_smoke.py`): 82 passed in 3.21s.
+  - Full project test suite: 166 passed, 1 skipped (`xgboost` test skipped via `importorskip`), 1 warning in 20.42s on Python 3.12.10.
+  - `git diff --check`: clean.
+  - `data/` directory untouched; `test_15.csv` was never accessed or used.
+- **Outcome:** `feature/streamlit-app` is fully synchronized with `develop`, the model loader adheres to the US-11 contract, all conflicts are resolved, and the test suite passes cleanly. PR #76 remains open in draft awaiting human review before any push or commit.
+- **Pending tasks:** Human review of the diff and test results; team approval to commit and push the merge; merge of PR #69 and subsequent update of D-016 references in `campaigns.json` and `app.py`; integration of PR #72 and team decision on direct `joblib` pinning; team consensus on campaign translation.

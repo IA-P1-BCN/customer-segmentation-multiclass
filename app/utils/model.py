@@ -45,9 +45,9 @@ class PredictionError(RuntimeError):
 def load_predictor(path: str | Path) -> Predictor:
     """Load a joblib-serialised predictor from ``path``.
 
-    US-11 owns the artefact contract and its location; this function only
-    provides the loading seam. It is intentionally not called by the Phase 1
-    application.
+    US-11 owns the artefact contract and its location; this function provides
+    the loading seam. It accepts either a directly serialised pipeline/predictor
+    or a dictionary payload containing the model under the ``"model"`` key.
     """
     artifact_path = Path(path)
     if not artifact_path.is_file():
@@ -61,11 +61,27 @@ def load_predictor(path: str | Path) -> Predictor:
             "joblib no está instalado; es necesario para cargar el modelo congelado."
         ) from exc
     try:
-        return joblib.load(artifact_path)
+        payload = joblib.load(artifact_path)
     except Exception as exc:
         raise ModelArtifactError(
             f"No se pudo cargar el artefacto del modelo en {artifact_path}: {exc}"
         ) from exc
+
+    if isinstance(payload, dict):
+        if "model" not in payload:
+            raise ModelArtifactError(
+                f"El artefacto en {artifact_path} no contiene la clave requerida 'model'."
+            )
+        model = payload["model"]
+    else:
+        model = payload
+
+    if not hasattr(model, "predict") or not callable(getattr(model, "predict")):
+        raise ModelArtifactError(
+            f"El modelo cargado desde {artifact_path} no tiene un método 'predict'."
+        )
+
+    return model
 
 
 def predict_segment(predictor: Predictor, features: pd.DataFrame) -> str:

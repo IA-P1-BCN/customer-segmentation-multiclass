@@ -83,9 +83,49 @@ def test_load_predictor_rejects_a_missing_artifact(tmp_path):
         load_predictor(tmp_path / "missing.joblib")
 
 
-def test_load_predictor_loads_a_joblib_artifact(tmp_path):
+def test_load_predictor_loads_direct_model_artifact(tmp_path):
     joblib = pytest.importorskip("joblib")
-    path = tmp_path / "model.joblib"
+    path = tmp_path / "direct_model.joblib"
     joblib.dump(FakePredictor(["D"]), path)
     loaded = load_predictor(path)
     assert predict_segment(loaded, feature_frame()) == "D"
+
+
+def test_load_predictor_loads_dict_payload_and_predicts(tmp_path):
+    joblib = pytest.importorskip("joblib")
+    path = tmp_path / "final_model.joblib"
+    payload = {
+        "model": FakePredictor(["B"]),
+        "frozen_params": {"C": 1.0, "kernel": "rbf"},
+        "trained_on": "train_70",
+        "rows": 5647,
+    }
+    joblib.dump(payload, path)
+    loaded = load_predictor(path)
+    assert predict_segment(loaded, feature_frame()) == "B"
+
+
+def test_load_predictor_rejects_dict_missing_model_key(tmp_path):
+    joblib = pytest.importorskip("joblib")
+    path = tmp_path / "invalid_dict.joblib"
+    payload = {
+        "frozen_params": {"C": 1.0},
+        "trained_on": "train_70",
+        "rows": 5647,
+    }
+    joblib.dump(payload, path)
+    with pytest.raises(ModelArtifactError, match="clave requerida 'model'"):
+        load_predictor(path)
+
+
+def test_load_predictor_rejects_object_without_predict_method(tmp_path):
+    joblib = pytest.importorskip("joblib")
+    path_direct = tmp_path / "not_a_model.joblib"
+    joblib.dump("not_a_model", path_direct)
+    with pytest.raises(ModelArtifactError, match="no tiene un método 'predict'"):
+        load_predictor(path_direct)
+
+    path_dict = tmp_path / "dict_not_a_model.joblib"
+    joblib.dump({"model": 12345}, path_dict)
+    with pytest.raises(ModelArtifactError, match="no tiene un método 'predict'"):
+        load_predictor(path_dict)
