@@ -83,5 +83,22 @@ def test_choose_model_stops_when_nothing_is_admissible():
 
 
 def test_frozen_pipeline_explains_which_modules_are_ready():
-    with pytest.raises(SystemExit, match="does not expose SELECTED_PARAMS"):
+    with pytest.raises(SystemExit, match="unknown model"):
+        cm.frozen_pipeline("nope")
+    # The boosting module is not in develop yet, so the registry knows it but
+    # cannot import it: the message says so instead of failing with an ImportError.
+    with pytest.raises(SystemExit, match="is not in develop yet"):
         cm.frozen_pipeline("boosting")
+
+
+def test_fallback_rows_are_not_mistaken_for_the_choice(tmp_path):
+    path = tmp_path / "random_forest.csv"
+    rows = [
+        ("2026-11-17T10:00:00Z", "tuned-fallback-1 {}", "train_70", 0.60, 0.55, 0.4, 0.3, 0.5, 0.7, "failed the official check"),
+        ("2026-11-17T10:00:00Z", "tuned-fallback-1 {}", "val_15", 0.55, 0.50, 0.4, 0.3, 0.5, 0.7, "failed the official check"),
+        ("2026-11-17T10:00:00Z", "tuned {}", "train_70", 0.54, 0.51, 0.4, 0.3, 0.5, 0.7, "SELECTED"),
+        ("2026-11-17T10:00:00Z", "tuned {}", "val_15", 0.52, 0.49, 0.4, 0.3, 0.5, 0.7, "SELECTED"),
+    ]
+    _write(path, rows)
+    train, _ = cm.load_selected_rows(path)
+    assert train["config"] == "tuned {}"

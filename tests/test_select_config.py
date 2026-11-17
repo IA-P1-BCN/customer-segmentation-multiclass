@@ -53,6 +53,25 @@ def test_cv_table_keeps_the_last_batch_of_each_configuration():
     assert table.loc[table["config"] == "a", "cv_macro_f1"].iloc[0] == pytest.approx(0.48)
 
 
+def test_cv_table_leaves_the_baseline_out():
+    """The baseline is a reference, not a candidate configuration (review of PR #72)."""
+    df = _file([
+        ("2026-11-17T10:00:00Z", "baseline {}", "cv5fold", 0.51, 0.49, SVM_NOTES),
+        ("2026-11-17T10:00:00Z", "grid-01", "cv5fold", 0.50, 0.48, SVM_NOTES),
+    ])
+    table = sc.cv_table(df)
+    assert list(table["config"]) == ["grid-01"]
+
+
+def test_cv_table_prefers_the_fold_mean_over_the_pooled_oof_column():
+    """D-015 item 2: mean of the folds, not the pooled out-of-fold score."""
+    df = _file([
+        ("2026-11-17T10:00:00Z", "refine_x", "cv5fold", 0.5215, 0.5049, BOOSTING_NOTES),
+    ])
+    table = sc.cv_table(df)
+    assert table["cv_macro_f1"].iloc[0] == pytest.approx(0.5045)
+
+
 def test_selection_breaks_ties_by_smallest_gap():
     table = pd.DataFrame([
         ("overfits", 0.5300, 0.0100, 0.0800),

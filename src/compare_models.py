@@ -59,9 +59,17 @@ RESULTS_FILES = {
 CHOSEN_PREFIXES = ("tuned",)
 CHOSEN_NOTES = ("SELECTED", "CANDIDATO")
 
-# model name -> (module, attribute holding the frozen hyperparameters)
-FROZEN_PARAMS = {
-    "svm": ("src.train_svm", "SELECTED_PARAMS"),
+# model name -> how to build its Pipeline. ``call`` is "kwargs" when the
+# builder takes keyword arguments and "dict" when it takes one parameter dict.
+# Every module must expose ``SELECTED_PARAMS`` so the frozen model cannot drift
+# from the recorded run; the SVM does, and the other three add it when their PR
+# merges (the comparison reports which ones are ready).
+FROZEN_MODELS = {
+    "svm": {"module": "src.train_svm", "builder": "build_model", "call": "kwargs"},
+    "boosting": {"module": "src.train_boosting", "builder": "build_pipeline", "call": "dict"},
+    "random_forest": {"module": "src.train_random_forest", "builder": "build_model", "call": "kwargs"},
+    "logistic_regression": {"module": "src.model_logreg", "builder": "build_logreg_pipeline",
+                           "call": "kwargs"},
 }
 
 TABLE_COLUMNS = [
@@ -75,23 +83,29 @@ TABLE_COLUMNS = [
 def _is_chosen(row: pd.Series) -> bool:
     config = str(row.get("config", ""))
     notes = str(row.get("notes", ""))
+    if "fallback" in config.lower() or "fallback" in notes.lower():
+        return False  # D-015 item 7 reserves "tuned-fallback-N" for a failed official check
     return config.startswith(CHOSEN_PREFIXES) or any(mark in notes for mark in CHOSEN_NOTES)
 
 
 def load_selected_rows(path: Path) -> tuple[pd.Series, pd.Series] | None:
-    """Return the chosen configuration's train_70 and val_15 rows, or None."""
+    """Return the chosen configuration's train_70 and val_15 rows, or None.
+
+    Of the last batch, the **last** marked configuration that has both rows is
+    used, so a fallback left in the file cannot be mistaken for the choice.
+    """
     df = pd.read_csv(path)
     chosen = df[df.apply(_is_chosen, axis=1)]
     if chosen.empty:
         return None
     batch = chosen["run_timestamp_utc"].max()
     chosen = chosen[chosen["run_timestamp_utc"] == batch]
-    config = chosen["config"].iloc[0]
-    chosen = chosen[chosen["config"] == config]
-    partitions = dict(zip(chosen["partition"], chosen.index))
-    if "train_70" not in partitions or "val_15" not in partitions:
-        return None
-    return chosen.loc[partitions["train_70"]], chosen.loc[partitions["val_15"]]
+    for config in chosen["config"].drop_duplicates().tolist()[::-1]:
+        rows = chosen[chosen["config"] == config]
+        partitions = dict(zip(rows["partition"], rows.index))
+        if "train_70" in partitions and "val_15" in partitions:
+            return rows.loc[partitions["train_70"]], rows.loc[partitions["val_15"]]
+    return None
 
 
 def model_row(name: str, path: Path) -> dict[str, Any] | None:
@@ -165,16 +179,25 @@ def choose_model(table: pd.DataFrame) -> tuple[pd.Series, str]:
 
 def frozen_pipeline(model: str) -> Any:
     """Build the winner's Pipeline with its frozen configuration."""
-    if model not in FROZEN_PARAMS:
+    if model not in FROZEN_MODELS:
+        raise SystemExit(f"unknown model '{model}'; known: {sorted(FROZEN_MODELS)}")
+    spec = FROZEN_MODELS[model]
+    try:
+        module = __import__(spec["module"], fromlist=[spec["builder"]])
+    except ImportError:
         raise SystemExit(
-            f"the comparison cannot freeze '{model}' yet: its module does not expose "
-            f"SELECTED_PARAMS. Known: {sorted(FROZEN_PARAMS)}. The owner adds the "
-            "constant when their PR merges."
+            f"cannot freeze '{model}': {spec['module']} is not in develop yet; "
+            "merge its PR first."
+        ) from None
+    if not hasattr(module, "SELECTED_PARAMS"):
+        raise SystemExit(
+            f"cannot freeze '{model}': {spec['module']} does not expose SELECTED_PARAMS. "
+            "The owner adds the constant with the configuration recorded in their results "
+            "file (see src/train_svm.py), so the frozen model cannot drift from the run."
         )
-    module_name, attribute = FROZEN_PARAMS[model]
-    module = __import__(module_name, fromlist=[attribute])
-    params = getattr(module, attribute)
-    return module.build_model(**params)
+    params = dict(getattr(module, "SELECTED_PARAMS"))
+    builder = getattr(module, spec["builder"])
+    return builder(**params) if spec["call"] == "kwargs" else builder(params)
 
 
 def freeze(model: str, output: Path, train_with: str = "train_70") -> Path:
@@ -201,8 +224,9 @@ def freeze(model: str, output: Path, train_with: str = "train_70") -> Path:
 
 
 def _params_of(model: str) -> dict[str, Any]:
-    module_name, attribute = FROZEN_PARAMS[model]
-    return dict(getattr(__import__(module_name, fromlist=[attribute]), attribute))
+    spec = FROZEN_MODELS[model]
+    module = __import__(spec["module"], fromlist=[spec["builder"]])
+    return dict(getattr(module, "SELECTED_PARAMS"))
 
 
 # --- CLI ---------------------------------------------------------------------

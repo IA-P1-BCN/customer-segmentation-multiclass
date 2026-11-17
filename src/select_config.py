@@ -84,8 +84,25 @@ def _first_number(text: str, patterns: tuple[str, ...]) -> float | None:
     return None
 
 
+def _fold_mean(notes: str) -> float | None:
+    """Mean macro-F1 across folds, when ``notes`` record it (D-015 item 2)."""
+    if notes is None or (isinstance(notes, float) and np.isnan(notes)):
+        return None
+    return _first_number(str(notes), (r"mean macro_f1 across folds=([\d.]+)",
+                                      r"mean of \d+ folds[^;]*macro-F1 ([\d.]+)"))
+
+
 def cv_table(df: pd.DataFrame) -> pd.DataFrame:
     """Cross-validation table of one model: last row per configuration.
+
+    Two hygiene rules, both from the review of PR #72:
+
+    * the ``baseline`` rows are not candidate configurations, so they are left
+      out of the table (they made the SVM report 6/10 instead of 6/9);
+    * when the ``notes`` carry the mean of the fold scores, that mean is used
+      instead of the row's ``macro_f1`` column, because D-015 item 2 asks for
+      the mean of the five folds and some files store the pooled out-of-fold
+      score in the column (the boosting file does).
 
     Files are append-only and may hold several batches; keeping the last row of
     each configuration makes a re-run supersede the earlier one.
@@ -93,10 +110,18 @@ def cv_table(df: pd.DataFrame) -> pd.DataFrame:
     cv = df[df["partition"] == "cv5fold"].copy()
     if cv.empty:
         raise ValueError("the results file has no cv5fold rows")
+    cv = cv[~cv["config"].astype(str).str.startswith("baseline")]
+    if cv.empty:
+        raise ValueError("the results file only has baseline cv5fold rows")
     cv = cv.sort_values("run_timestamp_utc").drop_duplicates(subset=["config"], keep="last")
     parsed = cv["notes"].map(parse_cv_notes).apply(pd.Series).reset_index(drop=True)
+    fold_mean = pd.to_numeric(cv["notes"].map(_fold_mean), errors="coerce").reset_index(drop=True)
     table = pd.concat([cv[["config", "accuracy", "macro_f1"]].reset_index(drop=True), parsed], axis=1)
-    return table.rename(columns={"accuracy": "cv_accuracy", "macro_f1": "cv_macro_f1"})
+    table = table.rename(columns={"accuracy": "cv_accuracy", "macro_f1": "cv_macro_f1"})
+    has_mean = fold_mean.notna()
+    if has_mean.any():
+        table.loc[has_mean.to_numpy(), "cv_macro_f1"] = fold_mean[has_mean].astype(float).to_numpy()
+    return table
 
 
 def select_configuration(table: pd.DataFrame) -> tuple[pd.Series, str]:
