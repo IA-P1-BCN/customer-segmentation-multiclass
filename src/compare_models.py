@@ -35,7 +35,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 from src.config import TARGET
 from src.frozen import FrozenPipeline
