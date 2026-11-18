@@ -617,3 +617,24 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+
+---
+
+### A-033 — US-18: technical presentation of the code
+
+- **Date:** 2026-11-18
+- **Note:** Numbered A-033 because A-030 is used by PR #81 (US-14), A-031 by PR #82 and A-032 by PR #77.
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-18 (issue #38): a technical presentation explaining how the project was built and how data leakage and overfitting were controlled. The task moved from Pedro to Brian by team agreement in the channel; Pedro contributes and reviews the slides on split, Pipeline, models and overfitting.
+- **Activities:**
+  - Branch `feature/technical-presentation` from `develop` (`d77f0ee`).
+  - Wrote `docs/technical-presentation.md`: 12 slides (~8 minutes) with on-screen content, speaker notes, a Mermaid diagram of the full path, the model comparison table, the frozen-artifact contract, the per-class results, the confusion pairs and the permutation importance.
+  - Every figure was taken from `results/model_comparison.csv`, `reports/final_metrics_*.csv`, `reports/confusion_*.csv` and `reports/feature_importance_val_15.csv`; no new metric was computed.
+  - Integrated Pedro's block with three corrections: the XGBoost gap is 3.33 points (the recorded value, not 3.32 from subtracting rounded accuracies), the majority-class baseline was added (0.2810 / 0.1097) so the "double the baseline" claim is supported, and the leakage sentence (preprocessing fitted per fold) was made explicit because it is an acceptance criterion.
+  - Included the mapping to the four acceptance criteria, the speaking split and a table tracing each figure to its file. The app screenshot is marked as pending until PR #82 merges.
+- **Files:** Created: `docs/technical-presentation.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** documentation only; no model, data or result was touched and no new metric was produced. Cross-checked each figure against the referenced files in `develop`. The confusion pairs are quoted as a share of the true class (B→C is 87 of 278 customers of B, 31 %), not as a share of the whole partition.
+- **Outcome:** Presentation ready for review in a PR into `develop`; Pedro reviews slides 3, 4 and 6.
+- **Pending tasks:** Review and merge of the PR; add the app screenshot when #82 lands; confirm the speaking split in the daily.
+- **Update 2026-11-18 after the review of PR #84 (Rita Pereira and Pedro):** applied the seven corrections agreed by both reviewers: renumbered to A-033 (A-030 is US-14), the configuration counts are labelled per model (logistic 6, SVM 10, random forest 60, XGBoost 27), the macro-F1 comparison is stated as ~4.8x with the accuracy as the figure that doubles (0.2810 → 0.5430), the unavoidable error is 3.0 % of rows (171, D-009) rather than the 6.5 % of contradictory profiles, the class split is listed (A 24.4, B 23.0, C 24.4, D 28.1) instead of a range, the app slide quotes the shared SHA-256 instead of "generated with one command", and the per-class note became "reconoce mejor D y C". The on-screen text was translated into Spanish, keeping code identifiers in English, as the team decided for every spoken artefact; `reports/technical_report.md` keeps the English Windows portability limitation, so the README states that a portable export *can be prepared* rather than existing.
