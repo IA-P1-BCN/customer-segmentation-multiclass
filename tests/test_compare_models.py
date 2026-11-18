@@ -7,6 +7,7 @@ Run from the repository root:
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -126,3 +127,26 @@ def test_fallback_rows_are_not_mistaken_for_the_choice(tmp_path):
     _write(path, rows)
     train, _ = cm.load_selected_rows(path)
     assert train["config"] == "tuned {}"
+
+
+class _NumericOnlyEstimator:
+    """Mimics the boosting Pipeline: it refuses non-numeric labels."""
+
+    def fit(self, X, y):
+        if not np.issubdtype(np.asarray(y).dtype, np.number):
+            raise ValueError("numeric labels required")
+        self._label = np.unique(y)[0]
+        return self
+
+    def predict(self, X):
+        return np.full(len(X), self._label)
+
+
+def test_frozen_pipeline_returns_the_original_labels():
+    """The frozen artifact takes A/B/C/D in and out, even if the model needs 0..3."""
+    X = np.zeros((6, 2))
+    y = pd.Series(["A", "B", "C", "A", "B", "C"])
+    frozen = cm.FrozenPipeline(_NumericOnlyEstimator()).fit(X, y)
+    predictions = frozen.predict(X)
+    assert len(predictions) == 6
+    assert set(predictions) <= {"A", "B", "C"}  # labels, not 0/1/2
