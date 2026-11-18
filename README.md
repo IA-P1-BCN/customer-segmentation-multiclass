@@ -104,7 +104,16 @@ AGENTS.md
     ```
 
   `test_15` is evaluated **once**; the script refuses a second run without `--allow-test-rerun` (D-012).
-- **App:** *(pending — US-15)* `streamlit run app.py`
+
+- **App (US-15):**
+
+    ```bash
+    python -m streamlit run app/app.py
+    ```
+
+  Loads the frozen XGBoost model from `models/final_model.joblib` (the file must exist locally).
+  On macOS, install OpenMP with `brew install libomp` (see Installation).
+
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
 - **Business presentation (US-17, Spanish):** [presentation/business_presentation.pptx](presentation/business_presentation.pptx) (editable, with speaker notes) and [presentation/business_presentation.pdf](presentation/business_presentation.pdf).
 - **Tests:** `python -m pytest`

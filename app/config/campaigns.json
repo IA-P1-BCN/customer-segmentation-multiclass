@@ -1,0 +1,19 @@
+{
+  "status": "Aprobado como hipótesis de negocio (revisión de PR #69 por Pedro, 2026-11-17; D-016 aprobado)",
+  "source": "reports/segment_insights.md (PR #69, US-13)",
+  "disclaimer": "Las campañas son hipótesis de negocio aprobadas, no resultados del modelo; no deben presentarse como recomendaciones definitivas.",
+  "segments": {
+    "A": {
+      "campaign": "Oferta básica para hogares pequeños, con opciones de entrada."
+    },
+    "B": {
+      "campaign": "Oferta con opciones en varios niveles de precio."
+    },
+    "C": {
+      "campaign": "Oferta de gama media y alta."
+    },
+    "D": {
+      "campaign": "Oferta de entrada a precio asequible."
+    }
+  }
+}

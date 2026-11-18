@@ -5,6 +5,8 @@
 # Versions below are the ones verified by recorded project runs:
 #   - A-009 (PR #47): environment inspection and import/version checks.
 #   - D-011 (PR #49): data-quality run with pandas 3.1.1 on Python 3.12.3.
+#   - A-031 (US-15): streamlit 1.67.0 installed and smoke-tested; version
+#     approved by Isbel, Rita Pereira, Brian and Pedro in PR #82 (2026-11-18).
 #
 # Install with:
 #   python -m pip install --upgrade pip
@@ -31,6 +33,9 @@ joblib==1.6.0
 # the US-09 record: better scikit-learn API and documentation than LightGBM,
 # and training speed is irrelevant with 5,647 rows.
 xgboost==3.4.1
+
+# --- App (US-15) ---
+streamlit==1.67.0
 
 # --- Development (tests, US-05) ---
 pytest==9.2.0

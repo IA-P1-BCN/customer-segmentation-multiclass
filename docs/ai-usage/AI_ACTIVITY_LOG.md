@@ -603,6 +603,49 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-031 — US-15: Streamlit application, validation, campaigns and model adapter
+
+- **Date:** 2026-11-17
+- **Agent:** Antigravity (Gemini 3.8 Flash)
+- **Human owner:** Isbel
+- **Objective:** Complete adjustments requested by Rita Pereira in the review of PR #76 (issue #35), adapt `load_predictor` to the US-11 contract (`payload["model"]`), expand model loader tests, synchronize `feature/streamlit-app` with `develop`, resolve conflicts, and prepare the branch and PR #76 for re-review.
+- **Activities:**
+  - Addressed review feedback from Rita Pereira on PR #76.
+  - Adapted `load_predictor()` in `app/utils/model.py` to support the US-11 artifact contract (`models/final_model.joblib`), where the object is serialized as a dictionary with keys `model`, `frozen_params`, `trained_on` and `rows`. Following the pattern in `src/evaluate_final.py`, prediction is executed on `payload["model"]`. Preserved backward compatibility with directly serialized models/pipelines, verified presence of the `"model"` key when a dict is loaded, and enforced that the extracted model has a callable `predict` method, raising `ModelArtifactError` with clear error messages when absent or invalid.
+  - Expanded `tests/test_app_model.py` with 3 new tests (13 tests total in module, 82 tests in US-15 app suite):
+    - Loading a directly serialized predictor.
+    - Loading a dictionary payload containing the `"model"` key and making successful predictions.
+    - Controlled `ModelArtifactError` if a dictionary payload lacks the `"model"` key.
+    - Controlled `ModelArtifactError` if the extracted object lacks a `predict` method (tested both direct and dict payloads).
+    - Preserved existing behavior when an artifact does not exist.
+  - Integrated `origin/develop` (`e4efd0ba9`) into `feature/streamlit-app` via a standard merge (no rebase), pulling in merged PRs #65 (US-09 XGBoost), #66 (US-07 Logistic Regression), #67 (US-08 Random Forest), #73 (US-12 Final evaluation script) and #75 (D-017 proposal).
+  - Resolved merge conflicts manually:
+    - `README.md`: retained `develop` documentation changes (macOS `libomp` installation note and US-09 boosting CLI commands) alongside the US-15 Streamlit execution instructions (`python -m streamlit run app/app.py`).
+    - `requirements.txt`: preserved `develop` dependencies (`xgboost==3.4.1`), retained US-15 `streamlit==1.67.0` and `pytest==9.2.0`, and updated the header reference to A-029. Documented dependency contract of PR #72: `joblib` remains a transitive dependency pending team approval for direct pinning once PR #72 is merged.
+    - `docs/ai-usage/AI_ACTIVITY_LOG.md`: preserved all historical entries from both branches without overwriting (retained A-025 for US-12 and A-023 for US-09 from `develop`), and documented the complete US-15 work under entry A-029 (releasing A-023 to US-09).
+  - Maintained provisional D-016 references in `app/config/campaigns.json` and `app/app.py` because PR #69 is still open and unmerged in `develop`. Preserved the disclaimer indicating campaigns are business hypotheses rather than model outputs, and kept the campaign texts in English pending explicit team consensus on translation.
+  - Verified that original CSVs, notebooks, `src/split_data.py` and other team members' work were not modified.
+- **Files:** Modified: `app/utils/model.py`, `tests/test_app_model.py`, `README.md`, `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md`.
+- **Verification:**
+  - `python -m py_compile` executed cleanly (code 0) on `app/app.py`, `app/utils/model.py`, `app/utils/validation.py`, `app/utils/campaigns.py`, `tests/test_app_model.py`, `tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_smoke.py`.
+  - US-15 test suite (`tests/test_app_validation.py`, `tests/test_app_campaigns.py`, `tests/test_app_model.py`, `tests/test_app_smoke.py`): 82 passed in 3.21s.
+  - Full project test suite: 166 passed, 1 skipped (`xgboost` test skipped via `importorskip`), 1 warning in 20.42s on Python 3.12.10.
+  - `git diff --check`: clean.
+  - `data/` directory untouched; `test_15.csv` was never accessed or used.
+- **Outcome:** `feature/streamlit-app` is fully synchronized with `develop`, the model loader adheres to the US-11 contract, all conflicts are resolved, and the test suite passes cleanly. PR #76 remains open in draft awaiting human review before any push or commit.
+- **Pending tasks:** Human review of the diff and test results; team approval to commit and push the merge; merge of PR #69 and subsequent update of D-016 references in `campaigns.json` and `app.py`; integration of PR #72 and team decision on direct `joblib` pinning; team consensus on campaign translation.
+- **Correction 2026-11-18 (OpenCode, DeepSeek V4.1 Flash Free):** the requirements header reference added above was corrected from A-029 to A-031, because A-029 records US-11/US-12 and A-031 records US-15. The earlier lines are kept unchanged as history; the incorrect A-029 references in the activities above are superseded by this correction.
+- **Update 2026-11-18 (OpenCode, DeepSeek V4.1 Flash Free):** addressed the review of PR #82 and the new review points.
+  - Continued the merge of `origin/develop` (`d77f0ee`) into `feature/us15-model-loading` with a standard merge. Resolved the `README.md` conflict by keeping develop's current content and the US-15 app block. `git diff MERGE_HEAD -- README.md` shows only the US-15 app block added relative to develop, so no develop content was lost. All changes are staged, `git ls-files -u` is empty and no conflict markers remain. Preserved the `app/app.py` import fix that removes `PROJECT_ROOT` from `sys.path` and reinserts it first.
+  - `tests/test_app_model.py`: removed the integration test that opened the real `models/final_model.joblib`; the loader tests still use temporary joblib files only. No real artefact is read.
+  - `tests/test_app_smoke.py`: replaced the real-artefact tests with `monkeypatch`-injected fake loaders and predictors; added checks that a general `ModelArtifactError` and a missing `joblib` are explained in the UI instead of propagated.
+  - `app/app.py`: catches `ModelArtifactError` after the not-found case and shows an understandable error with the macOS/libomp hint; the not-found message now gives the freeze command. Updated the module docstring and the campaign caption. `app/utils/model.py`: updated the docstring to describe the US-11 adapter.
+  - `app/config/campaigns.json`: campaigns translated to Spanish, status changed to approved business hypotheses (review of PR #69 by Pedro, 2026-11-17) and disclaimer updated. `app/utils/campaigns.py`: docstring updated. `requirements.txt`: corrected the reference to A-031 and recorded that `streamlit==1.67.0` was approved by Isbel, Rita Pereira, Brian and Pedro in PR #82 (2026-11-18).
+  - Status of earlier references: PR #69 (US-13, D-016 and the campaign table) and PR #72 (US-11 harness) are now merged into `develop`; the sentences above that describe them as open belong to the original 2026-11-17 entry. The PR #82 review mentions a manual form test that returned segment D; this session did not reproduce it because the official artefact fails to load here (XGBoost `rng_state` incompatibility, out of scope).
+- **Verification of the 2026-11-18 update:** `pytest tests/test_app_model.py tests/test_app_smoke.py tests/test_app_campaigns.py -q` -> 37 passed in 2.83 s; `python -m pytest -q` -> 210 passed, 1 warning in 20.86 s; `git diff --check` clean. No model, data, notebook or result file was modified. `test_15` was not read.
+- **Local merge completed 2026-11-18:** with human authorization, created local merge commit `ddc2a3a` with message `merge: integrate develop into US15 model loading`; no push. `MERGE_HEAD` is gone and the working tree is clean. Tests re-run after the commit: 210 passed, 1 warning in 18.93 s. The branch is 3 commits ahead of `origin/feature/us15-model-loading`.
+- **Pending after this update:** push and finish PR #82 after human approval; final merge to `develop` after approval. PR #76 remains open and was not closed, per the instruction not to modify other PRs.
+
 ### A-029 — US-11 freeze and US-12 single test evaluation
 
 - **Date:** 2026-11-18
