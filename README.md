@@ -66,6 +66,8 @@ src/                   # config.py, split_data.py, data_quality.py, preprocessin
 results/               # one CSV per model + model_comparison.csv (convention in results/README.md)
 reports/               # data quality, EDA synthesis, segment profiles, final metrics, confusion matrices, importance
 notebooks/03_modeling/ # logistic regression notebook (US-07)
+docs/ai-usage/         # DECISION_LOG.md, AI_ACTIVITY_LOG.md
+models/                # generated locally by `compare_models --stage freeze` (git-ignored)
 01_eda_inicial.ipynb   # initial EDA on Train.csv (EDA 01)
 02_eda_train70_gasto_estado_civil.ipynb # EDA on train_70 (EDA 02)
 03_eda_train70_brian_outliers_fuga.ipynb # EDA on train_70 (EDA 03)
