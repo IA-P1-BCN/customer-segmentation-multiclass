@@ -307,14 +307,62 @@ How to read it:
 
 ## 7. Error analysis
 
-*Owner: Pedro.*
+*Owner: Pedro. Full analysis: `reports/error_analysis.md` (US-14, issue #32); this section summarises it.*
 
-> **Pending (US-14).** This section will use the US-12 confusion matrix to identify the most confused pairs, contrast them with the segment profiles and review misclassified rows.
+> **Pending (US-14).** The structure below follows the acceptance criteria of issue #32. Cells marked "…" are filled from the US-12 run (section 6); explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
 
-Preview from validation and the EDA, to be confirmed with the test results:
+### 7.1 Preview from validation and the EDA
+
+To be confirmed or corrected with the test results:
 
 - B is the weakest segment in every model (recall 0.26–0.33 on `val_15`, section 5.3).
 - B and C are the pair most often mixed in the data (55 contradictory profiles, section 4.4) and they have similar profiles (section 8.1). *Hypothesis:* many B errors go to C, and some to A (B has the lowest recall in the four models). To be checked with the confusion matrix (US-12, US-14).
+
+### 7.2 Weakest segments
+
+From the per-class table of section 6.2:
+
+| Segment | Precision | Recall | Reading |
+|---|---:|---:|---|
+| Lowest recall: … | … | … | … |
+| Lowest precision: … | … | … | … |
+
+### 7.3 Most confused pairs
+
+From the row-normalised confusion matrix of section 6.3 (share of the true segment predicted as the other one), largest off-diagonal cells first:
+
+| True | Predicted as | Share of the true segment | Count |
+|---|---|---:|---:|
+| … | … | … | … |
+| … | … | … | … |
+| … | … | … | … |
+
+Contrast with the data: do the most confused pairs match the pairs that are mixed in the data (B + C, 55 profiles; A + B, 30; section 4.4)? …
+
+### 7.4 Why: contrast with the segment profiles
+
+For each confused pair, the profile traits of section 8.1 that the two segments share or do not share. All explanations are *hypotheses*:
+
+- **…:** …
+- **…:** …
+
+### 7.5 Review of misclassified rows
+
+> **Pending: source of the row-level predictions.** `src/evaluate_final.py` writes metrics, confusion matrices and importance, but not the prediction for each row. The team has to choose the source before US-12 runs, so that `test_15` is still opened once: save the predictions in the same test run, or review misclassified rows on `val_15`.
+
+A sample of misclassified rows with their nine variables, true and predicted segment, grouped by the most confused pairs. The review describes what the rows have in common; it is not used to change the model.
+
+| True | Predicted | Variables in common | Observation |
+|---|---|---|---|
+| … | … | … | … |
+
+### 7.6 What data would help
+
+Variables that are not in the dataset and could separate the confused segments (input for the business recommendation, section 8 and US-17): income, product (P1–P5) and vehicle type are named in the project brief and missing (section 9). Which of them would help each confused pair is a hypothesis: …
+
+### 7.7 Performance by subgroup (optional)
+
+Accuracy or recall by subgroup (for example age band, `Ever_Married` or `Spending_Score`), if time allows: …
 
 ## 8. Segments and business reading
 
