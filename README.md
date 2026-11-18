@@ -66,9 +66,13 @@ src/                   # config.py, split_data.py, data_quality.py, preprocessin
 results/               # one CSV per model + model_comparison.csv (convention in results/README.md)
 reports/               # data quality, EDA synthesis, segment profiles, final metrics, confusion matrices, importance
 notebooks/03_modeling/ # logistic regression notebook (US-07)
-docs/ai-usage/         # DECISION_LOG.md, AI_ACTIVITY_LOG.md
-models/                # generated locally by `compare_models --stage freeze` (git-ignored)
-01_eda_inicial.ipynb   # initial EDA on Train.csv
+01_eda_inicial.ipynb   # initial EDA on Train.csv (EDA 01)
+02_eda_train70_gasto_estado_civil.ipynb # EDA on train_70 (EDA 02)
+03_eda_train70_brian_outliers_fuga.ipynb # EDA on train_70 (EDA 03)
+04_eda_train70_duplicados.ipynb # EDA on train_70 (EDA 04)
+03_model_random_forest.ipynb # Random Forest model notebook (model block 03)
+requirements.txt
+AGENTS.md
 02_eda_train70_*.ipynb # EDA sections on train_70
 03_model_random_forest.ipynb
 requirements.txt
@@ -77,8 +81,9 @@ AGENTS.md
 
 ## How to run
 
-- **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All". The per-section notebooks are `02_eda_train70_gasto_estado_civil.ipynb`, `03_eda_train70_brian_outliers_fuga.ipynb`, `04_eda_train70_duplicados.ipynb` and `notebooks/03_modeling/01_logistic_regression.ipynb`.
-- **Models (US-07 to US-10):**
+- **EDA:** open `01_eda_inicial.ipynb` (Jupyter/VS Code) and run "Restart & Run All". The per-section EDA notebooks are `02_eda_train70_gasto_estado_civil.ipynb`, `03_eda_train70_brian_outliers_fuga.ipynb` and `04_eda_train70_duplicados.ipynb`.
+- **Models (US-07 to US-10):** the Random Forest notebook is `03_model_random_forest.ipynb`; the logistic regression notebook is `notebooks/03_modeling/01_logistic_regression.ipynb`.
+  Notebook numbering is scoped by work block, so the `03_` prefix can appear in both EDA and model notebooks.
 
     ```bash
     python -m src.train_svm --stage baseline && python -m src.train_svm --stage tune
@@ -87,7 +92,6 @@ AGENTS.md
     python src/train_boosting.py --select      # D-015 choice, marked SELECTED in results/boosting.csv
     ```
 
-  The logistic regression is the notebook `notebooks/03_modeling/01_logistic_regression.ipynb`.
 - **Selection, comparison and freeze (US-11):**
 
     ```bash
