@@ -592,3 +592,27 @@ Its purpose is to help team members understand previous activities, identify com
 - **Note on a one-row difference:** the frozen model scores 0.5421 / 0.5222 on `val_15`, while the boosting row recorded in `results/boosting.csv` says 0.5430 / 0.5227. The difference is one row out of 1,210 and is **not** caused by the wrapper: reproducing with the boosting module's own `fit_and_evaluate(SELECTED_PARAMS)` on this machine gives 0.5421 / 0.5222 as well. The likely cause is run-to-run or hardware variation of XGBoost `hist`. Both figures are reported; the ranking does not change.
 - **Outcome:** US-11 frozen (XGBoost on `train_70`) and US-12 evaluated once on `test_15`; the PR carries the evidence.
 - **Pending tasks:** Review and merge of the PR; approval of D-018 (Proposed); the app needs `xgboost` installed and, on macOS, `libomp`, plus the `.joblib` copied to the machine that runs the demo.
+
+---
+
+### A-030 — US-14: error analysis of the frozen model
+
+- **Date:** 2026-11-18
+- **Agent:** OpenCode (Beam Free)
+- **Human owner:** Pedro
+- **Objective:** Analyse where the frozen XGBoost model (D-018) is wrong and why (issue #32, US-14).
+- **Activities:**
+  - Loaded `models/final_model.joblib` (FrozenPipeline, trained on `train_70`, D-017) and predicted on `val_15` (1,210 rows).
+  - Computed the confusion matrix on `val_15`: 656 correct (accuracy 0,5421), B is the weakest segment (recall 0,323), D the strongest (0,782).
+  - Extracted the top confused pairs from the test matrix (`confusion_counts_test_15_20261118T092535Z.csv`): B→C 87 (31,3 %), A→D 68 (23,0 %), B→A 54 (19,4 %), D→A 64 (18,8 %), A→B 51 (17,2 %).
+  - Compared error profiles vs correct profiles: misclassified rows are ~5,8 years older, more married (64,5 % vs 52,0 %) and more graduated (67,5 % vs 57,3 %).
+  - Reviewed 3 misclassified examples per segment and proposed 5 hypotheses (marked as hypotheses, not facts).
+  - Recommended additional data: income, products, vehicle type, contact channel, purchase history.
+  - Wrote `reports/error_analysis.md` and saved predictions to `reports/error_analysis_val_15.csv` (553 rows).
+- **Files:** Created: `reports/error_analysis.md`, `reports/error_analysis_val_15.csv`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** Model loaded from `models/final_model.joblib`; predictions on `val_15` match `reports/final_metrics_val_15.csv` (accuracy 0,5421, macro-F1 0,5222). `test_15` not read for row-level analysis; only aggregated matrices from `reports/` used.
+- **Outcome:** US-14 document ready for review; pending PR into `develop`.
+- **Pending tasks:** Review and merge of the PR; update section 7 of the technical report (#74) with the final figures.
+
+---
+
