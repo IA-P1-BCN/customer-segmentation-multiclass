@@ -6,7 +6,7 @@
 
 El modelo acierta el **54,2 % de los clientes de validación** (656 de 1.210) y el **56,0 % en test** (0,5599). El segmento más difícil es **B** (recall 0,323, F1 0,367): dos de cada tres clientes B se predicen como otro segmento. El más fácil es **D** (recall 0,782, F1 0,715). El par más confundido en test es **B → C** (87 casos), seguido de **A → D** (68) y **B → A** (54).
 
-Los errores no son aleatorios: las filas mal clasificadas tienen en promedio **5.8 años más** que las acertadas, más estado civil casado (64.5 % vs 52.0 %) y más graduados (67.5 % vs 57.3 %). Esto sugiere que el modelo confunde perfiles "maduros" entre segmentos.
+Los errores no son aleatorios: las filas mal clasificadas tienen en promedio **5.8 años más** que las acertadas, más estado civil casado (64.9 % vs 51.6 %) y más graduados (67.4 % vs 57.3 %). Esto sugiere que el modelo confunde perfiles "maduros" entre segmentos.
 
 ## 2. Matriz de confusión
 
@@ -66,23 +66,23 @@ Los dos pares dominantes son **B ↔ C** (87 + 49 = 136 confusiones) y **A ↔ D
 
 ## 5. Perfil de las filas mal clasificadas en val_15
 
-Se comparan las 553 filas mal clasificadas con las 657 acertadas (predicciones del modelo congelado sobre `val_15`):
+Se comparan las 554 filas mal clasificadas con las 656 acertadas (predicciones del modelo congelado sobre `val_15`):
 
 | Variable | Aciertos (media) | Errores (media) | Diferencia |
 |---|---:|---:|---:|
-| Edad | 40.19 | 46.01 | +5.8 años |
-| Experiencia laboral | 2.49 | 2.77 | +0.28 años |
-| Tamaño de familia | 3.02 | 2.76 | -0.26 |
+| Edad | 40.21 | 45.97 | +5.8 años |
+| Experiencia laboral | 2.52 | 2.74 | +0.22 años |
+| Tamaño de familia | 3.03 | 2.75 | -0.28 |
 
 | Variable categórica | Aciertos (nivel más frecuente) | Errores (nivel más frecuente) |
 |---|---|---|
-| Gender | Male (59.2 %) | Male (53.5 %) |
-| Ever_Married | Yes (52.0 %) | Yes (64.5 %) |
-| Graduated | Yes (57.3 %) | Yes (67.5 %) |
-| Profession | Artist (32.0 %) | Artist (32.1 %) |
-| Spending_Score | Low (62.7 %) | Low (57.3 %) |
+| Gender | Male (59.1 %) | Male (53.6 %) |
+| Ever_Married | Yes (51.6 %) | Yes (64.9 %) |
+| Graduated | Yes (57.3 %) | Yes (67.4 %) |
+| Profession | Artist (32.1 %) | Artist (32.1 %) |
+| Spending_Score | Low (62.7 %) | Low (57.4 %) |
 
-**Lectura**: las filas mal clasificadas son en promedio **5.8 años más mayores**, más estado civil casado (64.5 % vs 52.0 %) y más graduados (67.5 % vs 57.3 %). Esto sugiere que el modelo confunde perfiles "maduros" entre segmentos.
+**Lectura**: las filas mal clasificadas son en promedio **5.8 años más mayores**, más estado civil casado (64.9 % vs 51.6 %) y más graduados (67.4 % vs 57.3 %). Esto sugiere que el modelo confunde perfiles "maduros" entre segmentos.
 
 ## 6. Ejemplos de filas mal clasificadas
 
@@ -102,7 +102,7 @@ Se muestran 3 ejemplos por segmento real, con todas sus variables. Son **ilustra
 |---|---|---|---|---|---|---|---|---|
 | 27 | Male | No | Yes | Artist | 9.0 | Low | 2.0 | A |
 | 23 | Male | No | No | Doctor | 0.0 | Low | 5.0 | D |
-| 38 | Male | Yes | No | Executive | 9.0 | High | 5.0 | A |
+| 38 | Male | Yes | No | Executive | 9.0 | High | 5.0 | D |
 
 ### Segmento real C (predicho como otra cosa)
 
@@ -121,7 +121,7 @@ Se muestran 3 ejemplos por segmento real, con todas sus variables. Son **ilustra
 | 67 | Female | Yes | No | Lawyer | nan | High | 2.0 | B |
 
 **Lectura de los ejemplos:**
-- Los B mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o ejecutivos con gasto High (se parecen a A o C).
+- Los B mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o ejecutivos con gasto High (en el ejemplo, predicho como D).
 - Los D mal clasificados suelen ser mayores, casados o con gasto High (se parecen a A, B o C).
 - Los C mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o con gasto Average (se parecen a B).
 
@@ -161,5 +161,5 @@ Estas recomendaciones alimentan la sección de limitaciones del informe (US-16, 
 - Importancia de variables: `reports/feature_importance_val_15.csv`
 - Perfiles de segmento: `reports/segment_profile_train_70.csv`
 - Predicciones de validación: `reports/error_analysis_val_15.csv` (554 filas mal clasificadas)
-- Modelo congelado: `models/final_model.joblib` (generado localmente, no commiteado)
+- Modelo congelado: `models/final_model.joblib` (fichero oficial del PR #78, SHA-256 `428e56ddcf3b1fa60c364bca2308e68ce4596cc30a121e62c98ce5492f817317`, no commiteado)
 - Decisiones: D-010 (métrica y overfitting), D-015 (selección de configuración), D-016 (priorización), D-017 (train_70 solo), D-018 (XGBoost elegido y congelado)

@@ -16,7 +16,8 @@ from collections import Counter
 from src.preprocessing import make_features_target
 from src.config import TARGET, RANDOM_STATE
 
-ROOT = "F:/Curso AI/Modulo 2 - Data Analytics - Machine Learning/Proyectos/Proyecto _Multiclass _Minds/customer-segmentation-multiclass"
+# Raiz del repositorio: la carpeta que contiene src/ (sin rutas fijas de un equipo).
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORTS = os.path.join(ROOT, "reports")
 MODELS = os.path.join(ROOT, "models")
 
@@ -24,7 +25,7 @@ MODELS = os.path.join(ROOT, "models")
 model_path = os.path.join(MODELS, "final_model.joblib")
 if not os.path.exists(model_path):
     print("ERROR: No existe %s" % model_path)
-    print("Generalo primero con: python -m src.compare_models --stage freeze --model boosting")
+    print("Copia en models/ el fichero oficial del PR #78 (no lo regeneres: puede cambiar predicciones).")
     sys.exit(1)
 print("Modelo encontrado: %s" % model_path)
 
@@ -52,8 +53,10 @@ for actual in classes:
         if calc != exp:
             match = False
             print("  DESCUADRE %s->%s: calculado=%d, esperado=%d" % (actual, predicted, calc, exp))
-if match:
-    print("  OK: coinciden exactamente.")
+if not match:
+    print("ERROR: el modelo no es el congelado evaluado en US-12. No se escribe nada.")
+    sys.exit(1)
+print("  OK: coinciden exactamente.")
 print()
 
 # 5. Resumen general
@@ -238,7 +241,7 @@ for cls in classes:
     doc += "|---|---|---|---|---|---|---|---|---|\n"
     doc += ex_table(cls) + "\n\n"
 doc += "**Lectura de los ejemplos:**\n"
-doc += "- Los B mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o ejecutivos con gasto High (se parecen a A o C).\n"
+doc += "- Los B mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o ejecutivos con gasto High (en el ejemplo, predicho como D).\n"
 doc += "- Los D mal clasificados suelen ser mayores, casados o con gasto High (se parecen a A, B o C).\n"
 doc += "- Los C mal clasificados suelen ser jóvenes no casados con gasto Low (se parecen a D) o con gasto Average (se parecen a B).\n\n"
 doc += "*Los ejemplos son ilustrativos y se obtienen de las primeras 3 filas mal clasificadas por segmento en val_15. No representan el conjunto completo de errores.*\n\n"
@@ -268,7 +271,7 @@ doc += "- Métricas de validación: `reports/final_metrics_val_15.csv`\n"
 doc += "- Importancia de variables: `reports/feature_importance_val_15.csv`\n"
 doc += "- Perfiles de segmento: `reports/segment_profile_train_70.csv`\n"
 doc += "- Predicciones de validación: `reports/error_analysis_val_15.csv` (554 filas mal clasificadas)\n"
-doc += "- Modelo congelado: `models/final_model.joblib` (generado localmente, no commiteado)\n"
+doc += "- Modelo congelado: `models/final_model.joblib` (fichero oficial del PR #78, SHA-256 `428e56ddcf3b1fa60c364bca2308e68ce4596cc30a121e62c98ce5492f817317`, no commiteado)\n"
 doc += "- Decisiones: D-010 (métrica y overfitting), D-015 (selección de configuración), D-016 (priorización), D-017 (train_70 solo), D-018 (XGBoost elegido y congelado)\n"
 
 # Save the document
@@ -276,10 +279,6 @@ out_path = ROOT + "/reports/error_analysis.md"
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(doc)
 print("Documento guardado: %s" % out_path)
-
-# Also copy to working directory
-shutil.copy(out_path, "C:/Users/USUARIO/Documents/Proyecto predeterminado/error_analysis.md")
-print("Copia guardada en la carpeta de trabajo.")
 
 # Print summary of profile numbers
 print()

@@ -10,11 +10,12 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 459478,Male,Yes,46,Yes,Artist,,Low,1.0,Cat_6,A,B,A
 460420,Female,No,37,Yes,Artist,1.0,Low,1.0,Cat_6,A,B,A
 461396,Male,No,23,No,Doctor,0.0,Low,5.0,Cat_6,B,D,B
-466504,Male,Yes,38,No,Executive,9.0,High,5.0,Cat_6,B,A,B
+466504,Male,Yes,38,No,Executive,9.0,High,5.0,Cat_6,B,D,B
+462882,Male,Yes,41,Yes,Homemaker,2.0,Average,3.0,Cat_3,B,A,B
 462416,Male,Yes,45,No,Artist,0.0,Low,2.0,Cat_4,B,A,B
 459690,Female,No,43,Yes,Artist,1.0,Low,1.0,Cat_6,A,B,A
 466104,Male,Yes,81,Yes,Lawyer,1.0,Low,1.0,Cat_6,B,D,B
-459742,Female,Yes,83,No,Lawyer,1.0,High,2.0,Cat_6,C,B,C
+459742,Female,Yes,83,No,Lawyer,1.0,High,2.0,Cat_6,C,A,C
 463886,Female,No,38,Yes,Artist,1.0,Low,2.0,Cat_6,C,B,C
 460791,Female,No,27,Yes,Engineer,9.0,Low,7.0,Cat_3,C,D,C
 462771,Female,Yes,46,Yes,Marketing,,High,3.0,Cat_6,B,C,B
@@ -88,7 +89,6 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 460607,Male,Yes,36,Yes,Artist,9.0,Average,4.0,Cat_7,A,C,A
 459079,Male,Yes,84,Yes,Lawyer,,High,2.0,Cat_6,A,B,A
 462030,Male,No,36,Yes,Artist,11.0,Low,2.0,Cat_6,C,A,C
-462070,Male,Yes,41,Yes,Entertainment,9.0,Average,2.0,Cat_6,B,C,B
 464015,Female,No,42,Yes,Artist,,Low,2.0,Cat_6,A,B,A
 466770,Female,Yes,85,Yes,Lawyer,0.0,Low,5.0,Cat_6,C,A,C
 460603,Female,No,22,,Entertainment,0.0,Low,3.0,Cat_3,A,D,A
@@ -102,7 +102,6 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 464653,Female,Yes,59,No,Artist,3.0,Average,4.0,Cat_4,A,B,A
 459860,Male,Yes,75,No,Executive,1.0,High,2.0,Cat_6,D,B,D
 459694,Male,Yes,77,No,Lawyer,0.0,Low,,Cat_6,D,A,D
-464525,Male,No,33,Yes,Entertainment,9.0,Low,2.0,Cat_6,D,A,D
 463144,Male,Yes,45,Yes,Executive,1.0,High,3.0,Cat_6,C,B,C
 459457,Male,Yes,51,Yes,Artist,2.0,Low,2.0,Cat_6,A,C,A
 459971,Female,No,40,Yes,Healthcare,8.0,Low,1.0,Cat_6,A,D,A
@@ -112,8 +111,8 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 462686,Male,Yes,41,Yes,Entertainment,9.0,Average,4.0,,A,B,A
 467125,Male,Yes,46,No,Entertainment,1.0,Average,4.0,Cat_3,C,B,C
 467374,Female,Yes,45,Yes,Homemaker,8.0,High,4.0,Cat_6,B,C,B
+462556,Male,Yes,57,Yes,Entertainment,0.0,Average,7.0,Cat_5,C,B,C
 461552,Female,Yes,38,Yes,Artist,,Average,2.0,Cat_6,B,C,B
-466424,Female,Yes,42,Yes,Engineer,1.0,High,3.0,Cat_3,A,B,A
 462728,Female,No,31,No,Engineer,0.0,Low,1.0,Cat_6,D,A,D
 460091,Female,No,26,Yes,Entertainment,1.0,Low,5.0,Cat_6,C,D,C
 464684,Female,No,40,No,Engineer,9.0,Low,5.0,Cat_4,A,D,A
@@ -123,6 +122,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 461465,Male,Yes,28,Yes,Artist,9.0,Average,2.0,Cat_6,A,C,A
 460485,Female,No,18,No,Marketing,9.0,Low,5.0,Cat_3,B,D,B
 463729,Female,No,32,No,Artist,,Low,5.0,Cat_1,B,C,B
+466872,Male,Yes,43,Yes,Artist,1.0,Low,2.0,Cat_3,B,A,B
 464162,Male,Yes,81,Yes,Lawyer,,High,2.0,Cat_6,C,B,C
 466096,Male,Yes,76,Yes,Lawyer,0.0,Low,2.0,Cat_4,B,A,B
 467659,Male,Yes,66,Yes,Entertainment,0.0,Average,2.0,Cat_6,B,C,B
@@ -131,12 +131,12 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 467056,Female,No,31,No,Homemaker,8.0,Low,1.0,Cat_6,A,D,A
 461617,Male,No,45,Yes,Artist,0.0,Low,2.0,Cat_6,A,B,A
 459277,Male,Yes,38,No,Entertainment,0.0,Low,2.0,Cat_6,B,A,B
-461586,Male,No,36,Yes,Artist,6.0,Low,3.0,Cat_2,B,A,B
 462892,Male,Yes,33,No,Healthcare,8.0,Average,3.0,Cat_6,C,D,C
 464431,Male,,67,Yes,Executive,0.0,High,3.0,Cat_6,B,C,B
 465858,Female,Yes,48,Yes,Artist,3.0,Low,1.0,Cat_6,A,B,A
 466947,Male,Yes,57,No,Executive,1.0,High,5.0,Cat_6,C,B,C
 460052,Female,No,81,Yes,Lawyer,1.0,Low,1.0,Cat_3,B,A,B
+459431,Male,Yes,68,No,Artist,0.0,Low,2.0,Cat_6,A,C,A
 460808,Male,No,42,Yes,Artist,1.0,Low,1.0,Cat_6,B,A,B
 467116,Male,Yes,73,Yes,Executive,1.0,High,2.0,Cat_6,B,C,B
 463972,Male,Yes,66,Yes,Artist,0.0,Low,4.0,Cat_2,C,B,C
@@ -145,9 +145,9 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 466847,Female,No,33,No,Doctor,,Low,2.0,Cat_6,A,D,A
 464373,Female,No,46,Yes,Artist,0.0,Low,2.0,Cat_6,B,C,B
 464673,Male,Yes,47,No,Executive,1.0,High,7.0,Cat_2,D,B,D
-459054,Male,Yes,37,Yes,Executive,9.0,High,4.0,Cat_6,C,B,C
 467428,Female,Yes,46,Yes,Entertainment,2.0,Average,2.0,Cat_6,B,C,B
 462677,Female,No,43,Yes,Artist,2.0,Low,4.0,Cat_6,B,C,B
+464642,Female,Yes,26,Yes,Engineer,6.0,High,7.0,Cat_4,D,A,D
 460220,Female,No,37,Yes,Entertainment,1.0,Low,2.0,Cat_2,D,A,D
 467911,Male,Yes,61,Yes,Healthcare,1.0,Low,4.0,Cat_6,D,C,D
 460952,Male,Yes,38,No,Doctor,0.0,Average,5.0,Cat_6,A,B,A
@@ -155,7 +155,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 467807,Male,Yes,50,Yes,Executive,1.0,Average,3.0,Cat_6,B,C,B
 460300,Female,Yes,60,Yes,Lawyer,0.0,Low,2.0,Cat_6,D,B,D
 460892,Male,Yes,43,Yes,Engineer,,Average,4.0,Cat_7,A,B,A
-465206,Male,Yes,47,Yes,Artist,13.0,Low,1.0,Cat_6,C,B,C
+465206,Male,Yes,47,Yes,Artist,13.0,Low,1.0,Cat_6,C,A,C
 459903,Male,Yes,27,Yes,Entertainment,9.0,Low,4.0,Cat_6,C,D,C
 460320,Male,No,26,No,Artist,11.0,Low,4.0,Cat_6,C,D,C
 466051,Male,No,25,No,Executive,3.0,Low,1.0,Cat_4,A,D,A
@@ -165,7 +165,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 466610,Male,No,19,No,Marketing,0.0,Low,5.0,Cat_6,A,D,A
 463962,Female,,35,Yes,Artist,12.0,Low,2.0,Cat_6,B,A,B
 466412,Male,Yes,26,Yes,Artist,1.0,Average,3.0,Cat_6,B,C,B
-464249,Male,Yes,80,No,Lawyer,,High,2.0,Cat_6,C,A,C
+464249,Male,Yes,80,No,Lawyer,,High,2.0,Cat_6,C,B,C
 466230,Male,Yes,46,Yes,Artist,0.0,Average,2.0,Cat_6,B,C,B
 463317,Male,Yes,72,Yes,Marketing,0.0,Low,1.0,Cat_6,A,D,A
 459042,Female,Yes,41,Yes,Engineer,1.0,Average,3.0,Cat_6,C,B,C
@@ -175,7 +175,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 463607,Female,No,29,Yes,Engineer,1.0,Low,5.0,Cat_1,B,D,B
 467548,Male,Yes,48,Yes,Artist,0.0,High,2.0,Cat_6,B,C,B
 462983,Female,Yes,66,Yes,Lawyer,1.0,High,2.0,Cat_6,A,C,A
-460565,Female,Yes,42,No,Homemaker,8.0,Average,4.0,Cat_3,C,B,C
+460565,Female,Yes,42,No,Homemaker,8.0,Average,4.0,Cat_3,C,A,C
 467721,Male,No,41,Yes,Entertainment,0.0,Low,1.0,Cat_4,D,A,D
 462631,Female,Yes,35,No,Engineer,2.0,High,4.0,Cat_4,D,A,D
 460251,Female,No,30,Yes,Entertainment,9.0,Low,1.0,Cat_6,D,A,D
@@ -216,7 +216,6 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 466551,Male,Yes,36,Yes,Artist,9.0,Average,2.0,Cat_6,B,C,B
 460572,Female,No,30,Yes,Engineer,0.0,Low,4.0,Cat_3,C,A,C
 465845,Female,Yes,40,Yes,Entertainment,,Low,2.0,Cat_6,B,A,B
-461150,Female,,20,No,Marketing,0.0,High,2.0,Cat_3,A,D,A
 463668,Female,No,29,No,Engineer,0.0,Low,6.0,Cat_4,C,D,C
 465950,Female,Yes,52,Yes,Artist,6.0,Low,2.0,Cat_6,A,C,A
 465101,Female,Yes,88,Yes,Lawyer,1.0,Low,1.0,Cat_6,D,A,D
@@ -229,7 +228,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 462092,Female,Yes,35,Yes,Homemaker,7.0,Average,4.0,,B,C,B
 462151,Female,No,35,Yes,Artist,8.0,Low,1.0,Cat_6,B,A,B
 465970,Female,Yes,38,No,Artist,1.0,Low,1.0,Cat_6,B,A,B
-465267,Male,Yes,37,No,Engineer,12.0,Average,5.0,Cat_4,B,D,B
+465267,Male,Yes,37,No,Engineer,12.0,Average,5.0,Cat_4,B,A,B
 463612,Female,Yes,51,Yes,Engineer,1.0,High,3.0,Cat_6,C,B,C
 465320,Female,Yes,65,Yes,Lawyer,1.0,Average,2.0,Cat_6,B,C,B
 461592,Male,Yes,29,Yes,Entertainment,0.0,Low,2.0,Cat_6,B,A,B
@@ -250,14 +249,12 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 459816,Male,Yes,37,Yes,Doctor,,Low,2.0,Cat_6,D,A,D
 467103,Male,No,32,Yes,Healthcare,1.0,Low,3.0,Cat_6,A,D,A
 464440,Male,Yes,87,Yes,Lawyer,0.0,High,2.0,Cat_6,A,C,A
-459632,Female,Yes,52,No,Marketing,1.0,High,3.0,Cat_4,D,A,D
 467605,Female,Yes,40,Yes,Engineer,1.0,Average,7.0,Cat_6,A,B,A
 465525,Female,Yes,38,Yes,Healthcare,3.0,Average,3.0,Cat_2,D,B,D
 466148,Male,Yes,39,No,Entertainment,0.0,Average,4.0,Cat_6,C,B,C
 464638,Male,No,39,Yes,Artist,2.0,Low,3.0,Cat_4,B,A,B
 467693,Male,Yes,61,Yes,Entertainment,7.0,High,5.0,Cat_6,B,C,B
 460135,Female,No,31,Yes,Healthcare,4.0,Low,3.0,Cat_6,B,D,B
-467471,Male,Yes,52,No,Entertainment,4.0,Average,5.0,Cat_6,C,B,C
 464155,Male,No,41,No,Doctor,0.0,Low,3.0,Cat_4,B,A,B
 465817,Male,Yes,56,No,Executive,0.0,Low,2.0,Cat_4,A,D,A
 460115,Female,No,28,Yes,Healthcare,,Low,1.0,Cat_3,A,D,A
@@ -290,6 +287,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 467496,Female,Yes,63,Yes,,4.0,Average,3.0,Cat_6,A,C,A
 466303,Male,Yes,67,Yes,Lawyer,0.0,High,2.0,Cat_2,B,C,B
 462061,Male,No,41,No,Doctor,1.0,Low,3.0,Cat_6,B,A,B
+466648,Male,Yes,36,Yes,Executive,6.0,High,2.0,Cat_6,C,B,C
 460048,Male,No,47,Yes,Doctor,1.0,Low,1.0,Cat_6,B,A,B
 467253,Female,No,35,Yes,Engineer,,Low,2.0,Cat_6,D,A,D
 465867,Female,Yes,35,Yes,Artist,8.0,High,5.0,Cat_6,B,C,B
@@ -325,20 +323,20 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 461341,Female,Yes,39,Yes,Artist,0.0,High,2.0,Cat_6,A,C,A
 467262,Female,Yes,77,No,Lawyer,1.0,High,2.0,Cat_6,D,A,D
 461163,Female,Yes,60,No,Entertainment,9.0,Low,4.0,Cat_3,B,A,B
+466787,Female,Yes,33,Yes,Doctor,0.0,Low,2.0,Cat_6,A,D,A
 460939,Female,Yes,87,Yes,Lawyer,0.0,Low,2.0,Cat_6,B,A,B
-463410,Male,Yes,37,No,Doctor,,Average,2.0,Cat_6,B,A,B
 464086,Male,Yes,42,Yes,Artist,1.0,Average,4.0,Cat_6,B,C,B
 465379,Male,No,30,No,Healthcare,0.0,Low,4.0,Cat_6,C,D,C
 460387,Female,No,35,No,Entertainment,4.0,Low,2.0,Cat_6,D,A,D
 463041,Female,Yes,43,Yes,Artist,,Average,4.0,Cat_2,B,C,B
 460869,Male,Yes,35,Yes,Artist,1.0,Average,2.0,Cat_6,B,C,B
 459862,Male,Yes,70,No,Executive,,High,2.0,Cat_6,A,B,A
-460176,Female,No,28,Yes,Entertainment,0.0,Low,4.0,Cat_6,C,D,C
+460176,Female,No,28,Yes,Entertainment,0.0,Low,4.0,Cat_6,C,A,C
 461730,Male,Yes,46,Yes,Artist,1.0,Low,3.0,Cat_6,B,C,B
 467670,Male,No,25,No,Engineer,,Low,3.0,Cat_6,A,D,A
 459327,Male,No,50,No,Doctor,9.0,Low,3.0,Cat_6,D,A,D
 461024,Male,Yes,82,Yes,Lawyer,1.0,Low,1.0,Cat_6,A,D,A
-464871,Female,No,28,Yes,Entertainment,6.0,Low,3.0,Cat_4,B,A,B
+464871,Female,No,28,Yes,Entertainment,6.0,Low,3.0,Cat_4,B,D,B
 461256,Male,No,33,No,Doctor,1.0,Low,4.0,Cat_4,C,D,C
 465720,Female,Yes,36,Yes,Artist,1.0,Low,2.0,Cat_6,C,B,C
 459207,Female,Yes,62,,Doctor,0.0,Average,4.0,Cat_6,B,C,B
@@ -351,12 +349,12 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 467716,Male,Yes,41,Yes,Artist,4.0,Average,3.0,Cat_6,B,C,B
 460265,Male,Yes,52,Yes,Executive,1.0,High,4.0,Cat_6,B,C,B
 462299,Female,No,33,No,Healthcare,7.0,Low,6.0,Cat_6,C,D,C
-460994,Male,Yes,78,Yes,Lawyer,0.0,Low,5.0,Cat_6,A,D,A
 461928,Male,Yes,69,Yes,Lawyer,,Low,1.0,,A,D,A
 460623,Male,Yes,41,Yes,Executive,5.0,Low,2.0,Cat_1,A,D,A
 459318,Female,No,32,Yes,Engineer,0.0,Low,3.0,Cat_6,D,A,D
 467856,Male,Yes,59,Yes,Artist,1.0,Low,2.0,Cat_6,A,C,A
 462884,Female,Yes,55,No,Artist,1.0,Low,2.0,Cat_3,B,A,B
+466633,Male,Yes,39,Yes,Entertainment,6.0,Average,2.0,Cat_6,C,B,C
 463314,Female,No,27,No,Healthcare,0.0,Low,4.0,Cat_3,A,D,A
 462554,Male,No,28,No,Healthcare,1.0,Low,8.0,Cat_4,C,D,C
 461735,Male,Yes,67,Yes,Lawyer,0.0,High,2.0,Cat_6,B,C,B
@@ -376,6 +374,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 466997,Female,,50,No,Engineer,1.0,Low,2.0,Cat_6,D,A,D
 467087,Male,No,68,Yes,Lawyer,0.0,Low,,Cat_6,B,D,B
 465661,Male,No,59,Yes,Entertainment,1.0,Low,1.0,Cat_6,C,A,C
+461413,Female,No,40,Yes,Artist,2.0,Low,1.0,Cat_6,B,A,B
 466374,Male,Yes,83,No,Lawyer,,Low,1.0,Cat_4,B,D,B
 464279,Male,Yes,53,No,Executive,1.0,Low,5.0,Cat_6,A,D,A
 464116,Female,Yes,69,Yes,Marketing,1.0,Low,2.0,Cat_6,C,D,C
@@ -397,7 +396,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 459828,Female,Yes,25,No,Homemaker,11.0,Average,3.0,Cat_6,D,A,D
 463637,Female,No,30,Yes,Healthcare,,Low,5.0,Cat_2,A,D,A
 459750,Female,Yes,39,Yes,Engineer,0.0,Average,2.0,Cat_6,A,B,A
-465805,Male,Yes,50,Yes,Engineer,,Low,1.0,Cat_3,C,A,C
+465805,Male,Yes,50,Yes,Engineer,,Low,1.0,Cat_3,C,B,C
 461672,Female,No,26,No,Engineer,1.0,Low,2.0,Cat_6,A,D,A
 459321,Male,Yes,81,Yes,Entertainment,1.0,Low,1.0,Cat_6,B,A,B
 466492,Female,Yes,85,Yes,Lawyer,0.0,High,2.0,Cat_6,A,C,A
@@ -407,9 +406,10 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 464881,Male,Yes,59,Yes,Entertainment,0.0,Low,,Cat_4,C,A,C
 459492,Female,Yes,72,Yes,Lawyer,1.0,High,2.0,Cat_6,A,C,A
 463273,Male,Yes,37,Yes,Entertainment,8.0,Average,2.0,Cat_3,B,A,B
+466421,Male,Yes,26,No,Doctor,4.0,Average,3.0,Cat_3,D,A,D
 459711,Male,Yes,37,No,Executive,9.0,High,6.0,Cat_6,D,B,D
 463250,Female,No,36,Yes,Doctor,0.0,Low,2.0,Cat_6,D,A,D
-461434,Female,Yes,32,Yes,Executive,4.0,High,3.0,Cat_7,C,D,C
+461434,Female,Yes,32,Yes,Executive,4.0,High,3.0,Cat_7,C,A,C
 465663,Female,No,70,Yes,Artist,0.0,Low,2.0,Cat_6,B,C,B
 464318,Male,Yes,88,Yes,Executive,1.0,Low,1.0,Cat_6,D,A,D
 464596,Female,Yes,35,Yes,Executive,0.0,Low,2.0,Cat_6,B,A,B
@@ -420,7 +420,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 465604,Female,Yes,41,No,Engineer,9.0,Average,2.0,Cat_3,B,A,B
 467479,Male,Yes,35,Yes,Executive,1.0,Average,4.0,Cat_6,C,B,C
 466852,Female,No,23,No,Marketing,4.0,Low,4.0,Cat_6,C,D,C
-463455,Male,Yes,46,No,Artist,0.0,Low,2.0,Cat_6,B,A,B
+463455,Male,Yes,46,No,Artist,0.0,Low,2.0,Cat_6,B,C,B
 467425,Female,No,42,Yes,Artist,13.0,Low,1.0,Cat_6,C,A,C
 461417,Female,No,37,Yes,Doctor,1.0,Low,3.0,Cat_6,D,A,D
 464537,Male,Yes,41,Yes,Artist,8.0,Average,3.0,Cat_6,A,C,A
@@ -438,6 +438,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 459486,Male,Yes,75,Yes,Lawyer,,High,2.0,Cat_6,A,B,A
 462017,Male,No,25,Yes,Entertainment,9.0,Low,1.0,Cat_2,A,D,A
 461221,Female,No,30,No,Marketing,1.0,Low,4.0,Cat_6,B,D,B
+461988,Male,Yes,36,No,Engineer,0.0,Average,2.0,Cat_6,B,A,B
 465765,Male,Yes,52,No,Entertainment,0.0,Average,2.0,Cat_4,B,A,B
 460940,Male,Yes,73,Yes,Artist,0.0,Low,1.0,Cat_6,A,B,A
 464745,Male,,60,No,Engineer,0.0,Average,3.0,Cat_4,A,B,A
@@ -446,7 +447,6 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 460731,Female,No,29,Yes,Artist,1.0,Low,3.0,Cat_6,C,A,C
 462171,Female,Yes,37,No,Engineer,3.0,High,2.0,Cat_6,D,A,D
 465038,Male,Yes,46,No,Executive,0.0,High,4.0,Cat_6,A,B,A
-459363,Male,No,53,Yes,Artist,2.0,Low,1.0,Cat_6,A,B,A
 466149,Female,No,30,No,Doctor,3.0,Low,4.0,Cat_6,A,D,A
 467472,Male,Yes,59,Yes,Executive,3.0,High,4.0,Cat_6,B,C,B
 463990,Male,Yes,55,Yes,Artist,1.0,Average,2.0,Cat_4,B,C,B
@@ -467,9 +467,9 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 463219,Male,Yes,50,No,Entertainment,0.0,Low,2.0,Cat_6,D,A,D
 463354,Male,Yes,53,Yes,Executive,4.0,High,4.0,Cat_6,D,C,D
 464099,Female,Yes,43,Yes,Artist,5.0,Average,2.0,Cat_4,A,B,A
-459663,Male,No,31,Yes,Artist,,Low,6.0,Cat_3,A,D,A
 464265,Male,Yes,56,Yes,Entertainment,1.0,Low,2.0,Cat_6,C,A,C
 461454,Female,Yes,35,Yes,Artist,7.0,High,4.0,Cat_7,B,C,B
+465995,Male,No,27,No,Entertainment,0.0,Low,3.0,Cat_2,D,A,D
 464719,Female,No,28,No,Doctor,3.0,Low,4.0,Cat_6,A,D,A
 463684,Female,No,29,Yes,Healthcare,0.0,Low,4.0,Cat_6,A,D,A
 465940,Female,No,53,Yes,Artist,0.0,Low,2.0,,A,C,A
@@ -480,6 +480,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 463940,Female,No,26,No,Healthcare,1.0,Low,8.0,Cat_4,C,D,C
 461838,Male,Yes,49,Yes,Artist,0.0,Low,1.0,Cat_6,C,B,C
 466668,Female,Yes,49,Yes,Engineer,0.0,Low,1.0,Cat_2,B,A,B
+462306,Male,Yes,79,No,Lawyer,8.0,High,2.0,Cat_6,A,B,A
 467667,Male,Yes,28,No,Doctor,8.0,Low,2.0,Cat_6,A,D,A
 467213,Female,Yes,88,Yes,Lawyer,1.0,High,2.0,Cat_6,B,C,B
 462927,Female,No,26,No,Homemaker,9.0,Low,2.0,Cat_6,A,D,A
@@ -503,7 +504,6 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 463975,Female,No,30,No,Healthcare,8.0,Low,4.0,Cat_4,B,D,B
 463083,Male,No,30,Yes,Artist,7.0,Low,3.0,Cat_6,D,A,D
 467251,Female,No,21,No,Engineer,1.0,Low,6.0,Cat_6,C,D,C
-466012,Male,Yes,56,,Artist,2.0,Average,3.0,Cat_4,B,C,B
 464554,Female,No,35,Yes,Artist,0.0,Low,7.0,Cat_2,C,A,C
 463845,Male,Yes,58,Yes,Artist,,Average,1.0,Cat_6,D,C,D
 466414,Male,Yes,66,Yes,Artist,1.0,Low,3.0,Cat_6,A,B,A
@@ -541,6 +541,7 @@ ID,Gender,Ever_Married,Age,Graduated,Profession,Work_Experience,Spending_Score,F
 463796,Female,No,33,No,Engineer,1.0,Low,3.0,Cat_6,D,A,D
 462356,Male,No,47,Yes,Engineer,0.0,Low,3.0,Cat_6,A,D,A
 461556,Female,Yes,49,Yes,Engineer,1.0,Average,2.0,Cat_6,A,C,A
+460097,Male,,43,Yes,Artist,0.0,Low,2.0,Cat_3,B,A,B
 465737,Female,Yes,49,Yes,Engineer,6.0,Low,3.0,Cat_3,D,B,D
 465888,Male,Yes,37,Yes,Doctor,8.0,Average,2.0,Cat_6,A,C,A
 467924,Male,Yes,52,Yes,Artist,0.0,Low,3.0,Cat_4,A,B,A
