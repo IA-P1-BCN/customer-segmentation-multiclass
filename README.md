@@ -73,10 +73,6 @@ notebooks/03_modeling/ # logistic regression notebook (US-07)
 03_model_random_forest.ipynb # Random Forest model notebook (model block 03)
 requirements.txt
 AGENTS.md
-02_eda_train70_*.ipynb # EDA sections on train_70
-03_model_random_forest.ipynb
-requirements.txt
-AGENTS.md
 ```
 
 ## How to run
