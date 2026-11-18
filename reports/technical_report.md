@@ -9,7 +9,7 @@
 | 3. Methodology and Pipeline | Isbel | Draft from approved decisions |
 | 4. Exploratory analysis | Pedro | Draft from the merged US-06 synthesis |
 | 5. Models and validation results | Brian | Draft from the recorded results of the four model PRs |
-| 6. Final model and test evaluation | Brian | Filled from PR #78; baseline on test and frozen-model gap pending |
+| 6. Final model and test evaluation | Brian | Filled from PR #78 and PR #79 |
 | 7. Error analysis | Pedro | 7.1–7.3 filled from the US-12 run; **7.4–7.7 pending US-14** |
 | 8. Segments and business reading | Rita | Draft from US-13 part 1 |
 | 9. Limitations | Rita | Draft |
@@ -27,7 +27,7 @@ On the validation split (`val_15`), the four selected configurations meet the ov
 
 > **Fixed by D-017 (Approved by Brian, 2026-11-17):** the frozen model is fitted on `train_70` only.
 >
-> **Final model (US-11, PR #78; D-018 Proposed):** XGBoost, fitted on `train_70`. On `test_15`, opened once, it reaches **accuracy 0.5599 and macro-F1 0.5456**, close to its validation figures (0.5421 and 0.5222; section 6). `Age`, `Profession` and `Spending_Score` are the variables the model relies on most (section 6.5).
+> **Final model (US-11, PR #78; D-018 Approved by Pedro, 2026-11-18):** XGBoost, fitted on `train_70`. On `test_15`, opened once, it reaches **accuracy 0.5599 and macro-F1 0.5456**, close to its validation figures (0.5421 and 0.5222) and far above the majority-class baseline on test (0.2816 and 0.1099); its train − validation gap is 3.44 points (section 6). `Age`, `Profession` and `Spending_Score` are the variables the model relies on most (section 6.5).
 
 All models find segment D easiest (F1 about 0.69–0.71 on validation) and segment B hardest (F1 about 0.30–0.37). On test, B has the lowest recall (0.385) and 31 % of the B customers are predicted as C, the pair that the data themselves mix most often (sections 4.4 and 7).
 
@@ -110,7 +110,7 @@ Among the models that meet the overfitting limit on `val_15`, the one with the h
 
 > **Decision D-017 (Approved by Brian, 2026-11-17; Pedro, Brian and Isbel voted for it):** the frozen model is fitted on `train_70` only, not on `train_70 + val_15`, so its `val_15` figures stay held-out figures and the official check of D-010 keeps its meaning.
 >
-> **Done (US-11, PR #78):** XGBoost frozen on `train_70` (section 6.1). The choice is recorded as D-018, **Proposed**: it needs approval by a team member other than its proposer.
+> **Done (US-11, PR #78):** XGBoost frozen on `train_70` (section 6.1). The choice is recorded as D-018, **Approved by Pedro** (reviewer of PR #78) on 2026-11-18.
 
 ### 3.5 Final evaluation (US-12)
 
@@ -237,13 +237,13 @@ Against the criterion of section 3.2:
 | Random seed | 42 | `src/config.py` |
 | Frozen on | 2026-11-18, PR #78 (`c6ce6c6` in `develop`); the `.joblib` file is not committed and is rebuilt with the command above | A-029 |
 
-> **D-018 (Proposed):** XGBoost as the final model. It needs approval by a team member other than its proposer.
+> **D-018 (Approved by Pedro, 2026-11-18):** XGBoost frozen on `train_70` is the final model.
 
 Its configuration was chosen by D-015 item 6 (no configuration met the 5-point gap in cross-validation, section 5.1); it meets the official limit on `val_15` (3.33 points in the recorded run).
 
 **Validation figures of the frozen model.** The frozen model scores 0.5421 accuracy and 0.5222 macro-F1 on `val_15`, against 0.5430 and 0.5227 in the recorded boosting run of section 5.2: one row of 1,210 differs. A-029 reproduces the lower figure with the boosting module itself, so the wrapper is not the cause; the likely cause is run-to-run variation of XGBoost. Section 5 keeps the recorded run; this section uses the frozen model.
 
-> **Pending:** the train − validation gap of the frozen model itself (its accuracy on `train_70` was not recorded).
+**Overfitting check of the frozen model (D-010).** On `train_70` the frozen model scores accuracy 0.5766 and macro-F1 0.5609, so its train − validation gap is **3.44 points** (computed before rounding), below the 5-point limit. Source: A-029, completed in PR #79.
 
 ### 6.2 Results on `test_15`
 
@@ -254,9 +254,9 @@ Its configuration was chosen by D-015 item 6 (no configuration met the 5-point g
 | Frozen model on `test_15` | **0.5599** | **0.5456** |
 | Same model on `val_15` | 0.5421 | 0.5222 |
 | Test − validation (points) | +1.77 | +2.34 |
-| Majority-class baseline on `test_15` | … | … |
+| Majority-class baseline on `test_15` | 0.2816 | 0.1099 |
 
-> **Pending:** the baseline on `test_15` was printed by the run but not saved to a file; it is to be recorded in A-029.
+The baseline row comes from the output of the same run, recorded in A-029 (PR #79); the script prints it but does not save it to a file.
 
 Per class on `test_15`:
 
@@ -294,9 +294,9 @@ Section 7 (US-14) reads which pairs are confused most.
 ### 6.4 Does the result hold on test?
 
 - **Against validation:** test is +1.77 points of accuracy and +2.34 of macro-F1 above the frozen model's validation figures. There is no sign that the choice was tuned to `val_15`; with 1,211 rows, a difference of this size can come from sampling, so test is not read as an improvement.
-- **Generalisation:** 0.5599 accuracy on unseen data is in line with validation; the comparison with the training accuracy of the frozen model is pending (section 6.1).
+- **Generalisation:** 0.5599 accuracy on unseen data is in line with validation; the frozen model's train − validation gap is 3.44 points (section 6.1), so it meets the overfitting limit.
 - **Per class:** the pattern of section 5.3 holds. D is recognised best (recall 0.751) and B worst (recall 0.385).
-- **Against the baseline:** pending the recorded baseline on `test_15` (section 6.2).
+- **Against the baseline:** on `test_15` the model doubles the baseline accuracy (0.5599 against 0.2816) and multiplies its macro-F1 by about five (0.5456 against 0.1099). It clearly beats it, which with the gap above meets the quality criterion of D-010 item 5.
 
 ### 6.5 Feature importance
 
@@ -475,9 +475,10 @@ python -m src.evaluate_final --model models/final_model.joblib --partition test_
 | 6, 7 | Test metrics and confusion matrices | `reports/final_metrics_test_15_20261118T092535Z.csv`, `reports/confusion_counts_test_15_20261118T092535Z.csv`, `reports/confusion_normalised_test_15_20261118T092535Z.csv` (single run, 2026-11-18 09:25 UTC, PR #78) |
 | 6 | Frozen model on validation | `reports/final_metrics_val_15.csv`, `reports/confusion_counts_val_15.csv` (PR #78) |
 | 6 | Feature importance | `reports/feature_importance_val_15.csv` (PR #78) |
+| 6 | Baseline on `test_15`; frozen model on `train_70` (gap) | Output of the US-12 run and of the frozen model on `train_70`, recorded in A-029 (PR #79) |
 | 7 | Error analysis | `reports/error_analysis.md` (pending US-14) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69, merged) |
 
 ### 10.3 Decisions cited
 
-D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, approved), D-017 (data used to fit the frozen model, approved), D-018 (XGBoost as the final model, proposed).
+D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, approved), D-017 (data used to fit the frozen model, approved), D-018 (XGBoost as the final model, approved).
