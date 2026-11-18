@@ -1,0 +1,5 @@
+model,config,accuracy_train,accuracy_val,macro_f1_train,macro_f1_val,gap_pp,f1_A,f1_B,f1_C,f1_D,source
+logistic_regression,C=1_l2_balanced,0.512307419868957,0.49586776859504134,0.49911660594085705,0.4785827259899149,1.6439651273915667,0.4065573770491803,0.29918032786885246,0.5152979066022544,0.6932952924393724,logistic_regression.csv
+svm,"tuned {""C"": 1.0, ""gamma"": 0.01, ""kernel"": ""rbf""}",0.5413,0.5025,0.5279,0.4853,3.8800000000000057,0.4046,0.3067,0.5386,0.6911,svm.csv
+random_forest,"tuned {""max_depth"": 6, ""max_features"": 0.5, ""min_samples_leaf"": 10, ""n_estimators"": 300}",0.5438,0.5248,0.5321,0.508,1.8999999999999906,0.4192,0.3556,0.5512,0.706,random_forest.csv
+boosting,refine_n_estimators=300_learning_rate=0.05_min_child_weight=5,0.5762,0.543,0.5608,0.5227,3.3200000000000007,0.4357,0.3692,0.5719,0.7139,boosting.csv
