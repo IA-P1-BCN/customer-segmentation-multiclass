@@ -236,6 +236,7 @@ Against the criterion of section 3.2:
 | Preprocessing | Shared Pipeline of section 3.1 (D-011, D-014; 28 columns), wrapped in `FrozenPipeline` (`src/frozen.py`) so that it takes and returns the labels A–D | `src/compare_models.py --stage freeze --model boosting` |
 | Random seed | 42 | `src/config.py` |
 | Frozen on | 2026-11-18, PR #78 (`c6ce6c6` in `develop`); the `.joblib` file is not committed and is rebuilt with the command above; a rebuilt file can differ in a few predictions (section 9) | A-029 |
+| Model file | `models/final_model.joblib`, SHA-256 `428e56ddcf3b1fa60c364bca2308e68ce4596cc30a121e62c98ce5492f817317`: the file evaluated on `test_15` and shared with the team | Computed on 2026-11-18 on Brian's copy (`sha256sum`) and on Rita's copy (`shasum -a 256`); both match |
 
 > **D-018 (Approved by Pedro, 2026-11-18):** XGBoost frozen on `train_70` is the final model.
 
@@ -430,7 +431,7 @@ The frozen model relies most on `Age`, `Profession` and `Spending_Score` (permut
 - **Validation used for every configuration in three models.** The XGBoost, SVM and logistic regression runs evaluated all their configurations on `val_15`, not only the selected one. The choice was made with cross-validation, but `val_15` has been seen more than once.
 - **Split by rows, not by profile.** The same profile can appear in `train_70` and in `val_15` or `test_15` (D-013). It affects the absolute accuracy, not the ranking, because all models use the same split.
 - **Logistic regression results marked provisional.** Its results file still carries the note "PROVISIONAL (US-05 phase 2 not integrated)"; it applies D-011 and D-014 like the other models (28 columns).
-- **Model file not versioned.** `models/final_model.joblib` is git-ignored, so the repository keeps the command that builds the model but not the file evaluated on `test_15` in PR #78. Rebuilding it, for example on another computer, can change a few predictions: on `val_15` the frozen model gets 656 of 1,210 rows right (diagonal of `reports/confusion_counts_val_15.csv`, accuracy 0.5421), while the recorded boosting run with the same configuration got 657 (accuracy 0.5430, `results/boosting.csv`; section 6.1). The figures of sections 6 and 7 hold only for the file frozen in PR #78, so the error analysis and the app must use that file, not a rebuilt one.
+- **Model file not versioned.** `models/final_model.joblib` is git-ignored, so the repository keeps the command that builds the model but not the file evaluated on `test_15` in PR #78. Rebuilding it, for example on another computer, can change a few predictions: on `val_15` the frozen model gets 656 of 1,210 rows right (diagonal of `reports/confusion_counts_val_15.csv`, accuracy 0.5421), while the recorded boosting run with the same configuration got 657 (accuracy 0.5430, `results/boosting.csv`; section 6.1). The figures of sections 6 and 7 hold only for the file frozen in PR #78, so the error analysis and the app must use that file, not a rebuilt one. Its SHA-256 (section 6.1) tells whether a copy is that file.
 - **Association, not causality.** The EDA and the feature importance describe associations.
 
 ## 10. Reproducibility and sources
