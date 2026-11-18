@@ -553,3 +553,25 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** `python -m pytest tests` passes (42 tests). The selection run starts with the D-013 partition check (row counts, checksums and zero ID overlap between partitions; `test_15` is never read). The selected `val_15` figures (accuracy 0.5430, macro-F1 0.5227) match the independent calculation made by the reviewer of PR #65 from the same CV rows.
 - **Outcome:** PR #65 updated; not merged.
 - **Pending tasks:** Approval and merge of PR #65 by a team member other than the author; the chosen configuration feeds US-11.
+
+---
+
+### A-030 — US-17: business presentation (PowerPoint and PDF, Spanish)
+
+- **Date:** 2026-11-18
+- **Note:** Numbered A-030 because A-026 is used by PR #74, A-028 by PR #72 and A-029 is reserved for PR #76.
+- **Agent:** Claude Code (Claude Opus 5.5)
+- **Human owner:** Rita
+- **Objective:** US-17 (issue #37): business presentation in non-technical Spanish with the segment profiles, the segment to prioritise, the campaigns as business hypotheses and the recommendation to collect income, product (P1 to P5) and vehicle type.
+- **Instructions received:** team decisions of 2026-11-18 (format `.pptx` + PDF in the repo; Spanish, translating only visible text; validation accuracy 0.5430 on `val_15` shown as "54 de cada 100" with a visible "validation, not test" label, to be replaced everywhere at once if US-12 lands before delivery; this deck is only the business part, after the technical part and the app demo). Pedro asked to mention macro-F1 (0.5227) as well: it is in the speaker notes.
+- **Activities:**
+  - Read `AGENTS.md`, issue #37, `reports/segment_insights.md`, `reports/segment_profile_train_70.csv` and section 8 of `reports/technical_report.md` (PR #74 branch). Checked 0.5430 / 0.5227 against A-023 and 0.2810 against the technical report draft.
+  - Built 11 slides: cover, question, data available and missing, the four segments, spending and marital status, segment to prioritise (D-016), campaigns, recommendation and next steps; annex: what distinguishes the segments, segment D, model accuracy. Speaker notes on every slide carry the technical terms and sources.
+  - Every figure is copied from `segment_profile_train_70.csv` and `segment_insights.md` with the same rounding (one decimal, Spanish comma). No new figure was computed. The two EDA figures (`eda_spending_by_segment.png`, `eda_married_by_segment.png`) were redrawn as native, editable charts with the same CSV values, because the PNGs show integer rounding and technical labels.
+  - Campaign texts translated without changing their content (table of §5, approved as business hypotheses in the review of PR #69). "Test the campaigns before rolling them out" is marked as optional: it is not in the issue.
+  - Model feature importance is shown as pending (US-12); nothing is claimed about it.
+- **Tools:** the deck is generated with `pptxgenjs` 3.12.0 installed in a temporary folder outside the repo (approved by Rita); the PDF is exported with PowerPoint. No dependency added to the project.
+- **Files:** Created: `presentation/business_presentation.pptx`, `presentation/business_presentation.pdf`. Modified: `README.md` (link), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only). No CSV modified; `test_15` and the Kaggle `Test.csv` not used.
+- **Verification:** OOXML validation passed; visual review of the 11 slides rendered from the PDF; check that the slide text (not the notes) contains no technical terms (`accuracy`, `macro-F1`, `train_70`, `pipeline`, ...).
+- **Outcome:** draft for team review; not approved.
+- **Pending tasks:** team review of the key messages (issue #37, approval status); replace the validation figure on slide 11 if the test result of US-12 arrives before delivery.

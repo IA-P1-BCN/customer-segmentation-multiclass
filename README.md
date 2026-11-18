@@ -55,6 +55,7 @@ AGENTS.md
 - **Boosting (US-09):** `python src/train_boosting.py --baseline --grid --refine` records the 27 runs. `python src/train_boosting.py --select` cross-validates the 26 candidates and appends the configuration chosen with D-015, marked `SELECTED` in `results/boosting.csv`.
 - **App:** *(pending — US-15)* `streamlit run app.py`
 - **Technical report:** *(pending — US-16)* see `reports/` and the report.
+- **Business presentation (US-17, Spanish):** [presentation/business_presentation.pptx](presentation/business_presentation.pptx) (editable, with speaker notes) and [presentation/business_presentation.pdf](presentation/business_presentation.pdf).
 - **Tests:** `python -m pytest`
 
 ## Main results
