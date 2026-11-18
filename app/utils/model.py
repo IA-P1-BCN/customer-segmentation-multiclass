@@ -16,13 +16,18 @@ import pandas as pd
 from src.config import FEATURE_COLUMNS
 
 __all__ = [
+    "DEFAULT_MODEL_PATH",
     "ModelArtifactError",
+    "ModelArtifactNotFoundError",
     "PredictionError",
     "Predictor",
     "SEGMENT_LABELS",
     "load_predictor",
     "predict_segment",
 ]
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_MODEL_PATH = PROJECT_ROOT / "models" / "final_model.joblib"
 
 SEGMENT_LABELS = frozenset({"A", "B", "C", "D"})
 
@@ -35,23 +40,28 @@ class Predictor(Protocol):
 
 
 class ModelArtifactError(RuntimeError):
-    """Raised when the frozen model artefact cannot be located or loaded."""
+    """Raised when the frozen model artefact cannot be loaded or is invalid."""
+
+
+class ModelArtifactNotFoundError(ModelArtifactError, FileNotFoundError):
+    """Raised when the frozen model artefact cannot be located."""
 
 
 class PredictionError(RuntimeError):
     """Raised when the predictor does not return a single valid segment."""
 
 
-def load_predictor(path: str | Path) -> Predictor:
+def load_predictor(path: str | Path | None = None) -> Predictor:
     """Load a joblib-serialised predictor from ``path``.
 
+    If ``path`` is ``None``, ``DEFAULT_MODEL_PATH`` is used.
     US-11 owns the artefact contract and its location; this function provides
     the loading seam. It accepts either a directly serialised pipeline/predictor
     or a dictionary payload containing the model under the ``"model"`` key.
     """
-    artifact_path = Path(path)
+    artifact_path = DEFAULT_MODEL_PATH if path is None else Path(path)
     if not artifact_path.is_file():
-        raise ModelArtifactError(
+        raise ModelArtifactNotFoundError(
             f"No se encontró el artefacto del modelo en {artifact_path}."
         )
     try:

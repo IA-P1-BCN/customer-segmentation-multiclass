@@ -8,21 +8,21 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
 
 class _FakeContext:
-    def __enter__(self) -> "_FakeContext":
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *args: object) -> bool:
+    def __exit__(self, *_args: object) -> bool:
         return False
 
 
 class _FakeColumn(_FakeContext):
-    def __init__(self, parent: "FakeStreamlit") -> None:
+    def __init__(self, parent: FakeStreamlit) -> None:
         self._parent = parent
 
     def __getattr__(self, name: str) -> Any:
@@ -104,9 +104,30 @@ def test_main_renders_prediction_with_injected_predictor(monkeypatch):
     assert "Campaña en borrador" in text
 
 
-def test_main_explains_that_the_model_is_pending(monkeypatch):
+def test_main_renders_prediction_without_injected_predictor(monkeypatch):
     fake = FakeStreamlit()
     monkeypatch.setitem(sys.modules, "streamlit", fake)
+    sys.modules.pop("app.app", None)
+
+    import app.app as app_module
+
+    app_module.main()
+
+    text = "\n".join(fake.messages)
+    assert "Datos validados correctamente." in text
+    assert "Segmento predicho:" in text
+    assert "Campaña propuesta" in text
+    assert "US-11" not in text
+
+
+def test_main_explains_that_the_model_is_pending_when_artifact_is_missing(
+    monkeypatch, tmp_path
+):
+    fake = FakeStreamlit()
+    monkeypatch.setitem(sys.modules, "streamlit", fake)
+    monkeypatch.setattr(
+        "app.utils.model.DEFAULT_MODEL_PATH", tmp_path / "missing.joblib"
+    )
     sys.modules.pop("app.app", None)
 
     import app.app as app_module
@@ -132,3 +153,59 @@ def test_main_displays_validation_errors_with_spanish_field_labels(monkeypatch):
     assert "Revisa los datos del formulario:" in text
     assert "- **Edad:** Debe estar entre 18 y 89." in text
     assert "Datos validados correctamente." not in text
+
+
+def test_main_loads_model_from_default_path_when_predictor_is_none(monkeypatch, tmp_path):
+    joblib = pytest.importorskip("joblib")
+    model_path = tmp_path / "final_model.joblib"
+    joblib.dump(FakePredictor(), model_path)
+    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", model_path)
+
+    fake = FakeStreamlit()
+    monkeypatch.setitem(sys.modules, "streamlit", fake)
+    sys.modules.pop("app.app", None)
+
+    import app.app as app_module
+
+    app_module.main()
+
+    text = "\n".join(fake.messages)
+    assert "Segmento predicho: B" in text
+    assert "Offer with options at several price levels." in text
+    assert "US-11" not in text
+
+
+def test_main_propagates_corrupt_artifact_error(monkeypatch, tmp_path):
+    joblib = pytest.importorskip("joblib")
+    from app.utils.model import ModelArtifactError
+
+    corrupt_path = tmp_path / "final_model.joblib"
+    corrupt_path.write_bytes(b"corrupt joblib content")
+    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", corrupt_path)
+
+    fake = FakeStreamlit()
+    monkeypatch.setitem(sys.modules, "streamlit", fake)
+    sys.modules.pop("app.app", None)
+
+    import app.app as app_module
+
+    with pytest.raises(ModelArtifactError, match="No se pudo cargar el artefacto"):
+        app_module.main()
+
+
+def test_main_does_not_suppress_general_model_artifact_error(monkeypatch, tmp_path):
+    from app.utils.model import ModelArtifactError
+
+    path = tmp_path / "dummy.joblib"
+    path.touch()
+    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", path)
+    monkeypatch.setitem(sys.modules, "joblib", None)
+
+    fake = FakeStreamlit()
+    monkeypatch.setitem(sys.modules, "streamlit", fake)
+    sys.modules.pop("app.app", None)
+
+    import app.app as app_module
+
+    with pytest.raises(ModelArtifactError, match="joblib no está instalado"):
+        app_module.main()

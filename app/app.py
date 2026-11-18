@@ -28,7 +28,12 @@ except ImportError as exc:
     ) from exc
 
 from app.utils.campaigns import CampaignConfigError, load_campaigns
-from app.utils.model import PredictionError, predict_segment
+from app.utils.model import (
+    ModelArtifactNotFoundError,
+    PredictionError,
+    load_predictor,
+    predict_segment,
+)
 from app.utils.validation import (
     CATEGORY_OPTIONS,
     FIELD_LABELS,
@@ -175,12 +180,15 @@ def main(predictor: Any = None) -> None:
 
     st.success("Datos validados correctamente.")
     if predictor is None:
-        st.info(
-            "Fase 1: el formulario y la validación están listos, pero el modelo "
-            "congelado aún no está conectado. La predicción se habilitará cuando "
-            "US-11 publique el artefacto."
-        )
-        return
+        try:
+            predictor = load_predictor()
+        except ModelArtifactNotFoundError:
+            st.info(
+                "Fase 1: el formulario y la validación están listos, pero el modelo "
+                "congelado aún no está conectado. La predicción se habilitará cuando "
+                "US-11 publique el artefacto."
+            )
+            return
 
     try:
         segment = predict_segment(predictor, features)

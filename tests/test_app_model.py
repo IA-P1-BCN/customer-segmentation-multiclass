@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
 from app.utils.model import (
+    DEFAULT_MODEL_PATH,
     ModelArtifactError,
+    ModelArtifactNotFoundError,
     PredictionError,
+    SEGMENT_LABELS,
     load_predictor,
     predict_segment,
 )
 from app.utils.validation import build_feature_frame
+from src.config import FEATURE_COLUMNS
 
 
 class FakePredictor:
@@ -129,3 +136,47 @@ def test_load_predictor_rejects_object_without_predict_method(tmp_path):
     joblib.dump({"model": 12345}, path_dict)
     with pytest.raises(ModelArtifactError, match="no tiene un método 'predict'"):
         load_predictor(path_dict)
+
+
+def test_load_predictor_uses_default_path(monkeypatch, tmp_path):
+    joblib = pytest.importorskip("joblib")
+    path = tmp_path / "final_model.joblib"
+    joblib.dump(FakePredictor(["A"]), path)
+    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", path)
+    loaded = load_predictor()
+    assert predict_segment(loaded, feature_frame()) == "A"
+
+
+def test_load_predictor_rejects_missing_default_path(monkeypatch, tmp_path):
+    missing = tmp_path / "nonexistent.joblib"
+    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", missing)
+    with pytest.raises(ModelArtifactNotFoundError, match="No se encontró el artefacto"):
+        load_predictor()
+
+
+def test_load_predictor_rejects_corrupted_artifact(tmp_path):
+    joblib = pytest.importorskip("joblib")
+    corrupt_file = tmp_path / "corrupt.joblib"
+    corrupt_file.write_bytes(b"not a valid joblib content")
+    with pytest.raises(ModelArtifactError, match="No se pudo cargar el artefacto"):
+        load_predictor(corrupt_file)
+
+
+def test_load_predictor_reports_joblib_missing_when_not_installed(monkeypatch, tmp_path):
+    path = tmp_path / "dummy.joblib"
+    path.touch()
+    monkeypatch.setitem(sys.modules, "joblib", None)
+    with pytest.raises(ModelArtifactError, match="joblib no está instalado"):
+        load_predictor(path)
+
+
+def test_load_predictor_integration_real_model():
+    if not DEFAULT_MODEL_PATH.is_file():
+        pytest.skip(
+            f"El artefacto real no existe en {DEFAULT_MODEL_PATH}; omitiendo prueba de integración."
+        )
+    predictor = load_predictor()
+    features = feature_frame()
+    assert list(features.columns) == list(FEATURE_COLUMNS)
+    label = predict_segment(predictor, features)
+    assert label in SEGMENT_LABELS
