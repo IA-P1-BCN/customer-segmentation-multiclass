@@ -1,6 +1,6 @@
 # Technical report: customer segmentation with multiclass classification (US-16)
 
-**Status: draft (2026-11-17).** Rita Pereira integrates the document; each section names who writes or checks it (issue #36). Pedro reviews the whole report before delivery.
+**Status: draft (2026-11-18).** Rita Pereira integrates the document; each section names who writes or checks it (issue #36). Pedro reviews the whole report before delivery.
 
 | Section | Owner | Status |
 |---|---|---|
@@ -9,8 +9,8 @@
 | 3. Methodology and Pipeline | Isbel | Draft from approved decisions |
 | 4. Exploratory analysis | Pedro | Draft from the merged US-06 synthesis |
 | 5. Models and validation results | Brian | Draft from the recorded results of the four model PRs |
-| 6. Final model and test evaluation | Brian | **Pending US-11 and US-12** |
-| 7. Error analysis | Pedro | **Pending US-14**; validation-level preview only |
+| 6. Final model and test evaluation | Brian | Structure ready; **figures pending US-11 and US-12** |
+| 7. Error analysis | Pedro | Structure ready; **pending US-14**; validation-level preview only |
 | 8. Segments and business reading | Rita | Draft from US-13 part 1 |
 | 9. Limitations | Rita | Draft |
 | 10. Reproducibility and sources | Rita | Draft |
@@ -110,7 +110,7 @@ Among the models that meet the overfitting limit on `val_15`, the one with the h
 
 > **Decision D-017 (Approved by Brian, 2026-11-17; Pedro, Brian and Isbel voted for it):** the frozen model is fitted on `train_70` only, not on `train_70 + val_15`, so its `val_15` figures stay held-out figures and the official check of D-010 keeps its meaning.
 >
-> **Recorded in D-017 (Approved):** the frozen model is fitted on `train_70` only. **Pending (US-11):** run the freeze and record the choice of the final model.
+> **Pending (US-11):** run the freeze and record the choice of the final model.
 
 ### 3.5 Final evaluation (US-12)
 
@@ -169,7 +169,7 @@ The most frequent mixed pair is **B + C** (55 profiles), followed by A + B (30).
 | Logistic regression | `StandardScaler`, multinomial | 6 | `C=1`, L2, `class_weight="balanced"` |
 | SVM | `StandardScaler`, `SVC` | 10 (baseline + 9) | RBF kernel, `C=1`, `gamma=0.01` |
 | Random forest | — | 60 | 300 trees, `max_depth=6`, `min_samples_leaf=10`, `max_features=0.5` |
-| XGBoost | — | 27 runs (26 candidates in the selection) | `refine_n_estimators=300_learning_rate=0.05_min_child_weight=5` (refinement stage) |
+| XGBoost | — | 27 runs (26 candidates in the selection) | 300 trees, `max_depth=3`, `learning_rate=0.05`, `subsample=1.0`, `colsample_bytree=0.8`, `min_child_weight=5` (run `refine_n_estimators=300_learning_rate=0.05_min_child_weight=5`; `SELECTED_PARAMS` in `src/train_boosting.py`) |
 
 For XGBoost, no configuration met the 5-point gap in cross-validation (smallest gap 6.19 points), so D-015 item 6 applies: the configuration with the smallest gap was chosen. It meets the official limit on `val_15` (3.33 points).
 
@@ -421,12 +421,25 @@ The campaign per segment that the app shows (US-15) is a **business hypothesis, 
 
 Python 3.12, packages pinned in `requirements.txt`; one seed for every stochastic step (`RANDOM_STATE = 42` in `src/config.py`). On macOS, XGBoost needs `brew install libomp` (README).
 
+Model runs (each one appends its rows to `results/`; the logistic regression is run from `notebooks/03_modeling/01_logistic_regression.ipynb` with `src/model_logreg.py`):
+
 ```
 python src/split_data.py --check                   # partitions match the committed files
 python -m src.train_random_forest --stage tune     # random forest
 python -m src.train_svm --stage tune               # SVM
 python src/train_boosting.py --select              # XGBoost
 ```
+
+Model choice, freeze and final evaluation (US-11, US-12). `src/compare_models.py` is in PR #72; `src/evaluate_final.py` is in `develop` (PR #73):
+
+```
+python -m src.compare_models --stage table                                    # comparison table of the four models
+python -m src.compare_models --stage freeze --model <name> --train-with train_70  # D-017; writes models/final_model.joblib
+python -m src.evaluate_final --model models/final_model.joblib --partition val_15  # check + permutation importance
+python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test  # once (US-12)
+```
+
+`<name>` is one of `logistic_regression`, `svm`, `random_forest` or `boosting`; freezing needs the model's `SELECTED_PARAMS`. The test run refuses a second evaluation unless `--allow-test-rerun` is passed.
 
 ### 10.2 Sources of the figures
 
@@ -441,6 +454,10 @@ python src/train_boosting.py --select              # XGBoost
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
 | 5 | Random forest | `results/random_forest.csv`, tuning 2026-11-17T08:49:04Z and baseline 2026-11-17T10:12:28Z (PR #67, merged; the baseline was repeated later to add per-class precision and recall) |
 | 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65, merged) |
+| 6 | Frozen model | `models/final_model.joblib` (pending US-11) |
+| 6 | Test metrics and confusion matrices | `reports/final_metrics_test_15_<timestamp>.csv`, `reports/confusion_counts_test_15_<timestamp>.csv`, `reports/confusion_normalised_test_15_<timestamp>.csv` (pending US-12) |
+| 6 | Feature importance | `reports/feature_importance_val_15.csv` (pending US-12) |
+| 7 | Error analysis | `reports/error_analysis.md` (pending US-14) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69, merged) |
 
 ### 10.3 Decisions cited
