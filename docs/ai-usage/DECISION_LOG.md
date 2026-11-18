@@ -277,6 +277,24 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Approved by Brian, 2026-11-16.
 - **Consequences:** The transformed feature matrix becomes numeric and model-ready. Dimension estimate (not a universal number — it depends on the categories observed during fit on `train_70` and on the imputation that US-05 applies): with the D-011 imputation in full, **28 columns** — 3 numeric + 2 D-011 missing indicators + 2 binary + 1 `Gender` + 10 `Profession` (9 levels + `"Unknown"`) + 7 `Var_1` + 3 `Spending_Score`. While the shared module still applies a single `nominal_imputer` to `Gender`, `Profession` and `Var_1` (US-05 phase 2 pending), the same configuration measures **29**, because `Var_1` also receives the `"Unknown"` level; that extra column disappears with phase 2 and is not the target width. A-016 recorded 29 columns for the previous reading of item 2 (all nominal levels kept, `Gender` contributing two columns) with the D-011 imputers: that reading measures 29 after phase 2 (30 with the current module). For reference, the configuration measured during the PR #55 review (mode-imputed `Profession`, single-column ordinal `Spending_Score`) measures 26. Unseen nominal categories contribute no signal instead of failing. If a later decision changes the encoding, every affected model must be re-run before its metrics are compared (D-013, Consequences).
 
+### D-016 — Segment prioritisation rule and meaning of "on the train split" (US-13)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered D-016 when D-015 was still proposed in PR #68. D-015 and D-017 are now in `develop`, so D-016 is free; it sits before D-015 and D-017 only because of the merge order. If D-016 is taken when this is merged, use the next free number.
+- **Status:** Approved
+- **Area:** Business analysis / Segment prioritisation
+- **Context:** US-13 (issue #13) asks to prioritise a segment "using the size of the segment and the % of High `Spending_Score` on the train split", with a rule approved by the team and the team confirming what "on the train split" means. The figures come from `src/segment_profile.py`, run on 2026-11-16 on `data/train_70.csv` (5,647 rows, SHA-256 checked against D-013) and recorded in `reports/segment_profile_train_70.csv`: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; share of High spending A 13.7 %, B 20.6 %, C 21.2 %, D 6.6 %; High-spending customers A 189, B 268, C 292, D 105 (854 in total). `Spending_Score` is a proxy of customer value: the dataset has no income or purchase amounts.
+- **Alternatives:** (1) most High-spending customers, the product of size and share of High spending; (2) highest share of High spending, which ignores size (C 21.2 %, almost tied with B 20.6 %); (3) size only, which selects D, the segment that spends the least (6.6 % High).
+- **Recommendation:** Option 1. It is the only one that uses both criteria of the story in a single figure: a large segment that spends little does not come first, and neither does a small one that spends a lot.
+- **Decision (proposed):**
+  1. **Rule:** the segment with the most High-spending customers in `train_70` is prioritised.
+  2. **Result:** C is the **provisional first priority** (292 High-spending customers, 34.2 % of all of them) and B is also a **segment of interest** (268, 31.4 %). The difference between them is small, so C is not presented as clearly ahead of B.
+  3. **"On the train split"** means computed with the 5,647 customers of `data/train_70.csv`; not with the full `Train.csv`, `val_15`, `test_15` or the population of customers. Documents that cite these figures keep that reference explicit.
+  4. The result is described as based on a proxy (`Spending_Score`) and on a description of `train_70`, not on revenue.
+- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review), and asked for both to be recorded in this log. Pedro approved the rule and the reading of "on the train split" as written here in his review of PR #69 (2026-11-17), after reproducing the figures, and asked for the status to be changed in this record; the change was made by Rita Pereira on his instruction.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #69, on 2026-11-17. "On the train split" = train_70; C is the provisional first priority and B a segment of interest (24 customers apart).
+- **Consequences:** `reports/segment_insights.md` (section 3) applies this rule; the technical report (US-16) and the business presentation (US-17) cite C as provisional first priority together with B. The campaign table (US-13 section 5, integrated by US-15) is not part of this record and is approved separately.
+
 ---
 
 ### D-015 — Common rule to select each model's configuration (clarifies D-010)
@@ -331,6 +349,33 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Agreement so far:** Raised by Isbel in the team channel on 2026-11-17 (the decision must not be taken unilaterally by whoever implements the code). Proposed here by Rita Pereira. Pedro voted for option A (`train_70` only) in the team channel on 2026-11-17 and asked for the decision to be written and approved before freezing, by someone other than its author (relayed by Rita Pereira). Brian voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Isbel voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Pedro, Brian and Isbel voted for option A, the one proposed by Rita Pereira; no vote is pending. The approval status is left to a human team member.
 - **Approval:** Approved by Brian, 2026-11-17.
 - **Consequences:** If approved as written, US-11 can freeze the winner and US-12 can evaluate it without changes to the scripts. If B is chosen, the freeze is run with `--train-with train_and_val`, the validation figures of the frozen model are omitted or labelled as not held out, and US-16 explains why.
+
+---
+
+### D-018 — Selected model for the final delivery: XGBoost frozen on `train_70` (US-11)
+
+- **Date:** 2026-11-18
+- **Status:** Approved
+- **Area:** Model selection / Delivery
+- **Context:** US-11 (issue #27) requires choosing one model with an approved criterion, freezing it and leaving the decision recorded. The criterion is D-015 (configuration chosen by 5-fold cross-validation on `train_70`, with `val_15` as the official check) and D-017 fixes the data of the frozen model (`train_70`). Running `src/compare_models --stage table` on the four models merged in `develop` produced, on `val_15`:
+
+  | Model | Configuration | accuracy | macro-F1 | gap (points) |
+  |---|---:|---:|---:|---:|
+  | XGBoost (boosting) | `min_child_weight=5`, 300 trees, depth 3, lr 0.05 (D-015 item 6) | 0.5430 | **0.5227** | 3.32 |
+  | Random forest | depth 6, leaf 10, `max_features=0.5`, 300 trees | 0.5248 | 0.5080 | 1.90 |
+  | SVM | rbf, C=1, gamma=0.01 | 0.5025 | 0.4853 | 3.88 |
+  | Logistic regression | `C=1_l2_balanced` | 0.4959 | 0.4786 | 1.64 |
+  | Dummy (majority class) | — | 0.2810 | 0.1097 | — |
+
+  All four models meet the 5-point limit, so the winner is the highest validation macro-F1.
+- **Alternatives:** (1) XGBoost; (2) random forest, better on overfitting (1.90 points) but 0.015 lower in macro-F1; (3) SVM or logistic regression, clearly below; (4) an ensemble, which the briefing does not ask for and which would add cost without a validated selection rule.
+- **Recommendation:** XGBoost. It is the best on the primary metric (D-010) and meets the overfitting limit; the cost is that the app needs `xgboost` installed (and `libomp` on macOS), which is documented in the README.
+- **Decision:**
+  1. The final model is the XGBoost Pipeline with the configuration selected by D-015, serialised as `models/final_model.joblib` by `src.compare_models --stage freeze --model boosting`, with `trained_on = train_70` (D-017).
+  2. The artifact is a dict `{"model", "frozen_params", "trained_on", "rows"}` where `model` is a `FrozenPipeline` that accepts and returns the original labels (`A`-`D`); the app uses `payload["model"]`.
+  3. The comparison table is `results/model_comparison.csv`; after the freeze there are no changes to the model without a new team decision.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #78, on 2026-11-18. XGBoost frozen on `train_70`; `test_15` opened once (accuracy 0.5599, macro-F1 0.5456); Age is the most important variable (0.080).
+- **Consequences:** US-12 evaluated the frozen artifact once on `test_15`: accuracy 0.5599, macro-F1 0.5456 (test − validation +1.77 and +2.34 points). The frozen model reproduces 0.5421 / 0.5222 on `val_15` instead of the 0.5430 / 0.5227 recorded for the boosting run (one row of 1,210; run-to-run variation of XGBoost, see A-029). The app must ship with `xgboost` installed and the `.joblib` available on the machine that runs the demo.
 
 ---
 

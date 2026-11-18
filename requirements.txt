@@ -11,10 +11,10 @@
 #   python -m pip install --upgrade pip
 #   python -m pip install -r requirements.txt
 #
-# Transitive dependencies (scipy, joblib, threadpoolctl, cloudpickle, narwhals)
-# are resolved automatically by pip from the pins below and are not listed
-# here because no project run has verified their versions yet. joblib becomes
-# a direct dependency in US-12 when the frozen model is serialized.
+# Transitive dependencies (scipy, threadpoolctl, cloudpickle, narwhals) are
+# resolved automatically by pip from the pins below and are not listed here
+# because no project run has verified their versions yet. joblib is a direct
+# dependency since US-11/US-12 serialise the frozen model (a run recorded it).
 
 # --- Execution ---
 pandas==3.1.1
@@ -24,6 +24,7 @@ matplotlib==3.11.2
 seaborn==0.13.2
 kagglehub==1.0.3
 ipykernel==7.4.0
+joblib==1.6.0
 
 # --- Modelling: boosting (US-09, issue #21) ---
 # Installed and smoke-tested in the reference environment (Python 3.12.3,
