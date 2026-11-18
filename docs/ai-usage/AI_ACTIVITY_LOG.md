@@ -593,3 +593,25 @@ Its purpose is to help team members understand previous activities, identify com
 - **Verification:** `python -m pytest tests` passes (42 tests). The selection run starts with the D-013 partition check (row counts, checksums and zero ID overlap between partitions; `test_15` is never read). The selected `val_15` figures (accuracy 0.5430, macro-F1 0.5227) match the independent calculation made by the reviewer of PR #65 from the same CV rows.
 - **Outcome:** PR #65 updated; not merged.
 - **Pending tasks:** Approval and merge of PR #65 by a team member other than the author; the chosen configuration feeds US-11.
+
+---
+
+### A-029 — US-11 freeze and US-12 single test evaluation
+
+- **Date:** 2026-11-18
+- **Note:** Numbered A-029 because A-028 is used by PR #72 (US-11 harness, merged).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** Execute US-11 (issue #27): freeze the winning model on `train_70` and record the comparison table; then run US-12 (issue #29) once on `test_15`.
+- **Activities:**
+  - Branch `feature/model-freeze` from `develop` (`31c134a`).
+  - The freeze failed at first: the boosting Pipeline needs numeric labels, so `build_pipeline` raised `ValueError: Invalid classes inferred from unique values of y`. Added `src/frozen.py` with `FrozenPipeline`, a `ClassifierMixin`/`BaseEstimator` wrapper that encodes the target on `fit` and decodes it on `predict`, so the artifact takes and returns `A`-`D` and works with `permutation_importance`. The class lives in its own module because a class defined in a script executed with `python -m` is pickled as `__main__.FrozenPipeline` and cannot be unpickled by another module.
+  - `python -m src.compare_models --stage table --write` → `results/model_comparison.csv` (four models + Dummy): XGBoost 0.5227 · Random Forest 0.5080 · SVM 0.4853 · logistic 0.4786, all with gap < 5 points.
+  - `python -m src.compare_models --stage freeze --model boosting` → `models/final_model.joblib` (5,647 rows, `trained_on = train_70`, `frozen_params` = the D-015 item 6 configuration: 300 trees, depth 3, learning rate 0.05, subsample 1.0, colsample 0.8, min_child_weight 5). The artifact is reloaded and predicts the first row, as US-11 requires; it is not committed because `*.joblib` is ignored.
+  - `python -m src.evaluate_final --model models/final_model.joblib --partition val_15` → accuracy 0.5421, macro-F1 0.5222, confusion matrices and permutation importance (Age 0.080 > Profession 0.077 > Spending_Score 0.054 > Family_Size 0.029).
+  - `python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test` → accuracy 0.5599, macro-F1 0.5456 (test − validation: +1.77 points of accuracy, +2.34 of macro-F1). Single evaluation; the report file carries a timestamp.
+- **Files:** Created: `src/frozen.py`, `results/model_comparison.csv`, `reports/final_metrics_val_15.csv`, `reports/final_metrics_test_15_20261118T092535Z.csv`, the confusion matrices and `reports/feature_importance_val_15.csv`. Modified: `src/compare_models.py` (imports the wrapper), `tests/test_compare_models.py` (round-trip test), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry) and `docs/ai-usage/DECISION_LOG.md` (D-018 proposal).
+- **Verification:** `python -m pytest tests -q` → 120 passed. The table is reproduced from the four results files; the frozen artifact reloads and predicts; `test_15` was read once and the script refuses a second run without `--allow-test-rerun`.
+- **Note on a one-row difference:** the frozen model scores 0.5421 / 0.5222 on `val_15`, while the boosting row recorded in `results/boosting.csv` says 0.5430 / 0.5227. The difference is one row out of 1,210 and is **not** caused by the wrapper: reproducing with the boosting module's own `fit_and_evaluate(SELECTED_PARAMS)` on this machine gives 0.5421 / 0.5222 as well. The likely cause is run-to-run or hardware variation of XGBoost `hist`. Both figures are reported; the ranking does not change.
+- **Outcome:** US-11 frozen (XGBoost on `train_70`) and US-12 evaluated once on `test_15`; the PR carries the evidence.
+- **Pending tasks:** Review and merge of the PR; approval of D-018 (Proposed); the app needs `xgboost` installed and, on macOS, `libomp`, plus the `.joblib` copied to the machine that runs the demo.

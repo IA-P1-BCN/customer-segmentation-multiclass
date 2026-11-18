@@ -35,8 +35,10 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 from src.config import TARGET
+from src.frozen import FrozenPipeline
 from src.preprocessing import make_features_target
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,7 +214,7 @@ def freeze(model: str, output: Path, train_with: str = "train_70") -> Path:
     data = pd.concat(frames.values(), ignore_index=True)
     X, y = make_features_target(data)
 
-    pipeline = frozen_pipeline(model).fit(X, y)
+    pipeline = FrozenPipeline(frozen_pipeline(model)).fit(X, y)
     output.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": pipeline, "frozen_params": _params_of(model),
                  "trained_on": train_with, "rows": len(data)}, output)
