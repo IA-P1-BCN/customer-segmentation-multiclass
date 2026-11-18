@@ -1,0 +1,186 @@
+# Segment profiles, prioritisation and influential variables (US-13)
+
+This document answers three business questions with the project data:
+
+- **N1.** Who is each segment?
+- **N2.** Which segment should be prioritised?
+- **N3.** Which variables matter most for belonging to a segment?
+
+The technical report (US-16) and the business presentation (US-17) cite the figures from here.
+
+**Status: draft.** Parts still pending are marked in the text:
+
+| Part | Status |
+|---|---|
+| Profile per segment (section 2) | Computed from a recorded run |
+| Prioritisation rule (section 3) | Approved in D-016 (review of PR #69 by Pedro, 2026-11-17) |
+| Feature importance from the model (section 4) | Pending US-12 |
+| Campaign table (section 5) | Approved as business hypotheses (review of PR #69 by Pedro, 2026-11-17); not a model result |
+
+## 1. Where the figures come from
+
+Every figure in sections 2 and 3 comes from `src/segment_profile.py`, which reads only `data/train_70.csv` (5,647 customers). `val_15` and `test_15` are not used.
+
+```
+python -m src.segment_profile
+```
+
+| Item | Value |
+|---|---|
+| Recorded run | 2026-11-16 14:31 UTC |
+| Environment | Python 3.12.10, pandas 3.1.1 |
+| Partition | `data/train_70.csv`, 5,647 rows, SHA-256 checked against D-013 |
+| Summary table | `reports/segment_profile_train_70.csv` |
+| Detailed table | `reports/segment_distributions_train_70.csv` |
+
+Three notes for reading the tables:
+
+- **Percentages are computed over the customers who have a value.** A customer with no marital status counts neither as married nor as not married. This is why some figures differ by about one point from the notebook `02_eda_train70_gasto_estado_civil.ipynb`, which shows missing values as one more category (for example, married customers in A: 58.2 % here and 57.2 % there).
+- **`Spending_Score` is a proxy of customer value.** The dataset has no income and no purchase amounts.
+- **The figures describe the customers; they do not explain causes.** A segment having more married customers does not mean that getting married leads to that segment.
+
+## 2. Profile of each segment (N1)
+
+| | A | B | C | D | All |
+|---|---:|---:|---:|---:|---:|
+| Customers | 1,380 | 1,301 | 1,379 | 1,587 | 5,647 |
+| % of train | 24.4 | 23.0 | 24.4 | 28.1 | 100 |
+| Age, median (years) | 41 | 46 | 49 | 29 | 41 |
+| Age, mean (years) | 44.7 | 48.2 | 49.6 | 33.9 | 43.7 |
+| Work experience, median (years) | 1 | 1 | 1 | 1 | 1 |
+| Work experience, mean (years) | 2.89 | 2.40 | 2.25 | 3.03 | 2.66 |
+| Family size, median | 2 | 2 | 3 | 3 | 3 |
+| Family size, mean | 2.49 | 2.68 | 2.95 | 3.21 | 2.84 |
+| % male | 53.7 | 53.3 | 52.4 | 56.9 | 54.2 |
+| % ever married | 58.2 | 73.7 | 79.5 | 29.0 | 58.8 |
+| % graduated | 61.5 | 72.9 | 81.7 | 37.8 | 62.4 |
+| Most frequent profession | Artist | Artist | Artist | Healthcare | Artist |
+| % in that profession | 28.4 | 41.1 | 53.8 | 43.2 | 31.4 |
+| % Low spending | 69.1 | 48.7 | 33.6 | 86.8 | 60.7 |
+| % Average spending | 17.2 | 30.7 | 45.2 | 6.6 | 24.2 |
+| % High spending | 13.7 | 20.6 | 21.2 | 6.6 | 15.1 |
+
+The three most frequent professions in each segment:
+
+| Segment | 1st | 2nd | 3rd |
+|---|---|---|---|
+| A | Artist (28.4 %) | Entertainment (19.7 %) | Engineer (13.5 %) |
+| B | Artist (41.1 %) | Entertainment (10.8 %) | Executive (10.8 %) |
+| C | Artist (53.8 %) | Executive (8.9 %) | Healthcare (7.8 %) |
+| D | Healthcare (43.2 %) | Entertainment (10.5 %) | Doctor (9.1 %) |
+
+EDA figures that go with this table: [spending by segment](figures/eda_spending_by_segment.png) and [marital status by segment](figures/eda_married_by_segment.png).
+
+### Description in words
+
+The names in quotes are **team hypotheses**, used to talk about the segments. The dataset only calls them A, B, C and D and does not explain what they mean.
+
+- **D, "young low spenders".** It is the largest segment (28.1 %) and the most different from the other three. Its customers are the youngest (median age 29), most have never married (29.0 % married) and have not graduated (37.8 % graduated), they work mainly in Healthcare (43.2 %) and 86.8 % have Low spending.
+- **C, "mature graduates with the highest spending".** Its customers are the oldest (median age 49), the most often married (79.5 %) and the most often graduated (81.7 %). More than half are Artists (53.8 %). It is the segment with the least Low spending (33.6 %) and the most Average (45.2 %) and High (21.2 %) spending.
+- **B, "married graduates with medium spending".** It resembles C with somewhat lower values throughout: median age 46, 73.7 % married, 72.9 % graduated and 41.1 % Artists. Its High spending (20.6 %) is almost that of C, but it has more Low spending (48.7 %).
+- **A, "mixed profile".** Its values are close to those of all customers in age (41), married (58.2 %) and graduated (61.5 %). It has the most evenly spread professions and the smallest families (mean 2.49). In spending it is closer to D: 69.1 % Low.
+
+Two variables hardly distinguish the segments: gender (between 52.4 % and 56.9 % male) and work experience (median of 1 year in all four).
+
+B and C are very similar. The model can be expected to have trouble separating them; the error analysis in US-14 will confirm this or not.
+
+## 3. Segment to prioritise (N2)
+
+> **Status: approved in D-016 (review of PR #69 by Pedro, 2026-11-17).** Isbel had agreed with the rule and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review). "On the train split" means computed with the 5,647 customers of `train_70.csv`, not with the full `Train.csv` and not with the population of customers.
+
+**Rule:** prioritise the segment with the most High-spending customers.
+
+The reason is that the story asks for two criteria, the size of the segment and its share of High spending, and the number of High-spending customers is the product of the two. A large segment that spends little does not come first, and neither does a small one that spends a lot.
+
+| Segment | Customers | % High spending | High-spending customers | % of all High |
+|---|---:|---:|---:|---:|
+| **C** | 1,379 | 21.2 | **292** | 34.2 |
+| B | 1,301 | 20.6 | 268 | 31.4 |
+| A | 1,380 | 13.7 | 189 | 22.1 |
+| D | 1,587 | 6.6 | 105 | 12.3 |
+| All | 5,647 | 15.1 | 854 | 100 |
+
+**Result with this rule: C is the provisional first priority, and B is also a segment of interest.** C has 292 High-spending customers (34.2 % of all of them) and B is close behind with 268 (31.4 %), so C should not be presented as clearly ahead of B. Together they hold 65.6 % of the High-spending customers.
+
+The result depends on the rule, which is why it was recorded as a team decision (D-016):
+
+| Rule | Segment selected | Comment |
+|---|---|---|
+| Most High-spending customers (D-016) | C (292) | Combines size and spending |
+| Highest % of High spending | C (21.2 %) | Almost tied with B (20.6 %); ignores size |
+| Size only | D (28.1 %) | It is the segment that spends the least (6.6 % High) |
+
+Limits of this answer:
+
+- Prioritising by `Spending_Score` is prioritising by a proxy. Without income or purchase amounts, the value of each segment cannot be calculated.
+- The rule does not say what to do with D, the largest segment. Its low spending today does not rule out that it is interesting for its volume or its potential; these data cannot measure that.
+
+## 4. Most influential variables (N3)
+
+This section combines two sources. The second one does not exist yet.
+
+### 4.1. What the EDA says
+
+Sources, all computed on `train_70`:
+
+- `02_eda_train70_gasto_estado_civil.ipynb`, section 8: Cramér's V, which measures how much one categorical variable helps to guess another (0 is not at all, 1 is completely).
+- `03_eda_train70_brian_outliers_fuga.ipynb` (PR #64, merged): the accuracy of a decision tree that uses only that variable, with 5-fold cross-validation, and the Kruskal-Wallis test for the numeric variables.
+- `reports/eda_train70_sintesis.md` (PR #71, merged): `eta²`, the share of a numeric variable's variance explained by the segment.
+
+The reference for the one-variable accuracy is 0.2810, the share of the majority segment (D, 28.1 %): a variable at that level adds nothing on its own.
+
+| Variable | One-variable accuracy (CV) | Strength measure | Reading |
+|---|---:|---|---|
+| `Spending_Score` | 0.4059 | Cramér's V 0.302 | Separates D (86.8 % Low) from B and C |
+| `Age` | 0.3974 | Kruskal-Wallis H = 1120.0, p ≈ 1.6e-242; `eta²` 0.144 | Orders the segments (median 29 in D, 41 to 49 in the others) but the distributions overlap |
+| `Ever_Married` | 0.3896 | Cramér's V 0.408 (the highest) | Separates D (29.0 % married) from the rest |
+| `Graduated` | 0.3733 | — | Ranges from 37.8 % graduated in D to 81.7 % in C |
+| `Profession` | 0.3512 | — | Healthcare dominates in D and Artist in C |
+| `Family_Size` | 0.3053 | Kruskal-Wallis H = 205.6, p ≈ 2.6e-44; `eta²` 0.032 | A little more than the reference. Its missing values are concentrated in D (47.1 % of them) |
+| `Var_1` | 0.3016 | — | Almost at the reference |
+| `Gender` | 0.2810 | — | Equal to the reference |
+| `Work_Experience` | 0.2810 | Kruskal-Wallis H = 30.0, p ≈ 1.4e-06; `eta²` 0.009 | Equal to the reference: a significant test but almost no strength of association |
+
+The two rankings do not fully agree: `Spending_Score` gives the best one-variable accuracy, while `Ever_Married` has the higher Cramér's V. Both measure association in different ways, so the table shows both.
+
+Three clarifications:
+
+- **No single variable is enough.** The associations are moderate and no variable reaches 0.41 accuracy on its own. The segment comes from combining several variables.
+- **Marital status and spending overlap.** Every customer in `train_70` who has never married has Low spending (V = 0.669 between the two variables). Part of what one contributes is already contributed by the other.
+- **`Spending_Score` and `Profession` are proxies.** They stand in for income level, which is not in the dataset. Executive (65.4 % High) and Lawyer (51.6 % High) are the only professions where High spending is the majority.
+
+### 4.2. What the model says
+
+> **Pending US-12.** The feature importance of the frozen model will be added when it exists. Until then this section makes no claim about the model.
+
+Two warnings must be kept when it is added: importance is not causality, and two overlapping variables (such as marital status and spending) share the importance between them.
+
+## 5. Proposed campaign per segment
+
+> **Status: approved as business hypotheses in the review of PR #69 by Pedro (2026-11-17), after Isbel's comments in the team channel.** All four campaigns are **business hypotheses, not model results** (US-15). The dataset contains no campaigns, products, channels, vehicle type or income.
+
+The short text is what the app would show (US-15). Each row separates the profile traits measured in `train_70` from the ideas that still have to be tested and have no data behind them.
+
+| Segment | Text for the app | Profile trait it is based on (measured) | Hypothesis to test (no data) |
+|---|---|---|---|
+| A | Basic offer for small households, with entry-level options. | Smallest families (mean 2.49); 69.1 % Low spending | — |
+| B | Offer with options at several price levels. | Spending split between Low (48.7 %), Average (30.7 %) and High (20.6 %) | — |
+| C | Mid-range and high-end offer. | Provisional first priority (section 3); 45.2 % Average and 21.2 % High | Preferential service |
+| D | Entry-level offer at an affordable price. | 86.8 % Low spending | Digital channels, suggested by its median age of 29 |
+
+Changes after Isbel's comments on PR #69, shared in the team channel (2026-11-17): B is no longer described as a family or mid-range segment, which the data do not support; preferential service for C and digital channels for D moved to the hypothesis column; the text for A is more specific.
+
+## 6. Limitations
+
+- There is no income, product (P1 to P5) or vehicle type. The strategy cannot be adapted to them with these data; the recommendation is to collect them.
+- Segments A to D have no explicit meaning in the dataset. The names in section 2 are hypotheses.
+- Everything is computed on `train_70`. These are descriptions of that sample of 5,647 customers.
+- Per D-009, there are customers with identical profiles in different segments. The profiles describe group tendencies and cannot classify an individual customer with certainty.
+
+## 7. Pending
+
+- [x] A team member approves D-016: prioritisation rule and meaning of "on the train split" (section 3). Approved by Pedro in the review of PR #69 (2026-11-17).
+- [ ] Add the feature importance from US-12 (section 4.2).
+- [x] Add the figures from the numeric EDA (section 4.1): PR #64 and PR #71 are in `develop`.
+- [x] The team approves the campaign table as business hypotheses (section 5). Approved by Pedro in the review of PR #69 (2026-11-17).
+- [ ] Isbel integrates the campaign table into the app (US-15).

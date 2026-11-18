@@ -13,6 +13,7 @@ Routine tasks, minor code changes and temporary troubleshooting do not require e
 - **Proposed:** Suggested but not yet approved.
 - **Approved:** Explicitly approved by a human team member.
 - **Rejected:** Reviewed and explicitly rejected by a human team member.
+- **Consolidated:** Agreements merged into another decision record; the record is retained for traceability.
 
 AI agents can propose and document decisions, but cannot approve or reject them.
 
@@ -81,23 +82,300 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 - **Approval:** Approved by a human team member, 2026-11-11.
 - **Consequences:** No `openspec/` structure or tooling is added. The decision is revisited at the reevaluation trigger; nothing needs maintenance in the meantime.
 
+### D-006 — Discard external `Test.csv`; split `Train.csv` 70/15/15
+
+- **Date:** 2026-11-12
+- **Status:** Approved
+- **Area:** Methodology / Data Management
+- **Context:** AGENTS.md and the README described `Test.csv` as the project's separate test set. A local check (Python `csv` module, run 2026-11-11 by Claude Code) found that `Test.csv` has labels, but 2,332 of its 2,627 IDs also appear in `Train.csv` (8,068 rows) with different feature values (e.g. ID 458989: `Age` 36 in Test vs 42 in Train) and only 707 shared IDs keep the same `Segmentation` label. Class distribution also differs (Train: D 28.1 %, A 24.4 %; Test: A 32.2 %, D 28.9 %). The team had independently decided to split `Train.csv` directly (EDA work in `feature/eda-pedro`).
+- **Alternatives:** (1) Use `Test.csv` as the final test set; (2) use `Test.csv` after removing overlapping IDs (only 295 rows left); (3) discard `Test.csv` and split `Train.csv` into train / validation / test.
+- **Recommendation:** Option 3. Overlapping customers with altered records make `Test.csv` unreliable as an independent test set, and option 2 leaves too few rows for a robust evaluation.
+- **Decision:** Do not use `Test.csv`. Split `Train.csv` once into train / validation / test (70/15/15), stratified by `Segmentation`, `random_state=42`. A first basic EDA on the full `Train.csv` (structure, types, nulls) precedes the split and is descriptive only; the full EDA, modeling decisions and all fitted preprocessing use only the train split; the test split is used only for the final evaluation. `ID` is never used as a feature. `Test.csv` stays versioned in the repository (CC0, per D-007) for traceability, but it is not used for training, validation or evaluation.
+- **Approval:** Approved by Isbel, 2026-11-12.
+- **Consequences:** AGENTS.md (§1, §5) and README updated accordingly. The split produces three new files in `data/` (train, validation and test), which every member uses instead of `Test.csv`. The split must be implemented reproducibly (shared code under `src/`, per D-007) so every member works with the same partitions. The new file names must not differ from `Train.csv`/`Test.csv` only by letter case (e.g. avoid `test.csv`): on case-insensitive file systems (macOS, Windows) they would overwrite the originals.
+
 ### D-007 — Collaborative workflow and dataset management
 
 - **Date:** 2026-11-11
+- **Last updated:** 2026-11-12 — Gitflow agreements, merge strategies, integration calendar and branch protection consolidated into this record.
 - **Status:** Approved
 - **Area:** Workflow / Data Management
-- **Context:** The team needed to define how members collaborate during EDA, preprocessing and model development, and whether the Kaggle dataset files can be kept in the repository.
+- **Context:** The team needed to define how members collaborate during EDA, preprocessing and model development, whether the Kaggle dataset files can be kept in the repository, and which Gitflow and integration rules govern collaboration.
 - **Decision:**
-  1. **Git workflow:** each member works on their own branch. Changes reach `main` exclusively through Pull Requests reviewed by another team member. No direct commits to `main`.
-  2. **EDA:** each member explores independently. The EDA lead owns `01_eda.ipynb` and integrates relevant findings into the final notebook.
-  3. **Notebooks:** each notebook has one designated owner. No simultaneous editing by multiple members.
-  4. **Preprocessing and data split:** implemented in a shared Python Pipeline under `src/`, ensuring consistent processing across models.
-  5. **Model experiments:** each member maintains their own model notebook, imports the shared Pipeline and records metrics in `results/` using a common format.
-  6. **Dataset:** retain `Train.csv` and `Test.csv` in the repository. The Kaggle dataset is licensed under CC0, allowing redistribution. No changes to `.gitignore` are required.
+  1. **Git workflow:**
+     - All task branches (`feature/*`, `fix/*`, `docs/*` and `refactor/*`) are created from `develop`.
+     - Pull Requests from all task branches go exclusively to `develop`.
+     - All task-branch Pull Requests are integrated with **Squash Merge**.
+     - `develop` is the integration branch for joint testing.
+     - When a milestone is validated, a Pull Request from `develop` to `main` is opened.
+     - The integration of `develop` into `main` uses a **normal Merge Commit** (not Squash Merge or Rebase).
+     - No direct commits are allowed on `develop` or `main`.
+     - Each Pull Request must be small, specific and reviewed by another team member the same day.
+  2. **Integration calendar:**
+     - Friday, November 13: integration with the frozen model.
+     - Monday, November 16: integration and validation.
+     - Tuesday, November 17: last stable integration before delivery.
+  3. **EDA:** each member explores independently. The EDA lead owns `01_eda.ipynb` and integrates relevant findings into the final notebook.
+  4. **Notebooks:** each notebook has one designated owner. No simultaneous editing by multiple members.
+  5. **Preprocessing and data split:** implemented in a shared Python Pipeline under `src/`, ensuring consistent processing across models.
+  6. **Model experiments:** each member maintains their own model notebook, imports the shared Pipeline and records metrics in `results/` using a common format.
+  7. **Dataset:** retain `Train.csv` and `Test.csv` in the repository. The Kaggle dataset is licensed under CC0, allowing redistribution. No changes to `.gitignore` are required.
+  8. **Branch protection:** the team will attempt to require Pull Requests and at least one approval on `main` and `develop`. If the repository plan or configuration does not allow these protections, the rules must remain explicitly documented in `AGENTS.md` and be honored by team agreement. Plan limitations must be checked manually and are not assumed.
 - **Dataset license note:** the CC0 license of the Kaggle dataset was confirmed by human review on Kaggle.
 - **Documentation:** add the Kaggle dataset source and Analytics Vidhya reference to the README.
 - **Approval:** Approved by a human team member, 2026-11-11.
-- **Consequences:** The team follows a branch + Pull Request workflow with single-owner notebooks and a shared preprocessing Pipeline. `Train.csv` and `Test.csv` remain versioned in the repository under the confirmed CC0 license, with no `.gitignore` changes.
+- **Consequences:** The team follows the `feature/* → develop → main` workflow with Squash Merge into `develop`, a normal Merge Commit into `main`, small same-day-reviewed Pull Requests, scheduled milestone integrations and single-owner notebooks with a shared preprocessing Pipeline. `Train.csv` and `Test.csv` remain versioned in the repository under the confirmed CC0 license, with no `.gitignore` changes.
+
+### D-008 — Integration branch `develop` in the Git workflow
+
+- **Date:** 2026-11-12
+- **Status:** Consolidated into D-007
+- **Area:** Workflow
+- **Consolidation:** Its Gitflow agreements have been consolidated into D-007 (updated 2026-11-12). This record is retained for traceability and its date is preserved.
+- **Context:** D-007 established that changes reach `main` exclusively through reviewed Pull Requests, but it did not define an intermediate integration stage. With several members developing features in parallel, integrating every feature directly into the stable branch made joint testing and release preparation harder.
+- **Alternatives:**
+  1. Keep the previous flow: `feature/*` PRs integrated directly into `main` (D-007).
+  2. Adopt an intermediate integration branch: `feature/* → develop → main`.
+  3. Integrate through long-lived release branches.
+- **Recommendation:** Adopt an intermediate integration branch (`develop`): it isolates the stable branch from work in progress, allows joint testing of completed features and keeps `main` reserved for validated versions.
+- **Decision:** Adopt the workflow `feature/* → develop → main`.
+  1. `main` is the stable branch and only receives integrated, tested and approved versions.
+  2. `develop` is the integration branch; it receives finished features and enables joint testing before preparing a release.
+  3. `feature/*` branches are created from `develop`, where each member develops their task.
+  4. `feature/*` branches open Pull Requests into `develop`, and each PR must be reviewed by another team member.
+  5. Direct commits to `develop` and `main` are not allowed.
+  6. Once `develop` is validated, a Pull Request is opened into `main`.
+- **Relationship with D-007:** Its Gitflow agreements were consolidated into D-007, which is now the authoritative record for the workflow. D-007 also preserves its original agreements on EDA ownership, single-owner notebooks, shared preprocessing Pipeline, model experiment conventions and dataset management.
+- **Approval:** Consolidated into D-007, which is Approved by a human team member (2026-11-11).
+- **Consequences:** All feature work is integrated and validated in `develop` before reaching `main`. This adds one integration step and requires branch protection rules for both `develop` and `main` in GitHub.
+
+### D-009 — Keep rows with identical feature profiles
+
+- **Date:** 2026-11-12
+- **Status:** Approved
+- **Area:** Methodology / Data Management
+- **Context:** In `Train.csv`, 1,283 rows (15.9 %) share all predictor values (ignoring `ID`) with at least one other row, across 549 profiles; removing them would drop 734 rows (417 if the label must also match). After the D-006 split, 82 rows of `val_15` and 78 of `test_15` have an exact copy in `train_70`. Checked with a Python `csv` script (Claude Code, 2026-11-12): 291 of the 549 profiles have different `Segmentation` labels, IDs of the same profile are far apart (only 7 pairs within 5 IDs), and the most repeated profiles are the most common ones in the dataset (e.g. young unmarried men in Healthcare with `Spending_Score` Low). With 9 mostly low-cardinality features, identical profiles are expected.
+- **Alternatives:** (1) Remove exact duplicates before the split; (2) keep all rows; (3) group identical profiles so they fall in the same split.
+- **Recommendation:** Option 2. The rows are most likely different customers with the same profile, not repeated records: removing them would discard real customers and distort the frequency of common profiles. Identical profiles across splits are not leakage, since new customers in production will also match profiles seen in training.
+- **Decision:** Keep all rows; the D-006 split is not changed. Identical profiles with different labels set a ceiling on achievable accuracy and should be mentioned when reporting model performance. Pedro documents the analysis in `01_eda_inicial.ipynb` so the figures come from an executed run.
+- **Approval:** Approved by Isbel, 2026-11-12.
+- **Consequences:** No deduplication step in the Pipeline. `train_70`, `val_15` and `test_15` are used as generated in PR #43.
+
+### D-010 — Primary metric, overfitting criterion and minimum reference (US-01)
+
+- **Date:** 2026-11-12
+- **Status:** Approved
+- **Area:** Methodology / Evaluation
+- **Context:** The four models (US-07 to US-10) need a single metric and a shared way of measuring overfitting to be comparable. The briefing requires overfitting below 5 % between training and validation, but does not state on which metric it is measured or whether the difference is absolute or relative. Classes are close to balanced (A 24.4 %, B 23.0 %, C 24.4 %, D 28.1 % in `train_70`, per the run in `01_eda_inicial.ipynb`). Per D-009, customers with identical profiles belong to different segments, which caps the achievable performance.
+- **Alternatives:** (1) Accuracy as the only metric; (2) macro-F1 as the primary metric, with accuracy also reported; (3) weighted-F1.
+- **Recommendation:** Option 2. Macro-F1 gives the four segments equal weight, so a model cannot look good by favouring the largest class (D); accuracy is kept because it is easy to explain in the business presentation. Weighted-F1 adds little with balanced classes.
+- **Decision (proposed):**
+  1. **Primary metric:** macro-F1 on validation. Accuracy is also reported for every model.
+  2. **Error costs:** all segments and all errors weigh the same; no misclassification is considered more costly than another.
+  3. **Overfitting:** the briefing limit (< 5 % between train and validation) is checked on **accuracy as an absolute difference**: `accuracy(train) − accuracy(validation) < 5 percentage points` (e.g. 65 % → 60 % is exactly 5 points and does not meet the limit). This follows the professor's answer (see below). The train − validation gap in macro-F1 is also reported for information, but it is not the pass/fail criterion.
+  4. **Minimum reference:** every model must beat the majority-class baseline (`DummyClassifier(strategy="most_frequent")`, which always predicts D). Expected values on `val_15`: accuracy ≈ 28.1 % (share of D) and macro-F1 ≈ 0.11 (F1 of D ≈ 0.44, the other classes 0). **These are analytical estimates, not measured results**; the actual values are measured and recorded in US-11, and this item is then updated with the executed results.
+  5. **Good enough:** a model is acceptable if it clearly beats the baseline on validation macro-F1 and meets the overfitting limit. Results are reported together with the ceiling described in D-009 (identical profiles with different segments).
+  6. **Hyperparameter tuning with cross-validation (suggested by Alex):** during the improvement phase (US-07 to US-10), configurations are compared with 5-fold stratified cross-validation on `train_70` (`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`), passing the **full Pipeline** (preprocessing + model) to `cross_validate` so that imputation and encoding are fitted inside each fold. Each configuration records mean accuracy and macro-F1 on the CV folds (with standard deviation) and the train − CV accuracy gap. This gives a more stable estimate than a single validation split and avoids tuning many configurations against `val_15`. The **official** overfitting check and the model comparison in US-11 remain train vs `val_15` (item 3), as stated by the professor.
+- **Question to the professor:** Is the < 5 % overfitting limit measured on accuracy or on another metric (e.g. macro-F1), and is it an absolute difference in percentage points or a relative difference? Asked by Rita Pereira, 2026-11-12.
+- **Professor's answer (2026-11-12, relayed by Rita Pereira):** when using accuracy, overfitting is measured by subtracting the validation accuracy from the training accuracy (absolute difference). The answer does not require a different metric, so the team applies it on accuracy.
+- **Approval:** Approved by Brian, 2026-11-12.
+- **Consequences:** US-07 to US-11 record accuracy and macro-F1 on train and validation, the accuracy gap in percentage points (pass/fail: < 5) and the macro-F1 gap (informative), plus per-class precision, recall and F1 on validation. Models are selected by validation macro-F1 among those that meet the accuracy-gap limit. During tuning, each configuration also records its 5-fold CV results on `train_70` (item 6).
+
+### D-011 - Missing-value diagnosis and imputation strategy (US-04)
+
+- **Date:** 2026-11-12
+- **Status:** Approved
+- **Area:** Preprocessing / Data quality
+- **Context:** US-04 requires a missing-value table per variable on the train split and an agreed imputation strategy for the Pipeline (US-05), with statistics computed only from `train_70`. Run of `src/data_quality.py` (opencode, 2026-11-12, Python 3.12.3, pandas 3.1.1) on `data/train_70.csv` (5,647 rows): `Work_Experience` 563 (9.97 %), `Family_Size` 244 (4.32 %), `Ever_Married` 99 (1.75 %), `Profession` 89 (1.58 %), `Graduated` 53 (0.94 %) and `Var_1` 50 (0.89 %); `ID`, `Gender`, `Age`, `Spending_Score` and `Segmentation` have no missing values. No duplicated `ID` in `Train.csv` (8,068 unique of 8,068 rows). Evidence per variable in `reports/data_quality.md`.
+- **Alternatives:** (1) Drop every row with a missing value, which removes ~16 % of `train_70` and biases the sample towards customers who answered every field; (2) impute only with median/mode and no indicators; (3) median/mode plus missing indicators and an explicit `Unknown` level; (4) model-based imputation (KNN, iterative), which adds complexity and cost for a small share of missing data.
+- **Recommendation:** Option 3. It keeps all customers, is cheap and explainable, and does not fabricate values where the mode is unreliable. Numeric variables with high missingness (`Work_Experience`, `Family_Size`) are right-skewed or small-range, so the median is robust; the missing indicators preserve the signal contained in the absence itself. `Profession` has 9 categories and a mode of only 31.4 % (`Artist`), so imputing `Artist` would invent a profession; an `Unknown` level is more honest and the encoder handles it natively. The remaining categorical variables are binary or heavily dominated by the mode (58.8 %, 62.4 % and 66.0 %), where the mode introduces little bias.
+- **Decision (proposed):**
+  1. `Work_Experience`: median (1.0) + binary indicator `Work_Experience_was_missing`.
+  2. `Family_Size`: median (3.0) + binary indicator `Family_Size_was_missing`.
+  3. `Ever_Married`: mode (`Yes`).
+  4. `Graduated`: mode (`Yes`).
+  5. `Var_1`: mode (`Cat_6`).
+  6. `Profession`: constant category `Unknown`.
+  7. Variables without missing values (`ID`, `Gender`, `Age`, `Spending_Score`) and the target `Segmentation`: no imputation; `ID` is never a feature.
+  8. All statistics are fitted on `train_70` inside the Pipeline (`SimpleImputer` / `Pipeline`, inside each cross-validation fold). `val_15` and `test_15` are transformed with the values learned from train, never used to compute them.
+- **Approval:** Approved by Brian, 2026-11-13.
+- **Consequences:** US-05 implements the strategy in the preprocessing Pipeline; no row is removed by missing values, so `train_70` keeps its 5,647 rows. The optional comparison of imputing vs dropping rows (US-04 extra) is not done now and can be added on validation if time allows.
+
+### D-012 — Original Kaggle `Test.csv` excluded from the project dataset
+
+- **Date:** 2026-11-12
+- **Status:** Approved
+- **Area:** Data Management / Methodology
+- **Context:** D-006 and D-007 contain clauses stating that the original Kaggle `Test.csv` stays/remains versioned in the repository. The team has confirmed that the original file is not part of the project's dataset: the evidence recorded in D-006 (Python `csv` check, 2026-11-11) shows that 2,332 of its 2,627 IDs also appear in `Train.csv` (8,068 rows) with different feature values (e.g. ID 458989: `Age` 36 in `Test.csv` vs 42 in `Train.csv`), that among those shared IDs the `Segmentation` labels match in only 30% of cases, and that the class distributions differ (Train: D 28.1 %, A 24.4 %; Test: A 32.2 %, D 28.9 %). It therefore cannot serve as an independent test set. The repository's `data/` directory currently contains `Train.csv` and the three internal splits (`train_70.csv`, `val_15.csv`, `test_15.csv`). The previous wording also conflicts with `AGENTS.md` and `README.md`, which are being updated to state that the original file must not be added, restored or used.
+- **Alternatives:** (1) Keep the original `Test.csv` as part of the project dataset/repository, versioned for traceability; (2) exclude the original `Test.csv` from the project dataset and use only the internally generated `test_15.csv` as the test set; (3) use the original `Test.csv` as the final test set.
+- **Recommendation:** Option 2. The original file overlaps with `Train.csv` and cannot provide an independent evaluation; keeping it as part of the dataset adds no value to the Pipeline and creates contradictory documentation. Excluding it from the dataset does not delete any history: D-006 and D-007 remain recorded and the Kaggle source stays referenced in `README.md`.
+- **Decision:**
+  1. The original Kaggle `Test.csv` is not part of the project's dataset/repository; it must not be added, restored, or used for any project step.
+  2. `Train.csv` is the only data source for EDA, preprocessing, model development, validation and final testing.
+  3. The project's split script generates `train_70.csv`, `val_15.csv` and `test_15.csv` with a 70/15/15 stratified split by `Segmentation` (`random_state=42`), preserving missing values.
+  4. `test_15.csv` is the project's test set and is reserved for final evaluation only; it is never used for training, tuning or modeling decisions.
+  5. `ID` is an identifier, never a feature.
+  6. D-012 expressly supersedes only the conservation clauses of D-006 and D-007 that state the original `Test.csv` stays/remains versioned in the repository. It does not supersede any other part of D-006 or D-007, which remain fully in force; their historical records are not rewritten or deleted.
+- **Relationship with D-006 and D-007:** D-006 remains the decision that stopped using the original test set and defined the 70/15/15 split; D-007 remains the workflow and dataset-management decision. D-012 only replaces their clauses about retaining the original `Test.csv` in the repository; it does not replace either decision as a whole.
+- **Approval:** Approved by Brian, 2026-11-13.
+- **Consequences:** `AGENTS.md` and `README.md` reference D-012 and state that the original `Test.csv` is not part of the project's dataset/repository and must not be added, restored or used; the activity is recorded as A-010 in `AI_ACTIVITY_LOG.md`. `data/` contains `Train.csv` and the three internal splits. Future documentation must not claim that the original file is kept in the repository, nor that it was removed from it: the clarification is about what belongs to the project dataset.
+
+### D-013 — Single shared 70/15/15 partition; each member contributes only their model
+
+- **Date:** 2026-11-13
+- **Status:** Approved
+- **Area:** Data management / Methodology
+- **Context:** US-07 to US-10 assign one model per member, each on their own branch. The phrase "each member trains with the 70 %" can be read as "each member makes their own copy of the split", and that reading would break the project: four models trained on different customers cannot be compared in US-11, which evaluates all of them on `val_15`. Preprocessing done by hand before training would also leak validation and test information into the fitted values. D-006 already fixed the split and `AGENTS.md` section 1 states that `Train.csv` is split once and the original CSV files must never be modified; this decision makes the operational consequence explicit so nobody has to guess.
+- **Alternatives:** (1) Each member generates their own split with their own seed or row order; (2) each member keeps a personal cleaned copy (filtered rows, filled values, scaled columns) and trains on it; (3) one committed partition, read-only for everyone, with differences only in the model, its hyperparameters and the Pipeline steps that model needs.
+- **Recommendation:** Option 3. Options 1 and 2 make the comparison in US-11 measure who chose the easier data instead of which model is better, and they silently reintroduce the information leak that D-006 and US-05 are designed to prevent. A single read-only partition costs each member nothing: Git isolates branches, so reading `data/train_70.csv` cannot disturb anybody else's work.
+- **Decision (proposed):**
+  1. `data/train_70.csv` (5,647 rows), `data/val_15.csv` (1,210 rows) and `data/test_15.csv` (1,211 rows) are the only partitions and are shared and read-only. They are generated once by `src/split_data.py` with `RANDOM_STATE = 42` (D-006) and every member works with the same content. Reference checksums (SHA-256 of the content with line endings normalised to LF, see item 6):
+
+     | File | Rows | SHA-256 (LF) |
+     |---|---:|---|
+     | `data/train_70.csv` | 5,647 | `58da50146ebd3ceaff7ac539f4a9c1c1cb21f7055f3d2262b923feaf3e49e754` |
+     | `data/val_15.csv` | 1,210 | `f7243496ce9a93cdfb9104e6e6d7fb045c50788bdf5fd70f7586e5045bcb2db1` |
+     | `data/test_15.csv` | 1,211 | `33427fa164216da231584cabf690528de7c84145dfdb4b9fe273d201edfdbf86` |
+     | `data/Train.csv` (source) | 8,068 | `4245166ea666055eaeb151aecf2d16c346cdb230749eb064949684c965bf7355` |
+
+  2. No member creates, modifies or commits a personal copy of the partitions inside the repository. A temporary copy for an experiment is allowed only outside the repository or in a folder ignored by Git, and never reaches `develop`.
+  3. Every transformation applied to the data — imputation, encoding, scaling, feature selection — lives inside the shared Pipeline built in US-05 and is fitted on `train_70`. Nothing is applied by hand to the CSV files before training. Each model may add the steps it needs, always inside the Pipeline: for example, logistic regression and SVM can include scaling, while random forest and boosting usually do not need it. Imputation and encoding follow the decisions the team approves: D-011 (approved by Brian, 2026-11-13) fixes the imputation and D-014 (proposed) fixes the encoding.
+  4. Each member owns the model and its hyperparameters, the training script or notebook, the configurations tried and the recorded metrics. Nothing else is decided individually.
+  5. A run is comparable only if items 1 to 3 hold. A result obtained on a different split or with transformations applied outside the Pipeline is not used in US-11.
+  6. Verification: every model run reports the row count of each partition (5,647 / 1,210 / 1,211), the absence of `ID` overlap across them, and the SHA-256 of the file it read. The checksum is always computed over the file content with line endings normalised to LF (`\r\n` replaced by `\n`), never over the raw bytes: Git stores these files with LF and `.gitattributes` checks them out with LF on every platform, but a partition regenerated by `src/split_data.py` on Windows is written with CRLF by pandas, so hashing the raw bytes would only match on one operating system. The reference values in item 1 were obtained this way and are identical on Windows and macOS:
+
+        python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" data/train_70.csv
+
+   Any deviation from the reference checksums is reported before the results are compared.
+- **Approval:** Approved by Isbel, 2026-11-16.
+- **Consequences:** Individual freedom is limited to the model and to the Pipeline steps that model needs, not to the data, in exchange for a valid comparison in US-11 and reproducible runs. If the shared Pipeline changes, the models that depend on it must be re-run before their metrics are compared. If the team later needs a different partition (for example a sensitivity analysis), it is a new decision and a new file with a different name; the committed partitions are never replaced.
+
+### D-014 — Categorical encoding strategy for the shared preprocessing Pipeline
+
+- **Date:** 2026-11-13
+- **Status:** Approved
+- **Area:** Methodology / Feature engineering
+- **Context:** US-05 is integrated in `develop` (PR #55): `build_preprocessing()` exposes per-group imputer and encoder parameters that default to `"passthrough"`, so no model can train on the real data until an encoding strategy is approved. The categorical columns are `Ever_Married` and `Graduated` (binary, `Yes`/`No`), `Gender`, `Profession` and `Var_1` (nominal) and `Spending_Score` (levels `Low`/`Average`/`High`). Imputation follows D-011 (approved by Brian, 2026-11-13 — note that D-013, written the same day before that approval, still states D-011 was Proposed): mode for `Ever_Married`/`Graduated`/`Var_1` and constant `Unknown` for `Profession`; `Spending_Score` has no missing values (A-011: 0.00 %). US-07 (multinomial logistic regression) and the prediction app need a numeric feature matrix. The proposal in issue #17 suggested an ordinal treatment for `Spending_Score`, but the evidence measured on `train_70` and reviewed on PR #57 shows that the segment mix across the spend levels is **not monotone**, so the ordinal option is dropped (see Alternatives and Decision item 4); the rest of the issue #17 proposal (one-hot for nominal columns) is kept. The manual validation performed during the PR #55 review by Rita Pereira (numeric matrix without touching the module) demonstrated the integration mechanism. D-013 item 3 already requires every transformation to live inside the shared Pipeline, fitted on `train_70` only.
+- **Alternatives:** (1) one-hot for the binary and nominal columns plus one-hot for `Spending_Score` (proposed); (2) label-encoding every categorical column — imposes a fake order on nominal levels and lets models invent numeric relationships that do not exist; (3) ordinal/numeric encoding with the order `Low`=0, `Average`=1, `High`=2 — treats the three levels as a single linear axis, but the measured segment mix is not monotone across that axis (Decision item 4), so a single ordered coefficient would encode a relationship the data do not support; also imposes fake order on nominal levels when applied to them; (4) target/leave-one-out encoding — leaks target information into the features, risks overfitting and is unnecessary for columns with at most 9 levels.
+- **Recommendation:** Option 1. One-hot keeps every categorical level independent and equally weighted, including the three spend levels; the measured, non-monotone segment mix supports not imposing a linear order on `Spending_Score`; `handle_unknown="ignore"` keeps the prediction app robust. The integration mechanism was already smoke-tested end to end (Rita Pereira, PR #55 review) against the current structure.
+- **Decision:**
+  1. Binary columns `Ever_Married` and `Graduated`: `OneHotEncoder(drop="if_binary", handle_unknown="ignore")`, producing a single 0/1 column each. Justification of `drop="if_binary"`: two levels carry exactly one dimension of information; keeping both columns duplicates it and creates a perfectly collinear pair (dummy-variable trap). One column keeps the matrix compact while remaining fully distinguishable (1 = second category in alphabetical order, 0 = the other).
+  2. Nominal columns `Gender`, `Profession` and `Var_1`: `OneHotEncoder(drop="if_binary", handle_unknown="ignore")`. `drop="if_binary"` has no effect on `Profession` and `Var_1` (9 and 7 levels), which keep one column per observed level, all levels kept for interpretability; it removes one of the two `Gender` columns for the same reason as item 1 — two levels carry one dimension of information, and keeping both creates a perfectly collinear pair with the intercept that the multinomial logistic regression of US-07 includes. An unseen `Gender` value at transform time therefore maps to all zeros, that is, to the reference level; this is acceptable because `Gender` has no missing values in `train_70` (A-011) and the prediction app validates its levels. Interaction with D-011: `Profession` is imputed with the constant level `"Unknown"`, so when that level appears in the training data after imputation — which happens inside the same sub-pipeline, because the imputer runs before the encoder — `OneHotEncoder` generates an additional column for `"Unknown"`.
+  3. `handle_unknown="ignore"` in items 1, 2 and 4: an unseen category at transform time maps to an all-zero block instead of raising an exception, so the prediction app never crashes on new data. The D-011 imputers run first inside the same sub-pipeline, so unknowns are a safety net, not the normal path.
+  4. `Spending_Score` is encoded with `OneHotEncoder(handle_unknown="ignore")`, producing one column per level (`Low`, `Average`, `High`), all kept. Evidence measured on `train_70` (5,647 rows; verified run, share of each segment within every spend level, column-normalized):
+
+     | Spending level | A | B | C | D |
+     |---|---:|---:|---:|---:|
+     | Low | 27.8 % | 18.5 % | 13.5 % | 40.2 % |
+     | Average | 17.4 % | 29.3 % | 45.7 % | 7.7 % |
+     | High | 22.1 % | 31.4 % | 34.2 % | 12.3 % |
+
+     The distribution is not monotone across the ordered levels: D falls from 40.2 % (Low) to 7.7 % (Average) and rises again to 12.3 % (High); C peaks at Average (45.7 %); A falls and then rises (27.8 % → 17.4 % → 22.1 %); only B rises steadily. An ordinal numeric encoding (`Low`=0, `Average`=1, `High`=2) would give a single ordered coefficient and thus impose a linear, monotone relationship that the data do not support; one-hot gives every level its own effect.
+  5. Integration: every encoder is passed through the existing parameters of `build_preprocessing()` inside each model's Pipeline; the shared module is not modified by the task that adopts this decision. The parameter and group names in `src.config` (`BINARY_COLS`, `NOMINAL_COLS`, `ORDINAL_COLS`) and the `binary_encoder`/`nominal_encoder`/`ordinal_encoder` slots describe the **source column group**, not the transformer type: `ORDINAL_COLS` and its sub-pipeline slot remain in the shared US-05 architecture unchanged, and the one-hot encoder chosen here for `Spending_Score` is passed through the existing `ordinal_encoder` parameter. Encoders are fitted on `train_70` only — inside each cross-validation fold per D-010 item 6 — and `val_15`/`test_15` are only transformed, never fitted.
+  6. `StandardScaler` is a model-specific transformation of logistic regression (US-07), not part of the shared preprocessing. The shared module and the encoders fixed by this record keep separate responsibilities: the scaler is integrated in the US-07 pipeline as its own step, after the shared preprocessing and before the estimator, in line with D-013 item 3 (each model adds the steps it needs inside its Pipeline).
+  7. `ID` is never encoded and never used as a feature (D-006, D-012).
+- **Approval:** Approved by Brian, 2026-11-16.
+- **Consequences:** The transformed feature matrix becomes numeric and model-ready. Dimension estimate (not a universal number — it depends on the categories observed during fit on `train_70` and on the imputation that US-05 applies): with the D-011 imputation in full, **28 columns** — 3 numeric + 2 D-011 missing indicators + 2 binary + 1 `Gender` + 10 `Profession` (9 levels + `"Unknown"`) + 7 `Var_1` + 3 `Spending_Score`. While the shared module still applies a single `nominal_imputer` to `Gender`, `Profession` and `Var_1` (US-05 phase 2 pending), the same configuration measures **29**, because `Var_1` also receives the `"Unknown"` level; that extra column disappears with phase 2 and is not the target width. A-016 recorded 29 columns for the previous reading of item 2 (all nominal levels kept, `Gender` contributing two columns) with the D-011 imputers: that reading measures 29 after phase 2 (30 with the current module). For reference, the configuration measured during the PR #55 review (mode-imputed `Profession`, single-column ordinal `Spending_Score`) measures 26. Unseen nominal categories contribute no signal instead of failing. If a later decision changes the encoding, every affected model must be re-run before its metrics are compared (D-013, Consequences).
+
+### D-016 — Segment prioritisation rule and meaning of "on the train split" (US-13)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered D-016 when D-015 was still proposed in PR #68. D-015 and D-017 are now in `develop`, so D-016 is free; it sits before D-015 and D-017 only because of the merge order. If D-016 is taken when this is merged, use the next free number.
+- **Status:** Approved
+- **Area:** Business analysis / Segment prioritisation
+- **Context:** US-13 (issue #13) asks to prioritise a segment "using the size of the segment and the % of High `Spending_Score` on the train split", with a rule approved by the team and the team confirming what "on the train split" means. The figures come from `src/segment_profile.py`, run on 2026-11-16 on `data/train_70.csv` (5,647 rows, SHA-256 checked against D-013) and recorded in `reports/segment_profile_train_70.csv`: segment sizes A 1,380, B 1,301, C 1,379, D 1,587; share of High spending A 13.7 %, B 20.6 %, C 21.2 %, D 6.6 %; High-spending customers A 189, B 268, C 292, D 105 (854 in total). `Spending_Score` is a proxy of customer value: the dataset has no income or purchase amounts.
+- **Alternatives:** (1) most High-spending customers, the product of size and share of High spending; (2) highest share of High spending, which ignores size (C 21.2 %, almost tied with B 20.6 %); (3) size only, which selects D, the segment that spends the least (6.6 % High).
+- **Recommendation:** Option 1. It is the only one that uses both criteria of the story in a single figure: a large segment that spends little does not come first, and neither does a small one that spends a lot.
+- **Decision (proposed):**
+  1. **Rule:** the segment with the most High-spending customers in `train_70` is prioritised.
+  2. **Result:** C is the **provisional first priority** (292 High-spending customers, 34.2 % of all of them) and B is also a **segment of interest** (268, 31.4 %). The difference between them is small, so C is not presented as clearly ahead of B.
+  3. **"On the train split"** means computed with the 5,647 customers of `data/train_70.csv`; not with the full `Train.csv`, `val_15`, `test_15` or the population of customers. Documents that cite these figures keep that reference explicit.
+  4. The result is described as based on a proxy (`Spending_Score`) and on a description of `train_70`, not on revenue.
+- **Agreement so far:** Proposed by Rita Pereira in the team channel and in PR #69 on 2026-11-16. Isbel agreed with the rule (C as provisional first priority, B as segment of interest) and with the reading of "on the train split" in comments on PR #69 that she shared in the team channel (2026-11-17; not a GitHub review), and asked for both to be recorded in this log. Pedro approved the rule and the reading of "on the train split" as written here in his review of PR #69 (2026-11-17), after reproducing the figures, and asked for the status to be changed in this record; the change was made by Rita Pereira on his instruction.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #69, on 2026-11-17. "On the train split" = train_70; C is the provisional first priority and B a segment of interest (24 customers apart).
+- **Consequences:** `reports/segment_insights.md` (section 3) applies this rule; the technical report (US-16) and the business presentation (US-17) cite C as provisional first priority together with B. The campaign table (US-13 section 5, integrated by US-15) is not part of this record and is approved separately.
+
+---
+
+### D-015 — Common rule to select each model's configuration (clarifies D-010)
+
+- **Date:** 2026-11-16
+- **Status:** Approved
+- **Area:** Methodology / Model selection
+- **Context:** The three model PRs open on 2026-11-16 do not choose their final configuration in the same way. Logistic regression (PR #66) and XGBoost (PR #65) evaluate every candidate configuration on `val_15` and keep the best validation macro-F1 among those that meet the overfitting limit; random forest (PR #67) chooses with cross-validation on `train_70` only and evaluates a single configuration on `val_15`. Both readings have support in the project documents: the acceptance criteria of US-07 to US-10 say that configurations are compared "in validation", while D-010 item 6 (later, approved) introduces 5-fold cross-validation to avoid tuning many configurations against `val_15`. The D-010 Consequences sentence "Models are selected by validation macro-F1 among those that meet the accuracy-gap limit" does not say whether it refers to configurations within a model or to the comparison between models in US-11. The criterion changes the winner: in the results recorded in PR #66, `C=0.1_l2` has the best validation macro-F1 (0.4806) and `C=1_l2_balanced` the best cross-validation macro-F1 (0.4857). Without a single rule, the four models cannot be compared fairly in US-11.
+- **Alternatives:** (A) every model chooses its configuration on `val_15` (random forest adapts); (B) every model chooses with cross-validation on `train_70` and `val_15` is kept for the official check and the comparison between models (logistic regression and XGBoost re-derive their choice).
+- **Recommendation:** Option B. It follows D-010 item 6, the choice does not depend on how many configurations each member tried against the same validation split (6, 27 and 60 in the current PRs), and `val_15` keeps its value as a check that took no part in the choice. Option A is less work and is not wrong in itself, because `test_15` remains untouched for the final figure.
+- **Decision (proposed):**
+  1. **Scope.** This rule fixes how each model (US-07 to US-10) chooses its final configuration. It does not change the metrics, the official overfitting limit (5 points on `val_15`) or the minimum reference of D-010.
+  2. **Comparison.** Candidate configurations are compared with the cross-validation of D-010 item 6: `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on `train_70`, with the full Pipeline passed to `cross_validate` and `return_train_score=True`. For each configuration, the CV accuracy and CV macro-F1 are the **mean of the five fold scores** (not the score of the pooled out-of-fold predictions), and the train − CV gap is the mean in-fold training accuracy minus the mean CV accuracy.
+  3. **Admissible configurations.** Those whose train − CV accuracy gap is below **5 percentage points**. This cut only filters candidates; the official limit of D-010 item 3 (5 points on `val_15`) is applied separately in item 7. The gap of every configuration is recorded (item 8) so the cut can be audited. A 10-point cut on the cross-validation scale was discussed and not adopted (see Evidence and limits).
+  4. **Ties.** Let *best* be the admissible configuration with the highest CV macro-F1. Its standard error is the standard deviation of its five fold macro-F1 scores divided by the square root of five, with the standard deviation computed as NumPy does by default (`scores.std()`, `ddof=0`). Every admissible configuration whose CV macro-F1 is greater than or equal to *best* minus that standard error is treated as tied with it: a smaller difference cannot be told apart from the variation between folds.
+  5. **Selection.** Among the tied configurations, the one with the **smallest train − CV accuracy gap** is selected; if the gap is equal, the highest CV macro-F1.
+  6. **No admissible configuration.** If no configuration meets item 3, the one with the smallest train − CV accuracy gap is selected, and the record states that none met the limit in cross-validation. That configuration must still pass the official check of item 7, and the limitation is declared in the technical report (US-16) (precision added by Brian, 2026-11-16).
+  7. **Official check.** The selected configuration is fitted on `train_70` and evaluated **once** on `val_15`. `accuracy(train) − accuracy(validation) < 5 points` on that evaluation remains the official overfitting check (D-010 item 3), and its validation macro-F1 is the figure used in US-11. If the selected configuration fails the official check, this is declared, as the acceptance criteria of US-07 to US-10 require, and the next configuration is evaluated, until one passes. The order is: (a) the rest of the tied group of item 4, smallest train − CV gap first; (b) the other admissible configurations, highest CV macro-F1 first; (c) the configurations that are not admissible, smallest train − CV gap first. Every evaluation on `val_15` is recorded.
+  8. **Records.** Each configuration has a `cv5fold` row in the model's results file with mean accuracy and mean macro-F1 across folds, and its `notes` state the fold standard deviation of both and the train − CV accuracy gap. The selected configuration has its `train_70` and `val_15` rows, and its `notes` state the reason for the selection and the per-class precision, recall and F1 on `val_15` (D-010, Consequences). Results files stay append-only (`results/README.md`).
+  9. **Relation to D-010.** The D-010 Consequences sentence "Models are selected by validation macro-F1 among those that meet the accuracy-gap limit" is read as the comparison **between the four models** in US-11. The choice of configuration **within** a model follows this record.
+- **Evidence and limits:** The tie-break of items 4 and 5 was first added to the random forest (PR #67) by decision of Rita Pereira on 2026-11-16, **after** seeing a first result: with "highest CV macro-F1 among the admissible ones", the selected configuration met the official limit by 0.2 points (gap 4.78 points on `val_15`) with a CV macro-F1 lead of 0.002, smaller than its standard error (0.0034). Both runs are kept in `results/random_forest.csv`. The rule uses cross-validation results only. In the results recorded in PR #65, no XGBoost configuration has a train − CV gap below 5 points (the smallest recorded is 6.19), so item 6 applies to that model.
+
+  **Known limitation of item 3 (raised by Pedro, 2026-11-17).** The 5-point cut is applied to the train − CV gap, but each CV fold trains on 80 % of `train_70`, so that gap is larger by construction than the train − `val_15` gap of a model fitted on all of `train_70`; for XGBoost no configuration meets it. Pedro proposed a 10-point cut on the CV scale. It was not adopted for this delivery because it changes the random forest selection to a configuration that had not been part of the reviewed results, and with 5 points every selected configuration is already verified on `val_15`. Fixing the cut on the correct scale is recorded as known technical debt, to be revisited when there is time.
+
+  Effect of the cut, measured from recorded files without retraining. Random forest (run of 2026-11-17 on the PR #67 branch): with 5 points the selected configuration is `max_depth=6`, `min_samples_leaf=10`, `max_features=0.5` (`val_15` accuracy 0.5248, macro-F1 0.5080, gap 1.90 points); with 8, 10 or 12 points it is `max_depth=10`, `min_samples_leaf=20`, `max_features=0.5` (`val_15` accuracy 0.5289, macro-F1 0.5066, gap 4.73 points). XGBoost, as reported by Pedro from the PR #65 files and not re-executed for this record: with 5 points, item 6 selects `min_child_weight=5` (`val_15` accuracy 0.5430, macro-F1 0.5227, gap 3.33 points); with 10 points it would be `min_child_weight=1` (0.5471, 0.5269, gap 3.30 points). According to Pedro, the cut does not change which model ranks first in US-11. The effect of this rule on logistic regression and XGBoost has been read from their recorded files, not executed; each owner re-derives the selection.
+- **Agreement so far:** Proposed by Rita Pereira in the team channel on 2026-11-16. Isbel agreed with option B and with items 3 to 6, and asked for the standard-error formula to be explicit (item 4); on 2026-11-17 she asked for the cut of item 3 to be resolved explicitly. Brian voted for option B as written (PR #68 comment, 2026-11-16) and added the precision now in item 6. Pedro first proposed a 10-point cut and on 2026-11-17 voted for option B with 5 points, for schedule reasons, asking to record the limitation above. The team kept 5 points (team channel, 2026-11-17, relayed by Rita Pereira).
+- **Approval:** Approved by Brian, 2026-11-17.
+- **Consequences:** If approved, PR #65 and PR #66 re-derive their selected configuration with this rule (recording the fold standard deviations it needs) before US-11; PR #67 keeps its selected configuration and adds the per-class precision and recall and the fallback of item 7. US-11 compares the four selected configurations on `val_15`. `test_15` is still opened only once, in US-12.
+
+---
+
+### D-017 — Data used to fit the frozen model (US-11)
+
+- **Date:** 2026-11-17
+- **Note:** Numbered D-017 because D-015 is in `develop` and D-016 is proposed in PR #69. If D-017 is taken when this is merged, use the next free number.
+- **Status:** Approved
+- **Area:** Methodology / Model selection
+- **Context:** US-11 (issue #27) freezes the winning model and US-12 (issue #29) evaluates it once on `test_15`. The issue leaves open whether the frozen model is fitted on `train_70` only or on `train_70 + val_15`, and nothing in the repository decides it. PR #72 (`src/compare_models.py`) implements both through `--train-with train_70|train_and_val`, with `train_70` as the default; that default was chosen by whoever wrote the script, not by the team. PR #73 (`src/evaluate_final.py`) reads the `trained_on` field stored in the frozen file: if it is `train_and_val`, it refuses to score `val_15` and omits the test − validation comparison. D-013 item 4 says each member owns the model and its hyperparameters, but nothing else is decided individually, and AGENTS.md section 2 requires explicit human approval to select the definitive model or methodology. The decision therefore belongs to the team, not to the person who implements US-11.
+- **Alternatives:**
+  - (A) Fit the frozen model on `train_70` only (5,647 rows), with the configuration already chosen by D-015.
+  - (B) Refit the chosen configuration on `train_70 + val_15` (6,857 rows, 21.4 % more data) with the same hyperparameters, and evaluate it once on `test_15`.
+- **Recommendation:** Option A.
+  - The configuration of each model was chosen with cross-validation on `train_70` (D-015) and checked once on `val_15` (D-010 item 3). The frozen model that is evaluated, described in the report and used by the app is then exactly the model whose `val_15` figures are recorded, and those figures remain honest.
+  - With option B, every `val_15` metric of the frozen model, the permutation importance computed on `val_15` and the test − validation comparison would be computed on rows the model was trained on. `test_15`, which is opened only once (US-12), would be the only unbiased figure, with no way to check the final model before it is opened.
+  - The expected benefit of B is small and unmeasured. The ceiling described in D-009 (identical profiles with different segments) limits what extra data can add, and the model differences in `val_15` macro-F1 are already small (see D-015).
+  - B is not wrong: it is common practice, and it is defensible if the team prefers using all labelled data outside the test split. In that case the report must say that `val_15` figures of the frozen model are not held-out figures.
+- **Decision (proposed):**
+  1. The frozen model is fitted on `train_70` only (option A). `val_15` is used for the D-010 check and the US-11 comparison; `test_15` for the single evaluation of US-12.
+  2. `src/compare_models.py --stage freeze` is run with `--train-with train_70`, and the frozen file records `trained_on = train_70`.
+  3. If the team chooses B instead, this record is changed before freezing, the frozen file records `trained_on = train_and_val`, and the technical report (US-16) states that the `val_15` metrics and the `val_15` importance of the frozen model are not held-out figures. `src/evaluate_final.py` already refuses `val_15` in that case.
+  4. Nobody implementing US-11 or US-12 changes this default on their own.
+- **Agreement so far:** Raised by Isbel in the team channel on 2026-11-17 (the decision must not be taken unilaterally by whoever implements the code). Proposed here by Rita Pereira. Pedro voted for option A (`train_70` only) in the team channel on 2026-11-17 and asked for the decision to be written and approved before freezing, by someone other than its author (relayed by Rita Pereira). Brian voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Isbel voted for option A in the team channel on 2026-11-17 (relayed by Rita Pereira). Pedro, Brian and Isbel voted for option A, the one proposed by Rita Pereira; no vote is pending. The approval status is left to a human team member.
+- **Approval:** Approved by Brian, 2026-11-17.
+- **Consequences:** If approved as written, US-11 can freeze the winner and US-12 can evaluate it without changes to the scripts. If B is chosen, the freeze is run with `--train-with train_and_val`, the validation figures of the frozen model are omitted or labelled as not held out, and US-16 explains why.
+
+---
+
+### D-018 — Selected model for the final delivery: XGBoost frozen on `train_70` (US-11)
+
+- **Date:** 2026-11-18
+- **Status:** Approved
+- **Area:** Model selection / Delivery
+- **Context:** US-11 (issue #27) requires choosing one model with an approved criterion, freezing it and leaving the decision recorded. The criterion is D-015 (configuration chosen by 5-fold cross-validation on `train_70`, with `val_15` as the official check) and D-017 fixes the data of the frozen model (`train_70`). Running `src/compare_models --stage table` on the four models merged in `develop` produced, on `val_15`:
+
+  | Model | Configuration | accuracy | macro-F1 | gap (points) |
+  |---|---:|---:|---:|---:|
+  | XGBoost (boosting) | `min_child_weight=5`, 300 trees, depth 3, lr 0.05 (D-015 item 6) | 0.5430 | **0.5227** | 3.32 |
+  | Random forest | depth 6, leaf 10, `max_features=0.5`, 300 trees | 0.5248 | 0.5080 | 1.90 |
+  | SVM | rbf, C=1, gamma=0.01 | 0.5025 | 0.4853 | 3.88 |
+  | Logistic regression | `C=1_l2_balanced` | 0.4959 | 0.4786 | 1.64 |
+  | Dummy (majority class) | — | 0.2810 | 0.1097 | — |
+
+  All four models meet the 5-point limit, so the winner is the highest validation macro-F1.
+- **Alternatives:** (1) XGBoost; (2) random forest, better on overfitting (1.90 points) but 0.015 lower in macro-F1; (3) SVM or logistic regression, clearly below; (4) an ensemble, which the briefing does not ask for and which would add cost without a validated selection rule.
+- **Recommendation:** XGBoost. It is the best on the primary metric (D-010) and meets the overfitting limit; the cost is that the app needs `xgboost` installed (and `libomp` on macOS), which is documented in the README.
+- **Decision:**
+  1. The final model is the XGBoost Pipeline with the configuration selected by D-015, serialised as `models/final_model.joblib` by `src.compare_models --stage freeze --model boosting`, with `trained_on = train_70` (D-017).
+  2. The artifact is a dict `{"model", "frozen_params", "trained_on", "rows"}` where `model` is a `FrozenPipeline` that accepts and returns the original labels (`A`-`D`); the app uses `payload["model"]`.
+  3. The comparison table is `results/model_comparison.csv`; after the freeze there are no changes to the model without a new team decision.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #78, on 2026-11-18. XGBoost frozen on `train_70`; `test_15` opened once (accuracy 0.5599, macro-F1 0.5456); Age is the most important variable (0.080).
+- **Consequences:** US-12 evaluated the frozen artifact once on `test_15`: accuracy 0.5599, macro-F1 0.5456 (test − validation +1.77 and +2.34 points). The frozen model reproduces 0.5421 / 0.5222 on `val_15` instead of the 0.5430 / 0.5227 recorded for the boosting run (one row of 1,210; run-to-run variation of XGBoost, see A-029). The app must ship with `xgboost` installed and the `.joblib` available on the machine that runs the demo.
 
 ---
 
