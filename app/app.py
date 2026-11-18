@@ -4,9 +4,10 @@ Run from the repository root with:
 
     python -m streamlit run app/app.py
 
-Phase 1 provides the form, input validation, campaign loading and the model
-seam. The frozen model itself belongs to US-11 (issue #27); until it is
-available, the form validates a record and explains that prediction is pending.
+The app provides the form, input validation, campaign loading and the model
+adapter. It loads the frozen model published by US-11 (issue #27) and shows the
+predicted segment with its campaign; if the artefact is missing or cannot be
+loaded, the form explains the problem instead of failing.
 """
 
 from __future__ import annotations
@@ -16,8 +17,10 @@ from pathlib import Path
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+project_root = str(PROJECT_ROOT)
+if project_root in sys.path:
+    sys.path.remove(project_root)
+sys.path.insert(0, project_root)
 
 try:
     import streamlit as st
@@ -29,6 +32,7 @@ except ImportError as exc:
 
 from app.utils.campaigns import CampaignConfigError, load_campaigns
 from app.utils.model import (
+    ModelArtifactError,
     ModelArtifactNotFoundError,
     PredictionError,
     load_predictor,
@@ -184,9 +188,15 @@ def main(predictor: Any = None) -> None:
             predictor = load_predictor()
         except ModelArtifactNotFoundError:
             st.info(
-                "Fase 1: el formulario y la validación están listos, pero el modelo "
-                "congelado aún no está conectado. La predicción se habilitará cuando "
-                "US-11 publique el artefacto."
+                "No se encontró el modelo congelado. Genera el artefacto con "
+                "`python -m src.compare_models --stage freeze --model boosting`."
+            )
+            return
+        except ModelArtifactError as exc:
+            st.error(
+                f"No se pudo cargar el modelo congelado: {exc}\n\n"
+                "Si el fallo está relacionado con OpenMP en macOS, instala "
+                "libomp con `brew install libomp`."
             )
             return
 
@@ -201,7 +211,7 @@ def main(predictor: Any = None) -> None:
     st.subheader("Campaña propuesta")
     st.write(campaign.campaign)
     st.caption(
-        "Campaña en borrador procedente de US-13; pendiente de aprobación (D-016)."
+        "Campaña propuesta como hipótesis de negocio aprobada; no es un resultado del modelo."
     )
 
 

@@ -1,19 +1,19 @@
 {
-  "status": "Borrador (US-13, PR #69; D-016 pendiente de aprobación)",
+  "status": "Aprobado como hipótesis de negocio (revisión de PR #69 por Pedro, 2026-11-17; D-016 aprobado)",
   "source": "reports/segment_insights.md (PR #69, US-13)",
-  "disclaimer": "Las campañas son un borrador de trabajo y no están aprobadas; no deben presentarse como recomendaciones definitivas.",
+  "disclaimer": "Las campañas son hipótesis de negocio aprobadas, no resultados del modelo; no deben presentarse como recomendaciones definitivas.",
   "segments": {
     "A": {
-      "campaign": "Basic offer for small households, with entry-level options."
+      "campaign": "Oferta básica para hogares pequeños, con opciones de entrada."
     },
     "B": {
-      "campaign": "Offer with options at several price levels."
+      "campaign": "Oferta con opciones en varios niveles de precio."
     },
     "C": {
-      "campaign": "Mid-range and high-end offer."
+      "campaign": "Oferta de gama media y alta."
     },
     "D": {
-      "campaign": "Entry-level offer at an affordable price."
+      "campaign": "Oferta de entrada a precio asequible."
     }
   }
 }

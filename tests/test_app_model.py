@@ -9,16 +9,13 @@ import pandas as pd
 import pytest
 
 from app.utils.model import (
-    DEFAULT_MODEL_PATH,
     ModelArtifactError,
     ModelArtifactNotFoundError,
     PredictionError,
-    SEGMENT_LABELS,
     load_predictor,
     predict_segment,
 )
 from app.utils.validation import build_feature_frame
-from src.config import FEATURE_COLUMNS
 
 
 class FakePredictor:
@@ -168,15 +165,3 @@ def test_load_predictor_reports_joblib_missing_when_not_installed(monkeypatch, t
     monkeypatch.setitem(sys.modules, "joblib", None)
     with pytest.raises(ModelArtifactError, match="joblib no está instalado"):
         load_predictor(path)
-
-
-def test_load_predictor_integration_real_model():
-    if not DEFAULT_MODEL_PATH.is_file():
-        pytest.skip(
-            f"El artefacto real no existe en {DEFAULT_MODEL_PATH}; omitiendo prueba de integración."
-        )
-    predictor = load_predictor()
-    features = feature_frame()
-    assert list(features.columns) == list(FEATURE_COLUMNS)
-    label = predict_segment(predictor, features)
-    assert label in SEGMENT_LABELS

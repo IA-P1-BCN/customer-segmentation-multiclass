@@ -1,8 +1,8 @@
 """Campaign catalogue loader for the prediction application (US-15, issue #35).
 
-The campaign texts are a draft from US-13 (PR #69) and remain unapproved until
-D-016 is decided. They live in ``app/config/campaigns.json`` so the application
-can display them without embedding business copy in the code.
+The campaign texts are the business hypotheses approved in US-13 (PR #69) and
+integrated by US-15. They live in ``app/config/campaigns.json`` so the
+application can display them without embedding business copy in the code.
 """
 
 from __future__ import annotations

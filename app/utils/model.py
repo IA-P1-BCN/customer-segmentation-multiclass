@@ -1,8 +1,8 @@
 """Frozen-model adapter for the prediction application (US-15, issue #35).
 
-Phase 1 only defines the seam: the application can receive any object with a
-``predict`` method, and tests use a fake predictor. The real artefact is
-produced by US-11 (issue #27), so no model is trained or loaded here.
+The application can receive any object with a ``predict`` method, and tests use
+fake predictors. ``load_predictor`` reads the frozen artefact published by US-11
+(issue #27); no model is trained here.
 """
 
 from __future__ import annotations

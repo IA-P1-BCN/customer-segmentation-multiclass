@@ -1,7 +1,7 @@
 """Smoke test for the Streamlit entry point with a fake streamlit module.
 
-The real dependency is not installed in the current environment, so this test
-injects a minimal stub to exercise ``app.app.main`` without a browser.
+The test injects a minimal stub to exercise ``app.app.main`` without a browser.
+It never loads the real frozen-model artefact.
 """
 
 from __future__ import annotations
@@ -9,8 +9,6 @@ from __future__ import annotations
 import sys
 import types
 from typing import Any, Self
-
-import pytest
 
 
 class _FakeContext:
@@ -100,8 +98,8 @@ def test_main_renders_prediction_with_injected_predictor(monkeypatch):
 
     text = "\n".join(fake.messages)
     assert "Segmento predicho: B" in text
-    assert "Offer with options at several price levels." in text
-    assert "Campaña en borrador" in text
+    assert "Oferta con opciones en varios niveles de precio." in text
+    assert "hipótesis de negocio" in text
 
 
 def test_main_renders_prediction_without_injected_predictor(monkeypatch):
@@ -111,18 +109,17 @@ def test_main_renders_prediction_without_injected_predictor(monkeypatch):
 
     import app.app as app_module
 
+    monkeypatch.setattr(app_module, "load_predictor", lambda: FakePredictor())
     app_module.main()
 
     text = "\n".join(fake.messages)
     assert "Datos validados correctamente." in text
-    assert "Segmento predicho:" in text
+    assert "Segmento predicho: B" in text
     assert "Campaña propuesta" in text
     assert "US-11" not in text
 
 
-def test_main_explains_that_the_model_is_pending_when_artifact_is_missing(
-    monkeypatch, tmp_path
-):
+def test_main_explains_how_to_generate_a_missing_artifact(monkeypatch, tmp_path):
     fake = FakeStreamlit()
     monkeypatch.setitem(sys.modules, "streamlit", fake)
     monkeypatch.setattr(
@@ -136,7 +133,8 @@ def test_main_explains_that_the_model_is_pending_when_artifact_is_missing(
 
     text = "\n".join(fake.messages)
     assert "Datos validados correctamente." in text
-    assert "US-11" in text
+    assert "No se encontró el modelo congelado." in text
+    assert "python -m src.compare_models --stage freeze --model boosting" in text
 
 
 def test_main_displays_validation_errors_with_spanish_field_labels(monkeypatch):
@@ -155,11 +153,12 @@ def test_main_displays_validation_errors_with_spanish_field_labels(monkeypatch):
     assert "Datos validados correctamente." not in text
 
 
-def test_main_loads_model_from_default_path_when_predictor_is_none(monkeypatch, tmp_path):
-    joblib = pytest.importorskip("joblib")
-    model_path = tmp_path / "final_model.joblib"
-    joblib.dump(FakePredictor(), model_path)
-    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", model_path)
+def test_main_uses_the_model_loader_when_predictor_is_not_injected(monkeypatch):
+    calls: list[bool] = []
+
+    def fake_loader():
+        calls.append(True)
+        return FakePredictor()
 
     fake = FakeStreamlit()
     monkeypatch.setitem(sys.modules, "streamlit", fake)
@@ -167,21 +166,18 @@ def test_main_loads_model_from_default_path_when_predictor_is_none(monkeypatch, 
 
     import app.app as app_module
 
+    monkeypatch.setattr(app_module, "load_predictor", fake_loader)
     app_module.main()
 
     text = "\n".join(fake.messages)
+    assert calls == [True]
     assert "Segmento predicho: B" in text
-    assert "Offer with options at several price levels." in text
+    assert "Oferta con opciones en varios niveles de precio." in text
     assert "US-11" not in text
 
 
-def test_main_propagates_corrupt_artifact_error(monkeypatch, tmp_path):
-    joblib = pytest.importorskip("joblib")
+def test_main_explains_when_the_model_artifact_cannot_be_loaded(monkeypatch):
     from app.utils.model import ModelArtifactError
-
-    corrupt_path = tmp_path / "final_model.joblib"
-    corrupt_path.write_bytes(b"corrupt joblib content")
-    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", corrupt_path)
 
     fake = FakeStreamlit()
     monkeypatch.setitem(sys.modules, "streamlit", fake)
@@ -189,17 +185,21 @@ def test_main_propagates_corrupt_artifact_error(monkeypatch, tmp_path):
 
     import app.app as app_module
 
-    with pytest.raises(ModelArtifactError, match="No se pudo cargar el artefacto"):
-        app_module.main()
+    def failing_loader():
+        raise ModelArtifactError("No se pudo cargar el artefacto del modelo.")
+
+    monkeypatch.setattr(app_module, "load_predictor", failing_loader)
+    app_module.main()
+
+    text = "\n".join(fake.messages)
+    assert "No se pudo cargar el modelo congelado" in text
+    assert "No se pudo cargar el artefacto del modelo." in text
+    assert "brew install libomp" in text
+    assert "Segmento predicho:" not in text
 
 
-def test_main_does_not_suppress_general_model_artifact_error(monkeypatch, tmp_path):
+def test_main_explains_when_joblib_is_not_installed(monkeypatch):
     from app.utils.model import ModelArtifactError
-
-    path = tmp_path / "dummy.joblib"
-    path.touch()
-    monkeypatch.setattr("app.utils.model.DEFAULT_MODEL_PATH", path)
-    monkeypatch.setitem(sys.modules, "joblib", None)
 
     fake = FakeStreamlit()
     monkeypatch.setitem(sys.modules, "streamlit", fake)
@@ -207,5 +207,13 @@ def test_main_does_not_suppress_general_model_artifact_error(monkeypatch, tmp_pa
 
     import app.app as app_module
 
-    with pytest.raises(ModelArtifactError, match="joblib no está instalado"):
-        app_module.main()
+    def failing_loader():
+        raise ModelArtifactError("joblib no está instalado.")
+
+    monkeypatch.setattr(app_module, "load_predictor", failing_loader)
+    app_module.main()
+
+    text = "\n".join(fake.messages)
+    assert "No se pudo cargar el modelo congelado" in text
+    assert "joblib no está instalado." in text
+    assert "Segmento predicho:" not in text

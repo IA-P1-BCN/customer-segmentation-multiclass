@@ -36,7 +36,8 @@ def test_default_catalogue_has_every_segment_and_traceability():
     assert catalog.status
     assert catalog.source
     assert catalog.disclaimer
-    assert "borrador" in catalog.status.lower()
+    assert "aprobado" in catalog.status.lower()
+    assert "PR #69" in catalog.status
     assert "D-016" in catalog.status
     assert "PR #69" in catalog.source
     for segment in SEGMENT_LABELS:
@@ -45,15 +46,17 @@ def test_default_catalogue_has_every_segment_and_traceability():
         assert campaign.campaign
 
 
-def test_default_campaign_texts_match_the_us13_draft():
+def test_default_campaign_texts_match_the_approved_hypotheses():
     catalog = load_campaigns()
     assert (
         catalog.get("A").campaign
-        == "Basic offer for small households, with entry-level options."
+        == "Oferta básica para hogares pequeños, con opciones de entrada."
     )
-    assert catalog.get("B").campaign == "Offer with options at several price levels."
-    assert catalog.get("C").campaign == "Mid-range and high-end offer."
-    assert catalog.get("D").campaign == "Entry-level offer at an affordable price."
+    assert catalog.get("B").campaign == (
+        "Oferta con opciones en varios niveles de precio."
+    )
+    assert catalog.get("C").campaign == "Oferta de gama media y alta."
+    assert catalog.get("D").campaign == "Oferta de entrada a precio asequible."
 
 
 def test_unknown_segment_raises():
