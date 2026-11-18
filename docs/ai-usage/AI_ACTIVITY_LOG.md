@@ -514,6 +514,23 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-028 — US-11: common selection rule, comparison table and freeze harness
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-028 because A-021 (SVM), A-022 (US-06 duplicates), A-023 (boosting), A-024 (logistic review), A-025 (US-12) and A-027 (D-017) are already in `develop` or reserved by open PRs; A-026 is left for the report draft (PR #74).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-11 (issue #27): make the approved D-015 rule reusable, assemble the D-010 comparison table and prepare the freeze of the winning model.
+- **Activities:**
+  - Created `src/select_config.py`: the D-015 rule as a module plus a CLI (`python -m src.select_config results/<model>.csv`). It reads the `cv5fold` rows, keeps the last batch of each configuration, parses the fold standard deviation and the train - CV gap from `notes` (the two formats in use) and applies items 2-6 of D-015. When the notes lack those two numbers it stops with an actionable message, because D-015 item 8 requires them.
+  - Created `src/compare_models.py`: reads the four results files, keeps the rows each owner marked as the chosen configuration (`tuned`/`SELECTED`/`CANDIDATO`), prints accuracy and macro-F1 on `train_70` and `val_15`, the gap in points, the per-class F1 and the majority-class baseline; selects the winner by validation macro-F1 among the models with gap < 5 points (D-010 Consequences, between models) and freezes it with joblib (serialise, reload in a fresh object, predict one row). The registry only knows the modules that expose `SELECTED_PARAMS`; today that is the SVM.
+  - Added `joblib==1.6.0` to `requirements.txt` as a direct dependency (installed version, verified in this run). Installing or upgrading dependencies needs human approval (AGENTS.md section 2), so the change is flagged for the team.
+  - Created `tests/test_select_config.py` and `tests/test_compare_models.py` (15 tests: both notes formats, missing fields, last-batch handling, tie rule, fallback, table assembly, skipped models, winner choice and the freeze registry).
+- **Files:** Created: `src/select_config.py`, `src/compare_models.py`, `tests/test_select_config.py`, `tests/test_compare_models.py`. Modified: `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests/test_select_config.py tests/test_compare_models.py -q` -> 15 passed. `python -m src.select_config results/svm.csv` returns `grid-07 {C: 1.0, gamma: 0.01, kernel: rbf}` with CV macro-F1 0.4923 and a 3.54-point train - CV gap, matching the configuration recorded in PR #70. `python -m src.compare_models --stage table` builds the table with the SVM and lists the other three files as not yet available. No data file and no `test_15` were read.
+- **Outcome:** The D-015 rule is reusable and the comparison harness is ready. The table cannot be completed yet: `results/boosting.csv` (PR #65) has no row marked as the chosen configuration, and `results/logistic_regression.csv` (PR #66) records pooled out-of-fold metrics without the fold standard deviation or the train - CV gap, so `select_config` stops with the message that D-015 item 8 requires them. Both owners need to re-derive and record their selection.
+- **Pending tasks:** Merge #65, #66 and #67; complete the table; team approval of the `joblib` dependency and of the choice between training the frozen model on `train_70` or on `train_70 + val_15`; then freeze the winner and record the US-11 decision.
+- **Update 2026-11-17 after the review of PR #72 (Rita Pereira):** renumbered from A-022 to A-024 because A-022 is used by PR #71 (merged) and A-023 by PR #65. Three fixes from the review: `baseline` rows are left out of the candidate table (the SVM counted 6/10 admissible instead of 6/9); the CV mean is taken from `notes` when the file stores the pooled out-of-fold score in the `macro_f1` column (the boosting file does: 0.5049 against the 0.5045 fold mean); and `load_selected_rows` now takes the last marked configuration that has both rows and ignores `tuned-fallback-N` rows, so a fallback from D-015 item 7 cannot be mistaken for the choice. The freeze registry now names every model's builder (keyword arguments or one parameter dict) and stops with a message that asks the owner to expose `SELECTED_PARAMS`; today only the SVM does, and the boosting winner needs the constant when PR #65 merges. Rita Pereira approved `joblib==1.6.0` as a direct dependency and voted to freeze on `train_70` only.
 ### A-025 — US-12: final evaluation script of the frozen model (test and importance)
 
 - **Date:** 2026-11-17
