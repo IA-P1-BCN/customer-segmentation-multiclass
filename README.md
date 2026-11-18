@@ -41,6 +41,14 @@ once with Homebrew:
 brew install libomp
 ```
 
+**Model file portability:** `models/final_model.joblib` is written by
+`python -m src.compare_models --stage freeze --model boosting` on the machine that runs it.
+Besides the trees, the file stores the full state of XGBoost's random number generator
+(`rng_state`), whose serialisation depends on the platform: a file created on Linux loads on
+Linux and macOS but not on Windows. For Windows, a portable export can be prepared from the
+same trained trees (`booster.save_model(...)` and rebuild the Pipeline on Windows), checking
+that the 1,210 `val_15` predictions match the original file row by row.
+
 ## Reproducibility
 - Global seed: `RANDOM_STATE = 42` in `src/config.py`. Always import it; never hardcode.
 - Split: `python src/split_data.py` generates `data/train_70.csv`, `data/val_15.csv` and `data/test_15.csv`.
