@@ -73,8 +73,8 @@ AGENTS.md
 - **Models (US-07 to US-10):**
 
     ```bash
-    python src/train_svm.py --stage baseline && python src/train_svm.py --stage tune
-    python src/train_random_forest.py --stage baseline && python src/train_random_forest.py --stage tune
+    python -m src.train_svm --stage baseline && python -m src.train_svm --stage tune
+    python -m src.train_random_forest --stage baseline && python -m src.train_random_forest --stage tune
     python src/train_boosting.py --baseline --grid --refine
     python src/train_boosting.py --select      # D-015 choice, marked SELECTED in results/boosting.csv
     ```
@@ -105,13 +105,15 @@ AGENTS.md
 
 | Model | accuracy (`val_15`) | macro-F1 (`val_15`) | train − val |
 |---|---:|---:|---:|
-| **XGBoost (frozen)** | 0.5430 | **0.5227** | 3.32 pp |
+| **XGBoost (selected)** | 0.5430 | **0.5227** | 3.33 pp |
 | Random Forest | 0.5248 | 0.5080 | 1.90 pp |
-| SVM | 0.5025 | 0.4853 | 3.88 pp |
+| SVM | 0.5025 | 0.4853 | 3.89 pp |
 | Logistic regression | 0.4959 | 0.4786 | 1.64 pp |
 | Dummy (majority class) | 0.2810 | 0.1097 | — |
 
-The frozen XGBoost Pipeline (configuration chosen with D-015, trained on `train_70` only, D-017) scores **0.5421 accuracy / 0.5222 macro-F1 on `val_15`** and **0.5599 / 0.5456 on `test_15`**, evaluated once at the end (D-012). Test − validation: +1.77 pp accuracy and +2.34 pp macro-F1.
+The frozen XGBoost Pipeline (configuration chosen with D-015, trained on `train_70` only, D-017) scores **0.5421 accuracy / 0.5222 macro-F1 on `val_15`** and **0.5599 / 0.5456 on `test_15`**, evaluated once at the end (D-012). Test − validation: +1.77 pp accuracy and +2.34 pp macro-F1. Its train − validation gap is **3.44 pp**, inside the D-010 limit.
+
+The majority-class baseline (D-010) scores 0.2810 accuracy / 0.1097 macro-F1 on `val_15` and **0.2816 / 0.1099 on `test_15`**.
 
 Most important variables (permutation, macro-F1 drop on `val_15`): Age 0.080, Profession 0.077, Spending_Score 0.054, Family_Size 0.029, Graduated 0.017, Gender 0.015, Work_Experience 0.013, Var_1 0.007, Ever_Married 0.006.
 
