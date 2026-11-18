@@ -592,3 +592,23 @@ Its purpose is to help team members understand previous activities, identify com
 - **Note on a one-row difference:** the frozen model scores 0.5421 / 0.5222 on `val_15`, while the boosting row recorded in `results/boosting.csv` says 0.5430 / 0.5227. The difference is one row out of 1,210 and is **not** caused by the wrapper: reproducing with the boosting module's own `fit_and_evaluate(SELECTED_PARAMS)` on this machine gives 0.5421 / 0.5222 as well. The likely cause is run-to-run or hardware variation of XGBoost `hist`. Both figures are reported; the ranking does not change.
 - **Outcome:** US-11 frozen (XGBoost on `train_70`) and US-12 evaluated once on `test_15`; the PR carries the evidence.
 - **Pending tasks:** Review and merge of the PR; approval of D-018 (Proposed); the app needs `xgboost` installed and, on macOS, `libomp`, plus the `.joblib` copied to the machine that runs the demo.
+
+---
+
+### A-030 — US-18: technical presentation of the code
+
+- **Date:** 2026-11-18
+- **Note:** Numbered A-030 because A-029 is used by PR #78 (US-11/US-12).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-18 (issue #38): a technical presentation explaining how the project was built and how data leakage and overfitting were controlled. The task moved from Pedro to Brian by team agreement in the channel; Pedro contributes and reviews the slides on split, Pipeline, models and overfitting.
+- **Activities:**
+  - Branch `feature/technical-presentation` from `develop` (`d77f0ee`).
+  - Wrote `docs/technical-presentation.md`: 12 slides (~8 minutes) with on-screen content, speaker notes, a Mermaid diagram of the full path, the model comparison table, the frozen-artifact contract, the per-class results, the confusion pairs and the permutation importance.
+  - Every figure was taken from `results/model_comparison.csv`, `reports/final_metrics_*.csv`, `reports/confusion_*.csv` and `reports/feature_importance_val_15.csv`; no new metric was computed.
+  - Integrated Pedro's block with three corrections: the XGBoost gap is 3.33 points (the recorded value, not 3.32 from subtracting rounded accuracies), the majority-class baseline was added (0.2810 / 0.1097) so the "double the baseline" claim is supported, and the leakage sentence (preprocessing fitted per fold) was made explicit because it is an acceptance criterion.
+  - Included the mapping to the four acceptance criteria, the speaking split and a table tracing each figure to its file. The app screenshot is marked as pending until PR #82 merges.
+- **Files:** Created: `docs/technical-presentation.md`. Modified: `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** documentation only; no model, data or result was touched and no new metric was produced. Cross-checked each figure against the referenced files in `develop`. The confusion pairs are quoted as a share of the true class (B→C is 87 of 278 customers of B, 31 %), not as a share of the whole partition.
+- **Outcome:** Presentation ready for review in a PR into `develop`; Pedro reviews slides 3, 4 and 6.
+- **Pending tasks:** Review and merge of the PR; add the app screenshot when #82 lands; confirm the speaking split in the daily.
