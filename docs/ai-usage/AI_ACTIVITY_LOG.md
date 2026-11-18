@@ -514,6 +514,23 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
+### A-028 — US-11: common selection rule, comparison table and freeze harness
+
+- **Date:** 2026-11-17
+- **Note:** Numbered A-028 because A-021 (SVM), A-022 (US-06 duplicates), A-023 (boosting), A-024 (logistic review), A-025 (US-12) and A-027 (D-017) are already in `develop` or reserved by open PRs; A-026 is left for the report draft (PR #74).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** US-11 (issue #27): make the approved D-015 rule reusable, assemble the D-010 comparison table and prepare the freeze of the winning model.
+- **Activities:**
+  - Created `src/select_config.py`: the D-015 rule as a module plus a CLI (`python -m src.select_config results/<model>.csv`). It reads the `cv5fold` rows, keeps the last batch of each configuration, parses the fold standard deviation and the train - CV gap from `notes` (the two formats in use) and applies items 2-6 of D-015. When the notes lack those two numbers it stops with an actionable message, because D-015 item 8 requires them.
+  - Created `src/compare_models.py`: reads the four results files, keeps the rows each owner marked as the chosen configuration (`tuned`/`SELECTED`/`CANDIDATO`), prints accuracy and macro-F1 on `train_70` and `val_15`, the gap in points, the per-class F1 and the majority-class baseline; selects the winner by validation macro-F1 among the models with gap < 5 points (D-010 Consequences, between models) and freezes it with joblib (serialise, reload in a fresh object, predict one row). The registry only knows the modules that expose `SELECTED_PARAMS`; today that is the SVM.
+  - Added `joblib==1.6.0` to `requirements.txt` as a direct dependency (installed version, verified in this run). Installing or upgrading dependencies needs human approval (AGENTS.md section 2), so the change is flagged for the team.
+  - Created `tests/test_select_config.py` and `tests/test_compare_models.py` (15 tests: both notes formats, missing fields, last-batch handling, tie rule, fallback, table assembly, skipped models, winner choice and the freeze registry).
+- **Files:** Created: `src/select_config.py`, `src/compare_models.py`, `tests/test_select_config.py`, `tests/test_compare_models.py`. Modified: `requirements.txt`, `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry only).
+- **Verification:** `python -m pytest tests/test_select_config.py tests/test_compare_models.py -q` -> 15 passed. `python -m src.select_config results/svm.csv` returns `grid-07 {C: 1.0, gamma: 0.01, kernel: rbf}` with CV macro-F1 0.4923 and a 3.54-point train - CV gap, matching the configuration recorded in PR #70. `python -m src.compare_models --stage table` builds the table with the SVM and lists the other three files as not yet available. No data file and no `test_15` were read.
+- **Outcome:** The D-015 rule is reusable and the comparison harness is ready. The table cannot be completed yet: `results/boosting.csv` (PR #65) has no row marked as the chosen configuration, and `results/logistic_regression.csv` (PR #66) records pooled out-of-fold metrics without the fold standard deviation or the train - CV gap, so `select_config` stops with the message that D-015 item 8 requires them. Both owners need to re-derive and record their selection.
+- **Pending tasks:** Merge #65, #66 and #67; complete the table; team approval of the `joblib` dependency and of the choice between training the frozen model on `train_70` or on `train_70 + val_15`; then freeze the winner and record the US-11 decision.
+- **Update 2026-11-17 after the review of PR #72 (Rita Pereira):** renumbered from A-022 to A-024 because A-022 is used by PR #71 (merged) and A-023 by PR #65. Three fixes from the review: `baseline` rows are left out of the candidate table (the SVM counted 6/10 admissible instead of 6/9); the CV mean is taken from `notes` when the file stores the pooled out-of-fold score in the `macro_f1` column (the boosting file does: 0.5049 against the 0.5045 fold mean); and `load_selected_rows` now takes the last marked configuration that has both rows and ignores `tuned-fallback-N` rows, so a fallback from D-015 item 7 cannot be mistaken for the choice. The freeze registry now names every model's builder (keyword arguments or one parameter dict) and stops with a message that asks the owner to expose `SELECTED_PARAMS`; today only the SVM does, and the boosting winner needs the constant when PR #65 merges. Rita Pereira approved `joblib==1.6.0` as a direct dependency and voted to freeze on `train_70` only.
 ### A-025 — US-12: final evaluation script of the frozen model (test and importance)
 
 - **Date:** 2026-11-17
@@ -556,10 +573,32 @@ Its purpose is to help team members understand previous activities, identify com
 
 ---
 
-### A-030 — US-17: business presentation (PowerPoint and PDF, Spanish)
+### A-029 — US-11 freeze and US-12 single test evaluation
 
 - **Date:** 2026-11-18
-- **Note:** Numbered A-030 because A-026 is used by PR #74, A-028 by PR #72 and A-029 is reserved for PR #76.
+- **Note:** Numbered A-029 because A-028 is used by PR #72 (US-11 harness, merged).
+- **Agent:** OpenCode (DeepSeek V4.1 Flash)
+- **Human owner:** Brian
+- **Objective:** Execute US-11 (issue #27): freeze the winning model on `train_70` and record the comparison table; then run US-12 (issue #29) once on `test_15`.
+- **Activities:**
+  - Branch `feature/model-freeze` from `develop` (`31c134a`).
+  - The freeze failed at first: the boosting Pipeline needs numeric labels, so `build_pipeline` raised `ValueError: Invalid classes inferred from unique values of y`. Added `src/frozen.py` with `FrozenPipeline`, a `ClassifierMixin`/`BaseEstimator` wrapper that encodes the target on `fit` and decodes it on `predict`, so the artifact takes and returns `A`-`D` and works with `permutation_importance`. The class lives in its own module because a class defined in a script executed with `python -m` is pickled as `__main__.FrozenPipeline` and cannot be unpickled by another module.
+  - `python -m src.compare_models --stage table --write` → `results/model_comparison.csv` with the **four candidate models** (the Dummy is not a candidate, so the script prints it as a reference instead of storing it): XGBoost 0.5227 · Random Forest 0.5080 · SVM 0.4853 · logistic 0.4786, all with gap < 5 points. The majority-class reference is accuracy 0.2810 and macro-F1 0.1097 on `val_15`, and accuracy 0.2816 and macro-F1 0.1099 on `test_15`.
+  - `python -m src.compare_models --stage freeze --model boosting` → `models/final_model.joblib` (5,647 rows, `trained_on = train_70`, `frozen_params` = the D-015 item 6 configuration: 300 trees, depth 3, learning rate 0.05, subsample 1.0, colsample 0.8, min_child_weight 5). The artifact is reloaded and predicts the first row, as US-11 requires; it is not committed because `*.joblib` is ignored.
+  - `python -m src.evaluate_final --model models/final_model.joblib --partition val_15` → accuracy 0.5421, macro-F1 0.5222, confusion matrices and permutation importance; on `train_70` the same artifact scores accuracy 0.5766 and macro-F1 0.5609, so its train - validation gap is **3.44 points** and meets the D-010 limit (Age 0.080 > Profession 0.077 > Spending_Score 0.054 > Family_Size 0.029).
+  - `python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test` → accuracy 0.5599, macro-F1 0.5456 (test − validation: +1.77 points of accuracy, +2.34 of macro-F1). Single evaluation; the report file carries a timestamp.
+- **Files:** Created: `src/frozen.py`, `results/model_comparison.csv`, `reports/final_metrics_val_15.csv`, `reports/final_metrics_test_15_20261118T092535Z.csv`, the confusion matrices and `reports/feature_importance_val_15.csv`. Modified: `src/compare_models.py` (imports the wrapper), `tests/test_compare_models.py` (round-trip test), `docs/ai-usage/AI_ACTIVITY_LOG.md` (this entry) and `docs/ai-usage/DECISION_LOG.md` (D-018 proposal).
+- **Verification:** `python -m pytest tests -q` → 120 passed. The table is reproduced from the four results files; the frozen artifact reloads and predicts; `test_15` was read once and the script refuses a second run without `--allow-test-rerun`.
+- **Note on a one-row difference:** the frozen model scores 0.5421 / 0.5222 on `val_15`, while the boosting row recorded in `results/boosting.csv` says 0.5430 / 0.5227. The difference is one row out of 1,210 and is **not** caused by the wrapper: reproducing with the boosting module's own `fit_and_evaluate(SELECTED_PARAMS)` on this machine gives 0.5421 / 0.5222 as well. The likely cause is run-to-run or hardware variation of XGBoost `hist`. Both figures are reported; the ranking does not change.
+- **Outcome:** US-11 frozen (XGBoost on `train_70`) and US-12 evaluated once on `test_15`; the PR carries the evidence.
+- **Pending tasks:** Review and merge of the PR; approval of D-018 (Proposed); the app needs `xgboost` installed and, on macOS, `libomp`, plus the `.joblib` copied to the machine that runs the demo.
+
+---
+
+### A-032 — US-17: business presentation (PowerPoint and PDF, Spanish)
+
+- **Date:** 2026-11-18
+- **Note:** First numbered A-030; renumbered to A-032 on 2026-11-18 because A-029 is in `develop` (PR #78), A-030 is used by PR #81 (US-14) and A-031 by PR #82 (US-15).
 - **Agent:** Claude Code (Claude Opus 5.5)
 - **Human owner:** Rita
 - **Objective:** US-17 (issue #37): business presentation in non-technical Spanish with the segment profiles, the segment to prioritise, the campaigns as business hypotheses and the recommendation to collect income, product (P1 to P5) and vehicle type.
