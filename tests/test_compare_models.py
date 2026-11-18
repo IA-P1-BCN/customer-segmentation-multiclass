@@ -100,12 +100,18 @@ def test_registry_knows_the_four_models():
     assert set(cm.FROZEN_MODELS) == {"svm", "boosting", "random_forest", "logistic_regression"}
 
 
-def test_frozen_pipeline_explains_which_modules_are_ready():
+def test_frozen_pipeline_explains_which_modules_are_ready(monkeypatch):
     with pytest.raises(SystemExit, match="unknown model"):
         cm.frozen_pipeline("nope")
-    # The random forest module is not in develop yet: the registry knows it but
-    # cannot import it, and the message says so instead of raising ImportError.
+    # A model whose module is not in develop yet: the registry knows it but
+    # cannot import it, so the message says so instead of raising ImportError.
+    monkeypatch.setitem(cm.FROZEN_MODELS, "notyet",
+                        {"module": "src.not_a_module", "builder": "x", "call": "kwargs"})
     with pytest.raises(SystemExit, match="is not in develop yet"):
+        cm.frozen_pipeline("notyet")
+    # The random forest is in develop but does not expose SELECTED_PARAMS, so it
+    # is reported as not freezable instead of being frozen with unknown settings.
+    with pytest.raises(SystemExit, match="does not expose SELECTED_PARAMS"):
         cm.frozen_pipeline("random_forest")
 
 
