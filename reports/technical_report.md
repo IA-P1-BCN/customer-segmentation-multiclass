@@ -10,7 +10,7 @@
 | 4. Exploratory analysis | Pedro | Draft from the merged US-06 synthesis |
 | 5. Models and validation results | Brian | Draft from the recorded results of the four model PRs |
 | 6. Final model and test evaluation | Brian | Filled from PR #78 and PR #79 |
-| 7. Error analysis | Pedro | 7.1–7.3 filled from the US-12 run; **7.4–7.7 pending US-14** |
+| 7. Error analysis | Pedro | Filled from the US-12 run and US-14 (PR #81); 7.7 (optional) not done |
 | 8. Segments and business reading | Rita | Draft from US-13 part 1 |
 | 9. Limitations | Rita | Draft |
 | 10. Reproducibility and sources | Rita | Draft |
@@ -242,7 +242,7 @@ Against the criterion of section 3.2:
 
 Its configuration was chosen by D-015 item 6 (no configuration met the 5-point gap in cross-validation, section 5.1); it meets the official limit on `val_15` (3.33 points in the recorded run).
 
-**Validation figures of the frozen model.** The frozen model scores 0.5421 accuracy and 0.5222 macro-F1 on `val_15`, against 0.5430 and 0.5227 in the recorded boosting run of section 5.2: one row of 1,210 differs. A-029 reproduces the lower figure with the boosting module itself, so the wrapper is not the cause; the likely cause is run-to-run variation of XGBoost. Section 5 keeps the recorded run; this section uses the frozen model.
+**Validation figures of the frozen model.** The frozen model scores 0.5421 accuracy and 0.5222 macro-F1 on `val_15`, against 0.5430 and 0.5227 in the recorded boosting run of section 5.2, which gets one more row of 1,210 right (657 against 656). A-029 reproduces the lower figure with the boosting module itself, so the wrapper is not the cause; the likely cause is run-to-run variation of XGBoost. Section 5 keeps the recorded run; this section uses the frozen model.
 
 **Overfitting check of the frozen model (D-010).** On `train_70` the frozen model scores accuracy 0.5766 and macro-F1 0.5609, so its train − validation gap is **3.44 points** (computed before rounding), below the 5-point limit. Source: A-029, completed in PR #79.
 
@@ -325,7 +325,7 @@ How to read it:
 
 *Owner: Pedro. Full analysis: `reports/error_analysis.md` (US-14, issue #32); this section summarises it.*
 
-> **Partly pending (US-14).** The structure follows the acceptance criteria of issue #32. Sections 7.2 and 7.3 are copied from the US-12 run (section 6); 7.4 and 7.6 contrast them with the segment profiles of section 8.1 and the EDA of section 4; 7.5 and 7.7 are pending (US-14, PR #81). Explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
+> **US-14 (PR #81, merged).** The structure follows the acceptance criteria of issue #32. Sections 7.2 and 7.3 are copied from the US-12 run (section 6); 7.4 and 7.6 contrast them with the segment profiles of section 8.1 and the EDA of section 4; 7.5 summarises `reports/error_analysis.md`; 7.7 (optional) was not done. Explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
 
 ### 7.1 Preview from validation and the EDA
 
@@ -355,7 +355,7 @@ From the row-normalised confusion matrix of section 6.3 (share of the true segme
 | D | A | 0.188 | 64 |
 | A | B | 0.172 | 51 |
 
-Contrast with the data: the largest error, **B predicted as C**, matches the pair most often mixed in the data (B + C, 55 contradictory profiles, section 4.4), and B and A are confused in both directions, as the second mixed pair (A + B, 30) suggests. The preview of section 7.1 holds. **A and D are also confused in both directions** (A as D and D as A), a pair that section 4.4 does not list among the most mixed; why is for US-14.
+Contrast with the data: the largest error, **B predicted as C**, matches the pair most often mixed in the data (B + C, 55 contradictory profiles, section 4.4), and B and A are confused in both directions, as the second mixed pair (A + B, 30) suggests. The preview of section 7.1 holds. **A and D are also confused in both directions** (A as D and D as A), a pair that section 4.4 does not list among the most mixed; section 7.4 reads why.
 
 ### 7.4 Why: contrast with the segment profiles
 
@@ -369,11 +369,21 @@ For each confused pair of section 7.3, the traits of section 8.1 (`train_70`) th
 
 > **Source: `val_15`.** The single test run (PR #78) did not save the prediction for each row, and opening `test_15` again is not allowed (sections 3.5 and 10.1), so the misclassified rows are reviewed on `val_15`, where the frozen model can be re-run. Its confusion matrix is in `reports/confusion_counts_val_15.csv`.
 
-A sample of misclassified rows with their nine variables, true and predicted segment, grouped by the most confused pairs. The review describes what the rows have in common; it is not used to change the model.
+The frozen model (the official file of section 6.1) misclassifies **554 of the 1,210 rows** of `val_15` and gets 656 right; every misclassified row, with its nine variables and its true and predicted segment, is in `reports/error_analysis_val_15.csv`. The review compares the two groups; it describes, it is not used to change the model. Source: `reports/error_analysis.md`, sections 5 and 6 (PR #81).
 
-| True | Predicted | Variables in common | Observation |
-|---|---|---|---|
-| … | … | … | … |
+| Variable | Correct rows (656) | Misclassified rows (554) |
+|---|---:|---:|
+| Mean age | 40.21 | 45.97 |
+| Ever married (Yes) | 51.6 % | 64.9 % |
+| Graduated (Yes) | 57.3 % | 67.4 % |
+| Low spending | 62.7 % | 57.4 % |
+| Mean family size | 3.03 | 2.75 |
+| Most frequent profession | Artist (32.1 %) | Artist (32.1 %) |
+
+Percentages exclude missing values. Reading:
+
+- The misclassified customers are older (about six years on average), more often married and more often graduated, and less often Low spenders. *Hypothesis:* this matches the B ↔ C confusion of section 7.4, because B and C are the oldest, most married and most graduated segments; the young, Low-spending profile of D is recognised best.
+- `reports/error_analysis.md` (section 6) shows three misclassified rows per true segment. They are the first three in the file, so they illustrate the errors but are not a representative sample, and no pattern is drawn from them here.
 
 ### 7.6 What data would help
 
@@ -387,7 +397,7 @@ None of these variables was measured, so their effect on the errors cannot be es
 
 ### 7.7 Performance by subgroup (optional)
 
-Accuracy or recall by subgroup (for example age band, `Ever_Married` or `Spending_Score`), if time allows: …
+**Not done.** It is an optional criterion of US-14, and `reports/error_analysis.md` (section 9) states that it is not included. Section 7.5 compares correct and misclassified rows, but does not give accuracy or recall by subgroup.
 
 ## 8. Segments and business reading
 
@@ -439,7 +449,7 @@ The frozen model relies most on `Age`, `Profession` and `Spending_Score` (permut
 - **Split by rows, not by profile.** The same profile can appear in `train_70` and in `val_15` or `test_15` (D-013). It affects the absolute accuracy, not the ranking, because all models use the same split.
 - **Logistic regression results marked provisional.** Its results file still carries the note "PROVISIONAL (US-05 phase 2 not integrated)"; it applies D-011 and D-014 like the other models (28 columns).
 - **Model file not versioned.** `models/final_model.joblib` is git-ignored, so the repository keeps the command that builds the model but not the file evaluated on `test_15` in PR #78. Rebuilding it, for example on another computer, can change a few predictions: on `val_15` the frozen model gets 656 of 1,210 rows right (diagonal of `reports/confusion_counts_val_15.csv`, accuracy 0.5421), while the recorded boosting run with the same configuration got 657 (accuracy 0.5430, `results/boosting.csv`; section 6.1). The figures of sections 6 and 7 hold only for the file frozen in PR #78, so the error analysis and the app must use that file, not a rebuilt one. Its SHA-256 (section 6.1) tells whether a copy is that file.
-- **Model file not portable to Windows.** Besides the trees, the `.joblib` file stores the full state of XGBoost's random number generator (`rng_state`: 624 numbers written as text by the C++ standard library, whose format differs between platforms). The official file loads on macOS (656 correct rows on `val_15`, as recorded), but did not load on Pedro's Windows computer ("input stream corrupted") with the same SHA-256 and the same package versions, and Isbel traced the error to `rng_state`. That state is used when training, not when predicting. A Windows copy would have to be rebuilt from the trees (XGBoost `save_model`) and checked row by row against the official predictions on `val_15`; at the time of writing it has not been done.
+- **Model file not portable to Windows.** Besides the trees, the `.joblib` file stores the full state of XGBoost's random number generator (`rng_state`: 624 numbers written as text by the C++ standard library, whose format differs between platforms). The official file was generated on Linux (Brian's computer) and loads on Linux and on macOS (656 correct rows on `val_15` on both), but did not load on Pedro's Windows computer ("input stream corrupted") with the same SHA-256 and the same package versions, and Isbel traced the error to `rng_state`. That state is used when training, not when predicting. A Windows copy would have to be rebuilt from the trees (XGBoost `save_model`) and checked row by row against the official predictions on `val_15`; at the time of writing it has not been done.
 - **Association, not causality.** The EDA and the feature importance describe associations.
 
 ## 10. Reproducibility and sources
@@ -486,7 +496,7 @@ python -m src.evaluate_final --model models/final_model.joblib --partition test_
 | 6 | Frozen model on validation | `reports/final_metrics_val_15.csv`, `reports/confusion_counts_val_15.csv` (PR #78) |
 | 6 | Feature importance | `reports/feature_importance_val_15.csv` (PR #78) |
 | 6 | Baseline on `test_15`; frozen model on `train_70` (gap) | Output of the US-12 run and of the frozen model on `train_70`, recorded in A-029 (PR #79) |
-| 7 | Error analysis | `reports/error_analysis.md` (pending US-14) |
+| 7 | Error analysis | `reports/error_analysis.md` and `reports/error_analysis_val_15.csv` (PR #81, regenerated with the official model file: 554 misclassified rows on `val_15`) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69, merged) |
 
 ### 10.3 Decisions cited
