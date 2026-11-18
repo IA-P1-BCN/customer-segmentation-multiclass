@@ -224,7 +224,86 @@ Against the criterion of section 3.2:
 
 *Owner: Brian.*
 
-> **Pending (US-11, US-12).** This section will contain the frozen model and its configuration, the data it was fitted on, accuracy, macro-F1 and per-class precision, recall and F1 on `test_15`, the confusion matrix in counts and normalised by row, the comparison with validation and with the baseline, and the feature importance with its method, grouped by original variable. Importance is not causality.
+> **Pending (US-11, US-12).** The structure below is ready; the cells marked "…" are filled from the files named in each subsection, after the freeze and the single evaluation of `test_15`. No figure in this section may be written from memory or estimated (AGENTS.md section 5).
+
+### 6.1 Frozen model
+
+| Field | Value | Source |
+|---|---|---|
+| Model | … (expected XGBoost: highest `val_15` macro-F1 among the four, section 5.4; to be confirmed by US-11) | PR #72, comparison table |
+| Configuration | … | `models/final_model.joblib`, `frozen_params` |
+| Fitted on | `train_70` (5,647 rows), per D-017 | `trained_on`, `rows` in the joblib file |
+| Preprocessing | Shared Pipeline of section 3.1 (D-011, D-014; 28 columns) | `src/compare_models.py --stage freeze` |
+| Random seed | 42 | `src/config.py` |
+| Frozen on | … (date and commit) | AI activity log, US-11 entry |
+
+If the frozen model is XGBoost, recall that its configuration was chosen by D-015 item 6 (no configuration met the 5-point gap in cross-validation, section 5.1); it meets the official limit on `val_15` (3.33 points).
+
+### 6.2 Results on `test_15`
+
+`test_15` (1,211 rows) is opened once, with `python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test`. Source: `reports/final_metrics_test_15_<timestamp>.csv`.
+
+| | Accuracy | Macro-F1 |
+|---|---:|---:|
+| Frozen model on `test_15` | … | … |
+| Same model on `val_15` (section 5.2) | … | … |
+| Test − validation | … | … |
+| Majority-class baseline on `test_15` | … | … |
+
+Per class on `test_15`:
+
+| Segment | Precision | Recall | F1 |
+|---|---:|---:|---:|
+| A | … | … | … |
+| B | … | … | … |
+| C | … | … | … |
+| D | … | … | … |
+
+### 6.3 Confusion matrix on `test_15`
+
+Rows are the true segment, columns the predicted one. Sources: `reports/confusion_counts_test_15_<timestamp>.csv` and `reports/confusion_normalised_test_15_<timestamp>.csv`.
+
+Counts:
+
+| True \ Predicted | A | B | C | D |
+|---|---:|---:|---:|---:|
+| A | … | … | … | … |
+| B | … | … | … | … |
+| C | … | … | … | … |
+| D | … | … | … | … |
+
+Normalised by row (each row sums to 1; the diagonal is the recall of the segment):
+
+| True \ Predicted | A | B | C | D |
+|---|---:|---:|---:|---:|
+| A | … | … | … | … |
+| B | … | … | … | … |
+| C | … | … | … | … |
+| D | … | … | … | … |
+
+Section 7 (US-14) reads which pairs are confused most.
+
+### 6.4 Does the result hold on test?
+
+To be written with the figures above, against the criterion of section 3.2:
+
+- **Against the baseline:** …
+- **Against validation:** a test − validation difference of a few points either way is expected from sampling with 1,211 rows; a large drop would mean the choice was tuned to `val_15`. …
+- **Per class:** does the pattern of section 5.3 hold (D best, B worst)? …
+
+### 6.5 Feature importance
+
+Method: permutation importance of the **nine original variables** (each column is shuffled and the drop in macro-F1 is measured; 5 repeats, `random_state=42`). It is computed on `val_15`, not on `test_15`, as issue #29 asks; `test_15` is only used for the metrics above. Source: `reports/feature_importance_val_15.csv`, from `python -m src.evaluate_final --model models/final_model.joblib --partition val_15`.
+
+| Variable | Macro-F1 drop (mean) | SD |
+|---|---:|---:|
+| … | … | … |
+
+How to read it:
+
+- Importance is not causality: it says how much the model relies on a variable, not that the variable causes the segment.
+- Overlapping variables share importance. `Ever_Married` and `Spending_Score` are strongly related (Cramér's V 0.669, section 4.2), so shuffling one may cost little because the other carries part of the same information.
+- Compare with the EDA ranking (section 4.1): a variable that ranks high in both is a robust finding.
 
 ## 7. Error analysis
 
