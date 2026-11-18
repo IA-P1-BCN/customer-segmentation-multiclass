@@ -45,7 +45,7 @@ Precision: A 0,458 · B 0,425 · C 0,545 · D 0,658. F1: A 0,437 · B 0,367 · C
 | Accuracy | 0,5421 | 0,5599 | +1,77 pp |
 | Macro-F1 | 0,5222 | 0,5456 | +2,34 pp |
 
-El test es **mejor** que la validación en ambas métricas. No hay sobreajuste: el modelo generaliza bien a datos nuevos.
+El test es **mejor** que la validación en ambas métricas. No hay sobreajuste: el modelo generaliza bien a datos nuevos. El gap train − val del modelo congelado es de 3,44 puntos (#79), dentro del límite de 5 puntos de D-010.
 
 ## 4. Pares más confundidos (matriz de test)
 
@@ -53,14 +53,14 @@ El test es **mejor** que la validación en ambas métricas. No hay sobreajuste: 
 |---|---:|---:|
 | B → C | 87 | 31.3 % de los B |
 | A → D | 68 | 23.0 % de los A |
-| B → A | 54 | 19.4 % de los B |
 | D → A | 64 | 18.8 % de los D |
+| B → A | 54 | 19.4 % de los B |
 | A → B | 51 | 17.2 % de los A |
 | C → B | 49 | 16.6 % de los C |
 | A → C | 42 | 14.2 % de los A |
 | C → D | 41 | 13.9 % de los C |
-| C → A | 26 | 8.8 % de los C |
 | B → D | 30 | 10.8 % de los B |
+| C → A | 26 | 8.8 % de los C |
 
 Los dos pares dominantes son **B ↔ C** (87 + 49 = 136 confusiones) y **A ↔ D** (68 + 64 = 132 confusiones).
 
@@ -160,6 +160,6 @@ Estas recomendaciones alimentan la sección de limitaciones del informe (US-16, 
 - Métricas de validación: `reports/final_metrics_val_15.csv`
 - Importancia de variables: `reports/feature_importance_val_15.csv`
 - Perfiles de segmento: `reports/segment_profile_train_70.csv`
-- Predicciones de validación: `reports/error_analysis_val_15.csv` (553 filas mal clasificadas)
+- Predicciones de validación: `reports/error_analysis_val_15.csv` (554 filas mal clasificadas)
 - Modelo congelado: `models/final_model.joblib` (generado localmente, no commiteado)
 - Decisiones: D-010 (métrica y overfitting), D-015 (selección de configuración), D-016 (priorización), D-017 (train_70 solo), D-018 (XGBoost elegido y congelado)
