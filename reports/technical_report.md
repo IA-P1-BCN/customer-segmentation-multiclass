@@ -4,18 +4,18 @@
 
 | Section | Owner | Status |
 |---|---|---|
-| 1. Summary | Rita | Draft; final figures pending US-11 and US-12 |
+| 1. Summary | Rita | Draft with the test results (PR #78) |
 | 2. Data | Isbel | Draft from approved decisions |
 | 3. Methodology and Pipeline | Isbel | Draft from approved decisions |
 | 4. Exploratory analysis | Pedro | Draft from the merged US-06 synthesis |
 | 5. Models and validation results | Brian | Draft from the recorded results of the four model PRs |
-| 6. Final model and test evaluation | Brian | Structure ready; **figures pending US-11 and US-12** |
-| 7. Error analysis | Pedro | Structure ready; **pending US-14**; validation-level preview only |
+| 6. Final model and test evaluation | Brian | Filled from PR #78; baseline on test and frozen-model gap pending |
+| 7. Error analysis | Pedro | 7.1–7.3 filled from the US-12 run; **7.4–7.7 pending US-14** |
 | 8. Segments and business reading | Rita | Draft from US-13 part 1 |
 | 9. Limitations | Rita | Draft |
 | 10. Reproducibility and sources | Rita | Draft |
 
-**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. The model results (sections 3 and 5) were checked against `develop` on 2026-11-17, after the four model PRs were merged. The segment figures (section 8) were checked against `develop` on 2026-11-17, after PR #69 was merged.
+**How to read the figures.** Every number comes from an executed run recorded in the repository (US-03, AGENTS.md section 5); section 10 lists the source of each one. The model results (sections 3 and 5) were checked against `develop` on 2026-11-17, after the four model PRs were merged. The segment figures (section 8) were checked against `develop` on 2026-11-17, after PR #69 was merged. The final model and test figures (sections 6 and 7) are copied from the files written by the single US-12 run (PR #78, 2026-11-18).
 
 ---
 
@@ -23,13 +23,13 @@
 
 The project predicts the segment (A, B, C or D) of a customer from nine demographic and behavioural variables, using `Train.csv` from the Kaggle Customer Segmentation dataset. Four models were trained on the same shared partition and preprocessing: multinomial logistic regression, SVM, random forest and XGBoost. Each chose its configuration with the same rule (D-015).
 
-On the validation split (`val_15`), the four selected configurations meet the overfitting limit (train − validation accuracy below 5 points) and clearly beat the majority-class baseline: macro-F1 between 0.4786 and 0.5227, against 0.1097 for the baseline. **XGBoost has the highest validation macro-F1 (0.5227, accuracy 0.5430).** The `val_15` figures of the four models are final; the choice of the frozen model and its test metrics are pending (US-11, US-12).
+On the validation split (`val_15`), the four selected configurations meet the overfitting limit (train − validation accuracy below 5 points) and clearly beat the majority-class baseline: macro-F1 between 0.4786 and 0.5227, against 0.1097 for the baseline. **XGBoost has the highest validation macro-F1 (0.5227, accuracy 0.5430).** The `val_15` figures of the four models are final.
 
 > **Fixed by D-017 (Approved by Brian, 2026-11-17):** the frozen model is fitted on `train_70` only.
 >
-> **Pending (US-11, US-12):** chosen model, test metrics, confusion matrix and feature importance.
+> **Final model (US-11, PR #78; D-018 Proposed):** XGBoost, fitted on `train_70`. On `test_15`, opened once, it reaches **accuracy 0.5599 and macro-F1 0.5456**, close to its validation figures (0.5421 and 0.5222; section 6). `Age`, `Profession` and `Spending_Score` are the variables the model relies on most (section 6.5).
 
-All models find segment D easiest (F1 about 0.69–0.71) and segment B hardest (F1 about 0.30–0.37). B and C are the pair that the data themselves mix most often (section 4.4).
+All models find segment D easiest (F1 about 0.69–0.71 on validation) and segment B hardest (F1 about 0.30–0.37). On test, B has the lowest recall (0.385) and 31 % of the B customers are predicted as C, the pair that the data themselves mix most often (sections 4.4 and 7).
 
 ## 2. Data
 
@@ -106,11 +106,11 @@ Every model chose its final configuration with the same rule, approved by the te
 
 ### 3.4 Choosing the model (US-11)
 
-Among the models that meet the overfitting limit on `val_15`, the one with the highest validation macro-F1 is chosen (D-010, Consequences, read as the comparison between models per D-015 item 9). The comparison table and the freezing tool are in PR #72.
+Among the models that meet the overfitting limit on `val_15`, the one with the highest validation macro-F1 is chosen (D-010, Consequences, read as the comparison between models per D-015 item 9). The comparison table and the freezing tool are in `src/compare_models.py` (PR #72, merged).
 
 > **Decision D-017 (Approved by Brian, 2026-11-17; Pedro, Brian and Isbel voted for it):** the frozen model is fitted on `train_70` only, not on `train_70 + val_15`, so its `val_15` figures stay held-out figures and the official check of D-010 keeps its meaning.
 >
-> **Pending (US-11):** run the freeze and record the choice of the final model.
+> **Done (US-11, PR #78):** XGBoost frozen on `train_70` (section 6.1). The choice is recorded as D-018, **Proposed**: it needs approval by a team member other than its proposer.
 
 ### 3.5 Final evaluation (US-12)
 
@@ -218,102 +218,117 @@ Against the criterion of section 3.2:
 - **Ranking on `val_15`:** XGBoost 0.5227 > random forest 0.5080 > SVM 0.4853 > logistic regression 0.4786 (macro-F1). The difference between the first two is small (0.0147) and has not been tested statistically.
 - **Ceiling:** about half of the customers are classified correctly. Section 4.4 shows that contradictory profiles explain only 3 %; the rest reflects the limited information in nine variables (section 9).
 
-> **Pending (US-11):** the `val_15` ranking is final for the four models. Confirm it with the comparison table of PR #72 and freeze the model (D-017: fitted on `train_70` only).
+> **Checked against the comparison table (2026-11-18):** `python -m src.compare_models --stage table` on `develop` gives the same accuracies, macro-F1 and per-class F1 as tables 5.2 and 5.3, and names XGBoost (`boosting`) as the model with the highest `val_15` macro-F1 (0.5227) among the 4 of 4 models with a gap below 5 points. Its gap column subtracts the accuracies already rounded to four decimals, so it shows 3.88 (SVM) and 3.32 (XGBoost) instead of 3.89 and 3.33; the result does not change.
+>
+> **Frozen in PR #78:** XGBoost on `train_70` (D-017); results in section 6.
 
 ## 6. Final model and test evaluation
 
-*Owner: Brian.*
-
-> **Pending (US-11, US-12).** The structure below is ready; the cells marked "…" are filled from the files named in each subsection, after the freeze and the single evaluation of `test_15`. No figure in this section may be written from memory or estimated (AGENTS.md section 5).
+*Owner: Brian. Sources: PR #78 (merged 2026-11-18), AI activity log A-029, `reports/*_test_15_20261118T092535Z.csv`, `reports/*_val_15.csv`.*
 
 ### 6.1 Frozen model
 
 | Field | Value | Source |
 |---|---|---|
-| Model | … (expected XGBoost: highest `val_15` macro-F1 among the four, section 5.4; to be confirmed by US-11) | PR #72, comparison table |
-| Configuration | … | `models/final_model.joblib`, `frozen_params` |
+| Model | XGBoost: highest `val_15` macro-F1 among the four models, all below the 5-point gap (section 5.4) | `results/model_comparison.csv` |
+| Configuration | 300 trees, `max_depth=3`, `learning_rate=0.05`, `subsample=1.0`, `colsample_bytree=0.8`, `min_child_weight=5` (D-015 item 6) | `frozen_params` in the joblib file; `SELECTED_PARAMS` in `src/train_boosting.py` |
 | Fitted on | `train_70` (5,647 rows), per D-017 | `trained_on`, `rows` in the joblib file |
-| Preprocessing | Shared Pipeline of section 3.1 (D-011, D-014; 28 columns) | `src/compare_models.py --stage freeze` |
+| Preprocessing | Shared Pipeline of section 3.1 (D-011, D-014; 28 columns), wrapped in `FrozenPipeline` (`src/frozen.py`) so that it takes and returns the labels A–D | `src/compare_models.py --stage freeze --model boosting` |
 | Random seed | 42 | `src/config.py` |
-| Frozen on | … (date and commit) | AI activity log, US-11 entry |
+| Frozen on | 2026-11-18, PR #78 (`c6ce6c6` in `develop`); the `.joblib` file is not committed and is rebuilt with the command above | A-029 |
 
-If the frozen model is XGBoost, recall that its configuration was chosen by D-015 item 6 (no configuration met the 5-point gap in cross-validation, section 5.1); it meets the official limit on `val_15` (3.33 points).
+> **D-018 (Proposed):** XGBoost as the final model. It needs approval by a team member other than its proposer.
+
+Its configuration was chosen by D-015 item 6 (no configuration met the 5-point gap in cross-validation, section 5.1); it meets the official limit on `val_15` (3.33 points in the recorded run).
+
+**Validation figures of the frozen model.** The frozen model scores 0.5421 accuracy and 0.5222 macro-F1 on `val_15`, against 0.5430 and 0.5227 in the recorded boosting run of section 5.2: one row of 1,210 differs. A-029 reproduces the lower figure with the boosting module itself, so the wrapper is not the cause; the likely cause is run-to-run variation of XGBoost. Section 5 keeps the recorded run; this section uses the frozen model.
+
+> **Pending:** the train − validation gap of the frozen model itself (its accuracy on `train_70` was not recorded).
 
 ### 6.2 Results on `test_15`
 
-`test_15` (1,211 rows) is opened once, with `python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test`. Source: `reports/final_metrics_test_15_<timestamp>.csv`.
+`test_15` (1,211 rows) was opened once, on 2026-11-18 at 09:25 UTC, with `python -m src.evaluate_final --model models/final_model.joblib --partition test_15 --allow-test`. Source: `reports/final_metrics_test_15_20261118T092535Z.csv`.
 
 | | Accuracy | Macro-F1 |
 |---|---:|---:|
-| Frozen model on `test_15` | … | … |
-| Same model on `val_15` (section 5.2) | … | … |
-| Test − validation | … | … |
+| Frozen model on `test_15` | **0.5599** | **0.5456** |
+| Same model on `val_15` | 0.5421 | 0.5222 |
+| Test − validation (points) | +1.77 | +2.34 |
 | Majority-class baseline on `test_15` | … | … |
+
+> **Pending:** the baseline on `test_15` was printed by the run but not saved to a file; it is to be recorded in A-029.
 
 Per class on `test_15`:
 
 | Segment | Precision | Recall | F1 |
 |---|---:|---:|---:|
-| A | … | … | … |
-| B | … | … | … |
-| C | … | … | … |
-| D | … | … | … |
+| A | 0.484 | 0.456 | 0.470 |
+| B | 0.484 | 0.385 | 0.429 |
+| C | 0.570 | 0.608 | 0.588 |
+| D | 0.648 | 0.751 | 0.696 |
 
 ### 6.3 Confusion matrix on `test_15`
 
-Rows are the true segment, columns the predicted one. Sources: `reports/confusion_counts_test_15_<timestamp>.csv` and `reports/confusion_normalised_test_15_<timestamp>.csv`.
+Rows are the true segment, columns the predicted one. Sources: `reports/confusion_counts_test_15_20261118T092535Z.csv` and `reports/confusion_normalised_test_15_20261118T092535Z.csv`.
 
 Counts:
 
-| True \ Predicted | A | B | C | D |
-|---|---:|---:|---:|---:|
-| A | … | … | … | … |
-| B | … | … | … | … |
-| C | … | … | … | … |
-| D | … | … | … | … |
+| True \ Predicted | A | B | C | D | Total |
+|---|---:|---:|---:|---:|---:|
+| A | 135 | 51 | 42 | 68 | 296 |
+| B | 54 | 107 | 87 | 30 | 278 |
+| C | 26 | 49 | 180 | 41 | 296 |
+| D | 64 | 14 | 7 | 256 | 341 |
 
 Normalised by row (each row sums to 1; the diagonal is the recall of the segment):
 
 | True \ Predicted | A | B | C | D |
 |---|---:|---:|---:|---:|
-| A | … | … | … | … |
-| B | … | … | … | … |
-| C | … | … | … | … |
-| D | … | … | … | … |
+| A | **0.456** | 0.172 | 0.142 | 0.230 |
+| B | 0.194 | **0.385** | 0.313 | 0.108 |
+| C | 0.088 | 0.166 | **0.608** | 0.139 |
+| D | 0.188 | 0.041 | 0.021 | **0.751** |
 
 Section 7 (US-14) reads which pairs are confused most.
 
 ### 6.4 Does the result hold on test?
 
-To be written with the figures above, against the criterion of section 3.2:
-
-- **Against the baseline:** …
-- **Against validation:** a test − validation difference of a few points either way is expected from sampling with 1,211 rows; a large drop would mean the choice was tuned to `val_15`. …
-- **Per class:** does the pattern of section 5.3 hold (D best, B worst)? …
+- **Against validation:** test is +1.77 points of accuracy and +2.34 of macro-F1 above the frozen model's validation figures. There is no sign that the choice was tuned to `val_15`; with 1,211 rows, a difference of this size can come from sampling, so test is not read as an improvement.
+- **Generalisation:** 0.5599 accuracy on unseen data is in line with validation; the comparison with the training accuracy of the frozen model is pending (section 6.1).
+- **Per class:** the pattern of section 5.3 holds. D is recognised best (recall 0.751) and B worst (recall 0.385).
+- **Against the baseline:** pending the recorded baseline on `test_15` (section 6.2).
 
 ### 6.5 Feature importance
 
-Method: permutation importance of the **nine original variables** (each column is shuffled and the drop in macro-F1 is measured; 5 repeats, `random_state=42`). It is computed on `val_15`, not on `test_15`, as issue #29 asks; `test_15` is only used for the metrics above. Source: `reports/feature_importance_val_15.csv`, from `python -m src.evaluate_final --model models/final_model.joblib --partition val_15`.
+Method: permutation importance of the **nine original variables** (each column is shuffled and the drop in macro-F1 is measured; 5 repeats, `random_state=42`). It is computed on `val_15`, not on `test_15`, as issue #29 asks. Source: `reports/feature_importance_val_15.csv`.
 
 | Variable | Macro-F1 drop (mean) | SD |
 |---|---:|---:|
-| … | … | … |
+| `Age` | 0.080 | 0.004 |
+| `Profession` | 0.077 | 0.004 |
+| `Spending_Score` | 0.054 | 0.004 |
+| `Family_Size` | 0.029 | 0.007 |
+| `Graduated` | 0.017 | 0.005 |
+| `Gender` | 0.015 | 0.003 |
+| `Work_Experience` | 0.013 | 0.004 |
+| `Var_1` | 0.007 | 0.006 |
+| `Ever_Married` | 0.006 | 0.002 |
 
 How to read it:
 
 - Importance is not causality: it says how much the model relies on a variable, not that the variable causes the segment.
-- Overlapping variables share importance. `Ever_Married` and `Spending_Score` are strongly related (Cramér's V 0.669, section 4.2), so shuffling one may cost little because the other carries part of the same information.
-- Compare with the EDA ranking (section 4.1): a variable that ranks high in both is a robust finding.
+- Overlapping variables share importance. `Ever_Married` and `Spending_Score` are strongly related (Cramér's V 0.669, section 4.2): `Ever_Married` ranks last although it has the highest Cramér's V with the segment in the EDA, which is consistent with `Spending_Score` and `Age` already carrying most of its information.
+- Compared with the EDA (section 4.1): `Age` and `Spending_Score` rank high in both; `Profession` ranks higher in the model than as a single variable; `Gender` and `Work_Experience`, which add nothing on their own, have a small but non-zero importance.
 
 ## 7. Error analysis
 
 *Owner: Pedro. Full analysis: `reports/error_analysis.md` (US-14, issue #32); this section summarises it.*
 
-> **Pending (US-14).** The structure below follows the acceptance criteria of issue #32. Cells marked "…" are filled from the US-12 run (section 6); explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
+> **Partly pending (US-14).** The structure follows the acceptance criteria of issue #32. Sections 7.2 and 7.3 are copied from the US-12 run (section 6); 7.4 to 7.7 are pending. Explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
 
 ### 7.1 Preview from validation and the EDA
 
-To be confirmed or corrected with the test results:
+Written before the test run; sections 7.2 and 7.3 check it:
 
 - B is the weakest segment in every model (recall 0.26–0.33 on `val_15`, section 5.3).
 - B and C are the pair most often mixed in the data (55 contradictory profiles, section 4.4) and they have similar profiles (section 8.1). *Hypothesis:* many B errors go to C, and some to A (B has the lowest recall in the four models). To be checked with the confusion matrix (US-12, US-14).
@@ -324,8 +339,8 @@ From the per-class table of section 6.2:
 
 | Segment | Precision | Recall | Reading |
 |---|---:|---:|---|
-| Lowest recall: … | … | … | … |
-| Lowest precision: … | … | … | … |
+| Lowest recall: B | 0.484 | 0.385 | Fewer than 4 in 10 B customers are recognised; B was also the weakest on validation |
+| Lowest precision: A and B (tied at three decimals) | 0.484 / 0.484 | 0.456 / 0.385 | About half of the customers predicted as A or as B belong to another segment |
 
 ### 7.3 Most confused pairs
 
@@ -333,11 +348,13 @@ From the row-normalised confusion matrix of section 6.3 (share of the true segme
 
 | True | Predicted as | Share of the true segment | Count |
 |---|---|---:|---:|
-| … | … | … | … |
-| … | … | … | … |
-| … | … | … | … |
+| B | C | 0.313 | 87 |
+| A | D | 0.230 | 68 |
+| B | A | 0.194 | 54 |
+| D | A | 0.188 | 64 |
+| A | B | 0.172 | 51 |
 
-Contrast with the data: do the most confused pairs match the pairs that are mixed in the data (B + C, 55 profiles; A + B, 30; section 4.4)? …
+Contrast with the data: the largest error, **B predicted as C**, matches the pair most often mixed in the data (B + C, 55 contradictory profiles, section 4.4), and B and A are confused in both directions, as the second mixed pair (A + B, 30) suggests. The preview of section 7.1 holds. **A and D are also confused in both directions** (A as D and D as A), a pair that section 4.4 does not list among the most mixed; why is for US-14.
 
 ### 7.4 Why: contrast with the segment profiles
 
@@ -348,7 +365,7 @@ For each confused pair, the profile traits of section 8.1 that the two segments 
 
 ### 7.5 Review of misclassified rows
 
-> **Pending: source of the row-level predictions.** `src/evaluate_final.py` writes metrics, confusion matrices and importance, but not the prediction for each row. The team has to choose the source before US-12 runs, so that `test_15` is still opened once: save the predictions in the same test run, or review misclassified rows on `val_15`.
+> **Source: `val_15`.** The single test run (PR #78) did not save the prediction for each row, and opening `test_15` again is not allowed (sections 3.5 and 10.1), so the misclassified rows are reviewed on `val_15`, where the frozen model can be re-run. Its confusion matrix is in `reports/confusion_counts_val_15.csv`.
 
 A sample of misclassified rows with their nine variables, true and predicted segment, grouped by the most confused pairs. The review describes what the rows have in common; it is not used to change the model.
 
@@ -401,7 +418,7 @@ The campaign per segment that the app shows (US-15) is a **business hypothesis, 
 
 ### 8.4 Which variables matter
 
-> **Pending (US-12):** model-based feature importance. Until then, section 4 gives the descriptive evidence: spending, age and marital status separate D from the rest; no single variable separates B from C.
+The frozen model relies most on `Age`, `Profession` and `Spending_Score` (permutation importance on `val_15`, section 6.5). Section 4 gives the descriptive evidence: spending, age and marital status separate D from the rest; no single variable separates B from C. Importance is not causality.
 
 ## 9. Limitations
 
@@ -430,7 +447,7 @@ python -m src.train_svm --stage tune               # SVM
 python src/train_boosting.py --select              # XGBoost
 ```
 
-Model choice, freeze and final evaluation (US-11, US-12). `src/compare_models.py` is in PR #72; `src/evaluate_final.py` is in `develop` (PR #73):
+Model choice, freeze and final evaluation (US-11, US-12). `src/compare_models.py` (PR #72) and `src/evaluate_final.py` (PR #73) are in `develop`:
 
 ```
 python -m src.compare_models --stage table                                    # comparison table of the four models
@@ -454,12 +471,13 @@ python -m src.evaluate_final --model models/final_model.joblib --partition test_
 | 5 | SVM | `results/svm.csv`, runs 2026-11-17T10:10:48Z and 10:11:52Z |
 | 5 | Random forest | `results/random_forest.csv`, tuning 2026-11-17T08:49:04Z and baseline 2026-11-17T10:12:28Z (PR #67, merged; the baseline was repeated later to add per-class precision and recall) |
 | 5 | XGBoost | `results/boosting.csv`, baseline 2026-11-16T10:46:49Z and selection 2026-11-17T11:05:42Z (PR #65, merged) |
-| 6 | Frozen model | `models/final_model.joblib` (pending US-11) |
-| 6 | Test metrics and confusion matrices | `reports/final_metrics_test_15_<timestamp>.csv`, `reports/confusion_counts_test_15_<timestamp>.csv`, `reports/confusion_normalised_test_15_<timestamp>.csv` (pending US-12) |
-| 6 | Feature importance | `reports/feature_importance_val_15.csv` (pending US-12) |
+| 6 | Frozen model | `models/final_model.joblib` (not committed; rebuilt with `compare_models --stage freeze --model boosting`), PR #78, A-029 |
+| 6, 7 | Test metrics and confusion matrices | `reports/final_metrics_test_15_20261118T092535Z.csv`, `reports/confusion_counts_test_15_20261118T092535Z.csv`, `reports/confusion_normalised_test_15_20261118T092535Z.csv` (single run, 2026-11-18 09:25 UTC, PR #78) |
+| 6 | Frozen model on validation | `reports/final_metrics_val_15.csv`, `reports/confusion_counts_val_15.csv` (PR #78) |
+| 6 | Feature importance | `reports/feature_importance_val_15.csv` (PR #78) |
 | 7 | Error analysis | `reports/error_analysis.md` (pending US-14) |
 | 8 | Segment profiles | `reports/segment_profile_train_70.csv`, run 2026-11-16 14:31 UTC (PR #69, merged) |
 
 ### 10.3 Decisions cited
 
-D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, approved), D-017 (data used to fit the frozen model, approved).
+D-006 and D-012 (dataset and test set), D-009 (repeated profiles), D-010 (metric and overfitting), D-011 (imputation), D-013 (shared partition), D-014 (encoding), D-015 (configuration selection), D-016 (segment prioritisation, approved), D-017 (data used to fit the frozen model, approved), D-018 (XGBoost as the final model, proposed).
