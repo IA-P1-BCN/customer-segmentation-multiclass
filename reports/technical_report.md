@@ -325,7 +325,7 @@ How to read it:
 
 *Owner: Pedro. Full analysis: `reports/error_analysis.md` (US-14, issue #32); this section summarises it.*
 
-> **Partly pending (US-14).** The structure follows the acceptance criteria of issue #32. Sections 7.2 and 7.3 are copied from the US-12 run (section 6); 7.4 to 7.7 are pending. Explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
+> **Partly pending (US-14).** The structure follows the acceptance criteria of issue #32. Sections 7.2 and 7.3 are copied from the US-12 run (section 6); 7.4 and 7.6 contrast them with the segment profiles of section 8.1 and the EDA of section 4; 7.5 and 7.7 are pending (US-14, PR #81). Explanations are hypotheses, not facts. The frozen model is not refitted or adjusted with anything found here.
 
 ### 7.1 Preview from validation and the EDA
 
@@ -359,10 +359,11 @@ Contrast with the data: the largest error, **B predicted as C**, matches the pai
 
 ### 7.4 Why: contrast with the segment profiles
 
-For each confused pair, the profile traits of section 8.1 that the two segments share or do not share. All explanations are *hypotheses*:
+For each confused pair of section 7.3, the traits of section 8.1 (`train_70`) that the two segments share or do not share. All explanations are *hypotheses*:
 
-- **…:** …
-- **…:** …
+- **B and C (B predicted as C: 87, the largest error).** The two segments are close in every trait except spending: median age 46 and 49, ever married 73.7 % and 79.5 %, graduated 72.9 % and 81.7 %, Artist as the most frequent profession in both, and almost the same share of High spending (20.6 % and 21.2 %). Where they differ is Low spending (48.7 % in B, 33.6 % in C). *Hypothesis:* a B customer with Average or High spending has nothing left that separates it from C. It is also the pair most often mixed in the data (55 contradictory profiles, section 4.4), so part of this error cannot be removed with these nine variables.
+- **A and D, in both directions (A as D: 68; D as A: 64).** They share their spending: most of their customers spend Low (69.1 % in A, 86.8 % in D). They differ in age (median 41 and 29), marital status (58.2 % and 29.0 % ever married), education (61.5 % and 37.8 % graduated) and profession (Artist and Healthcare). *Hypothesis:* a young, unmarried A customer with Low spending looks like D, and an older or married D customer looks like A. Section 4.4 does not list A + D among the most mixed pairs, so these errors are more likely to come from overlapping distributions than from identical profiles.
+- **A and B, in both directions (B as A: 54; A as B: 51).** A is the "mixed profile", close to the average of all customers, and B lies between A and C on every trait: median age 41 and 46, ever married 58.2 % and 73.7 %, graduated 61.5 % and 72.9 %, Low spending 69.1 % and 48.7 %. *Hypothesis:* the differences are moderate on every variable and no single one separates the two segments (section 4.1), so customers near the middle are assigned to either. A + B is the second most mixed pair in the data (30 profiles, section 4.4).
 
 ### 7.5 Review of misclassified rows
 
@@ -376,7 +377,13 @@ A sample of misclassified rows with their nine variables, true and predicted seg
 
 ### 7.6 What data would help
 
-Variables that are not in the dataset and could separate the confused segments (input for the business recommendation, section 8 and US-17): income, product (P1–P5) and vehicle type are named in the project brief and missing (section 9). Which of them would help each confused pair is a hypothesis: …
+Variables that are not in the dataset and could separate the confused segments (input for the business recommendation, section 8 and US-17): income, product (P1–P5) and vehicle type are named in the project brief and missing (section 9). Which of them would help each confused pair is a hypothesis:
+
+- **B and C:** they differ mainly in spending, which the dataset only gives as three levels. Income or the amount actually spent, and the products bought (P1–P5), could separate a B customer with Average spending from a C customer.
+- **A and D:** both spend Low. Income and vehicle type could tell whether the same low spending hides different capacities to spend.
+- **A and B:** no single variable separates them today; the products bought could show whether they buy different things at similar spending levels.
+
+None of these variables was measured, so their effect on the errors cannot be estimated with this dataset.
 
 ### 7.7 Performance by subgroup (optional)
 
