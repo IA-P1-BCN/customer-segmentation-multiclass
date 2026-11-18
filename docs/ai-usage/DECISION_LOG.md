@@ -355,7 +355,7 @@ AI agents can propose and document decisions, but cannot approve or reject them.
 ### D-018 — Selected model for the final delivery: XGBoost frozen on `train_70` (US-11)
 
 - **Date:** 2026-11-18
-- **Status:** Proposed
+- **Status:** Approved
 - **Area:** Model selection / Delivery
 - **Context:** US-11 (issue #27) requires choosing one model with an approved criterion, freezing it and leaving the decision recorded. The criterion is D-015 (configuration chosen by 5-fold cross-validation on `train_70`, with `val_15` as the official check) and D-017 fixes the data of the frozen model (`train_70`). Running `src/compare_models --stage table` on the four models merged in `develop` produced, on `val_15`:
 
@@ -370,11 +370,11 @@ AI agents can propose and document decisions, but cannot approve or reject them.
   All four models meet the 5-point limit, so the winner is the highest validation macro-F1.
 - **Alternatives:** (1) XGBoost; (2) random forest, better on overfitting (1.90 points) but 0.015 lower in macro-F1; (3) SVM or logistic regression, clearly below; (4) an ensemble, which the briefing does not ask for and which would add cost without a validated selection rule.
 - **Recommendation:** XGBoost. It is the best on the primary metric (D-010) and meets the overfitting limit; the cost is that the app needs `xgboost` installed (and `libomp` on macOS), which is documented in the README.
-- **Decision (proposed):**
+- **Decision:**
   1. The final model is the XGBoost Pipeline with the configuration selected by D-015, serialised as `models/final_model.joblib` by `src.compare_models --stage freeze --model boosting`, with `trained_on = train_70` (D-017).
   2. The artifact is a dict `{"model", "frozen_params", "trained_on", "rows"}` where `model` is a `FrozenPipeline` that accepts and returns the original labels (`A`-`D`); the app uses `payload["model"]`.
   3. The comparison table is `results/model_comparison.csv`; after the freeze there are no changes to the model without a new team decision.
-- **Approval:** Pending. Only a human team member can approve it.
+- **Approval:** Approved by Pedro (@PDguezPgr), team member and reviewer of PR #78, on 2026-11-18. XGBoost frozen on `train_70`; `test_15` opened once (accuracy 0.5599, macro-F1 0.5456); Age is the most important variable (0.080).
 - **Consequences:** US-12 evaluated the frozen artifact once on `test_15`: accuracy 0.5599, macro-F1 0.5456 (test − validation +1.77 and +2.34 points). The frozen model reproduces 0.5421 / 0.5222 on `val_15` instead of the 0.5430 / 0.5227 recorded for the boosting run (one row of 1,210; run-to-run variation of XGBoost, see A-029). The app must ship with `xgboost` installed and the `.joblib` available on the machine that runs the demo.
 
 ---
